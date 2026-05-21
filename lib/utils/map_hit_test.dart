@@ -8,9 +8,12 @@ ProvinceModel? getProvinceFromPosition(
   Offset position,
   List<ProvinceModel> provinces,
   List<ProvinceModel> specialZones,
-  Size canvasSize,
-) {
-  final allRegions = [...provinces, ...specialZones];
+  Size canvasSize, {
+  ProvinceModel? onlyProvince,
+}) {
+  final provinceList = onlyProvince != null ? [onlyProvince] : provinces;
+
+  final allRegions = [...provinceList, ...specialZones];
 
   final transform = calculateMapTransform(canvasSize, allRegions);
 
@@ -19,7 +22,7 @@ ProvinceModel? getProvinceFromPosition(
     (position.dy - transform.offsetY) / transform.scale,
   );
 
-  for (var province in provinces) {
+  for (var province in provinceList) {
     final geometry = province.geometry;
 
     final type = geometry['type'];

@@ -47,4 +47,24 @@ class GeoJsonService {
 
     return zones;
   }
+
+  Future<List<ProvinceModel>> fetchCommunes() async {
+    final String response = await rootBundle.loadString(
+      'assets/geojson/communes.geojson',
+    );
+
+    String fixedJson = response.replaceAll('NaN', 'null');
+
+    final data = jsonDecode(fixedJson);
+
+    final features = data['features'];
+
+    List<ProvinceModel> communes = [];
+
+    for (var item in features) {
+      communes.add(ProvinceModel.fromJson(item));
+    }
+
+    return communes;
+  }
 }

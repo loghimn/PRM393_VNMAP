@@ -34,7 +34,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(
             flex: 6,
 
-            child: Container(color: Colors.blueGrey, child: const VietnamMap()),
+            child: Container(
+              color: Colors.blueGrey,
+              child: Stack(
+                children: [
+                  const VietnamMap(),
+
+                  Positioned(
+                    top: 20,
+                    left: 20,
+
+                    child: Consumer<ProvinceProvider>(
+                      builder: (context, provider, child) {
+                        if (provider.focusedProvince == null) {
+                          return const SizedBox();
+                        }
+
+                        return ElevatedButton(
+                          onPressed: () {
+                            provider.clearFocus();
+                          },
+
+                          child: const Text("← Back"),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
 
           // ANALYTICS
@@ -66,7 +94,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Consumer<ProvinceProvider>(
                       builder: (context, provider, child) {
                         return ProvinceDetailPanel(
-                          province: provider.selectedProvince,
+                          province:
+                              provider.selectedCommune ??
+                              provider.selectedProvince,
                         );
                       },
                     ),

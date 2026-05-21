@@ -11,6 +11,11 @@ class ProvinceModel {
   final String? decree;
   final String? macroRegion;
 
+  final String? type;
+  final String? predecessors;
+  final String? parentMa;
+  final String? parentTen;
+
   final Map<String, dynamic> geometry;
   final Map<String, dynamic> properties;
 
@@ -26,6 +31,10 @@ class ProvinceModel {
     this.capital,
     this.decree,
     this.macroRegion,
+    this.type,
+    this.predecessors,
+    this.parentMa,
+    this.parentTen,
   });
 
   factory ProvinceModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +56,14 @@ class ProvinceModel {
       decree: props['decree'],
 
       macroRegion: props['macro_region'],
+
+      type: props['type'],
+
+      predecessors: props['predecessors'],
+
+      parentMa: props['parent_ma'],
+
+      parentTen: props['parent_ten'],
 
       geometry: json['geometry'],
 
