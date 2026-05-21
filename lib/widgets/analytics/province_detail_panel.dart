@@ -20,17 +20,77 @@ class ProvinceDetailPanel extends StatelessWidget {
       );
     }
 
+    final isSpecialZone = province!.type == 'Đặc khu';
+
     return Container(
       color: const Color(0xff111827),
       padding: const EdgeInsets.all(20),
 
+      child: isSpecialZone ? _buildSpecialZoneDetail() : _buildProvinceDetail(),
+    );
+  }
+
+  Widget _buildProvinceDetail() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          province!.name,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        _buildInfo("Code", province!.ma),
+
+        _buildInfo("Area", "${province!.areaKm2} km²"),
+
+        _buildInfo("Population", province!.population),
+
+        _buildInfo("Density", province!.density),
+
+        _buildInfo("Capital", province!.capital),
+
+        _buildInfo("Region", province!.macroRegion),
+
+        const SizedBox(height: 24),
+
+        const Divider(color: Colors.white24),
+
+        const SizedBox(height: 24),
+
+        Text(
+          "Decree",
+          style: TextStyle(
+            color: Colors.orange.shade300,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        Text(
+          province!.decree ?? "-",
+          style: const TextStyle(color: Colors.white70, height: 1.5),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpecialZoneDetail() {
+    return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             province!.name,
             style: const TextStyle(
-              color: Colors.white,
+              color: Colors.cyan,
               fontSize: 30,
               fontWeight: FontWeight.bold,
             ),
@@ -38,16 +98,41 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           const SizedBox(height: 24),
 
+          _buildInfo("Type", province!.type),
+
           _buildInfo("Code", province!.ma),
+
           _buildInfo("Area", "${province!.areaKm2} km²"),
+
           _buildInfo("Population", province!.population),
+
           _buildInfo("Density", province!.density),
+
           _buildInfo("Capital", province!.capital),
-          _buildInfo("Region", province!.macroRegion),
 
-          const SizedBox(height: 24),
+          _buildInfo("Macro Region", province!.macroRegion),
 
-          const Divider(color: Colors.white24),
+          _buildInfo("Parent Code", province!.parentMa),
+
+          _buildInfo("Parent", province!.parentTen),
+
+          const SizedBox(height: 20),
+
+          Text(
+            "Predecessors",
+            style: TextStyle(
+              color: Colors.cyan.shade200,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            province!.predecessors ?? "-",
+            style: const TextStyle(color: Colors.white70, height: 1.5),
+          ),
 
           const SizedBox(height: 24),
 

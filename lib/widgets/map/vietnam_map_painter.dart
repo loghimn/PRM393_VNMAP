@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vietnam_geo_dashboard/models/commune_dot.dart';
 
 import '../../models/province_model.dart';
 import '../../models/provinceLabel.dart';
@@ -13,12 +14,16 @@ class VietnamMapPainter extends CustomPainter {
   final List<ProvinceModel> specialZones;
   final ProvinceModel? hoveredProvince;
   final Offset mousePosition;
+  final List<ProvinceModel> communes;
+  final ProvinceModel? focusedProvince;
 
   VietnamMapPainter({
     required this.provinces,
     required this.specialZones,
     this.hoveredProvince,
     required this.mousePosition,
+    required this.communes,
+    required this.focusedProvince,
   });
 
   @override
@@ -48,6 +53,14 @@ class VietnamMapPainter extends CustomPainter {
       (mousePosition.dx - offsetX) / fitScale,
       (mousePosition.dy - offsetY) / fitScale,
     );
+
+    if (focusedProvince != null) {
+      canvas.restore();
+
+      drawFocusedProvinceMode(canvas, size);
+
+      return;
+    }
 
     for (var province in provinces) {
       final geometry = province.geometry;
@@ -156,20 +169,18 @@ class VietnamMapPainter extends CustomPainter {
     // DRAW DOTS
     // =========================
 
-    for (var label in labels) {
-      _drawDot(canvas, label.position);
-    }
+    if (focusedProvince == null) {
+      for (var label in labels) {
+        _drawDot(canvas, label.position);
+      }
 
-    // =========================
-    // DRAW LABELS
-    // =========================
-
-    for (var label in labels) {
-      drawCalloutLabel(canvas, label.position, label.name);
+      for (var label in labels) {
+        drawCalloutLabel(canvas, label.position, label.name);
+      }
     }
 
     canvas.restore();
-    // _drawSpecialZoneInset(canvas, size);
+    _drawSpecialZoneInset(canvas, size);
   }
 
   // ====================================================
@@ -342,5 +353,90 @@ class VietnamMapPainter extends CustomPainter {
       default:
         return Colors.grey;
     }
+  }
+
+  void drawFocusedProvinceMode(Canvas canvas, Size size) {
+    final province = focusedProvince!;
+    List<CommuneDot> communeDots = [];
+
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final fillPaint = Paint()
+      ..color = Colors.green
+      ..style = PaintingStyle.fill;
+
+    // ===== FIT ONLY THIS PROVINCE =====
+
+    final transform = calculateMapTransform(size, [province]);
+
+    canvas.save();
+
+    canvas.translate(transform.offsetX, transform.offsetY);
+
+    canvas.scale(transform.scale);
+
+    final geometry = province.geometry;
+
+    final type = geometry['type'];
+
+    final coordinates = geometry['coordinates'];
+
+    // ===== DRAW BIG PROVINCE =====
+
+    if (type == 'Polygon') {
+      final path = PathUtils.createPolygonPath(coordinates);
+
+      canvas.drawPath(path, fillPaint);
+
+      canvas.drawPath(path, borderPaint);
+    } else if (type == 'MultiPolygon') {
+      for (final polygon in coordinates) {
+        final path = PathUtils.createPolygonPath(polygon);
+
+        canvas.drawPath(path, fillPaint);
+
+        canvas.drawPath(path, borderPaint);
+      }
+    }
+
+    // ===== DRAW COMMUNES =====
+
+    final relatedCommunes = communes.where((c) {
+      return c.parentTen == province.name;
+    }).toList();
+
+    for (final commune in relatedCommunes) {
+      final geometry = commune.geometry;
+
+      final coords = geometry['coordinates'];
+
+      if (coords == null) continue;
+
+      List ring;
+
+      if (geometry['type'] == 'Polygon') {
+        ring = coords[0];
+      } else {
+        ring = coords[0][0];
+      }
+
+      final anchor = GeoUtils.getAnchorPoint(ring);
+
+      communeDots.add(CommuneDot(commune, anchor));
+
+      final isWard = commune.type == 'Phường';
+
+      final dotPaint = Paint()
+        ..color = isWard ? Colors.yellow : Colors.red
+        ..style = PaintingStyle.fill;
+
+      final double dotSize = 3 / transform.scale;
+      canvas.drawCircle(anchor, dotSize.clamp(1.5, 3), dotPaint);
+    }
+
+    canvas.restore();
   }
 }
