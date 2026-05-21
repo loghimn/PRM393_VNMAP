@@ -13,11 +13,12 @@ class ProvinceProvider extends ChangeNotifier {
   }
 
   List<ProvinceModel> provinces = [];
+  List<ProvinceModel> specialZones = [];
   ProvinceModel? selectedProvince;
 
   Future<void> loadData() async {
     provinces = await _service.fetchProvinces();
-
+    specialZones = await _service.fetchSpecialZones();
     notifyListeners();
   }
 

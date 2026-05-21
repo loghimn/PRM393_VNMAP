@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:vietnam_geo_dashboard/models/provinceLabel.dart';
-import 'package:vietnam_geo_dashboard/utils/geo_utils.dart';
-import 'package:vietnam_geo_dashboard/utils/path_utils.dart';
+
 import '../../models/province_model.dart';
+import '../../models/provinceLabel.dart';
+
+import '../../utils/geo_utils.dart';
+import '../../utils/map_transform.dart';
+import '../../utils/path_utils.dart';
+import 'package:vietnam_geo_dashboard/utils/province_anchor_overrides.dart';
 
 class VietnamMapPainter extends CustomPainter {
-  final double scale = 50;
   final List<ProvinceModel> provinces;
+  final List<ProvinceModel> specialZones;
   final ProvinceModel? hoveredProvince;
   final Offset mousePosition;
 
   VietnamMapPainter({
     required this.provinces,
+    required this.specialZones,
     this.hoveredProvince,
     required this.mousePosition,
   });
@@ -23,12 +28,30 @@ class VietnamMapPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.5;
 
-    canvas.translate(120, 20);
+    final allRegions = [...provinces, ...specialZones];
+
+    final transform = calculateMapTransform(size, allRegions);
+
+    final fitScale = transform.scale;
+    final offsetX = transform.offsetX;
+    final offsetY = transform.offsetY;
+
+    canvas.save();
+
+    canvas.translate(offsetX, offsetY);
+
+    canvas.scale(fitScale);
 
     List<ProvinceLabel> labels = [];
 
+    final adjustedMouse = Offset(
+      (mousePosition.dx - offsetX) / fitScale,
+      (mousePosition.dy - offsetY) / fitScale,
+    );
+
     for (var province in provinces) {
       final geometry = province.geometry;
+
       final type = geometry['type'];
       final coordinates = geometry['coordinates'];
 
@@ -37,45 +60,29 @@ class VietnamMapPainter extends CustomPainter {
       }
 
       // =========================
-      // HOVER COLOR
-      // =========================
-
-      final fillPaint = Paint()
-        ..color = hoveredProvince?.name == province.name
-            ? Colors.orange
-            : Colors.green
-        ..style = PaintingStyle.fill;
-
-      // =========================
       // POLYGON
       // =========================
 
       if (type == 'Polygon') {
         final path = PathUtils.createPolygonPath(coordinates);
 
-        final adjustedMouse = Offset(
-          mousePosition.dx - 120,
-          mousePosition.dy - 20,
-        );
-
         final isHovered = path.contains(adjustedMouse);
 
         final provincePaint = Paint()
-          ..color = isHovered ? Colors.orange : Colors.green
+          ..color = getProvinceColor(province, isHovered)
           ..style = PaintingStyle.fill;
 
         canvas.drawPath(path, provincePaint);
+
         canvas.drawPath(path, borderPaint);
 
         final ring = coordinates[0];
 
         if (ring.isEmpty) continue;
 
-        final anchor = GeoUtils.getAnchorPoint(ring);
-
-        if (anchor.dx == 0 && anchor.dy == 0) {
-          continue;
-        }
+        Offset anchor =
+            ProvinceAnchorOverrides.overrides[province.name] ??
+            GeoUtils.getAnchorPoint(ring);
 
         labels.add(ProvinceLabel(position: anchor, name: province.name));
       }
@@ -83,24 +90,24 @@ class VietnamMapPainter extends CustomPainter {
       // MULTIPOLYGON
       // =========================
       else if (type == 'MultiPolygon') {
+        bool hovered = false;
+
         for (var polygon in coordinates) {
           if (polygon.isEmpty) continue;
           if (polygon[0].isEmpty) continue;
 
           final path = PathUtils.createPolygonPath(polygon);
 
-          final adjustedMouse = Offset(
-            mousePosition.dx - 120,
-            mousePosition.dy - 20,
-          );
-
-          final isHovered = path.contains(adjustedMouse);
+          if (path.contains(adjustedMouse)) {
+            hovered = true;
+          }
 
           final provincePaint = Paint()
-            ..color = isHovered ? Colors.orange : Colors.green
+            ..color = getProvinceColor(province, hovered)
             ..style = PaintingStyle.fill;
 
           canvas.drawPath(path, provincePaint);
+
           canvas.drawPath(path, borderPaint);
         }
 
@@ -110,13 +117,38 @@ class VietnamMapPainter extends CustomPainter {
           continue;
         }
 
-        final anchor = GeoUtils.getAnchorPoint(biggest[0]);
-
-        if (anchor.dx == 0 && anchor.dy == 0) {
-          continue;
-        }
+        Offset anchor =
+            ProvinceAnchorOverrides.overrides[province.name] ??
+            GeoUtils.getAnchorPoint(biggest[0]);
 
         labels.add(ProvinceLabel(position: anchor, name: province.name));
+      }
+    }
+
+    for (var zone in specialZones) {
+      final geometry = zone.geometry;
+
+      final type = geometry['type'];
+      final coordinates = geometry['coordinates'];
+
+      final islandPaint = Paint()
+        ..color = Colors.blueAccent
+        ..style = PaintingStyle.fill;
+
+      if (type == 'Polygon') {
+        final path = PathUtils.createPolygonPath(coordinates);
+
+        canvas.drawPath(path, islandPaint);
+
+        canvas.drawPath(path, borderPaint);
+      } else if (type == 'MultiPolygon') {
+        for (final polygon in coordinates) {
+          final path = PathUtils.createPolygonPath(polygon);
+
+          canvas.drawPath(path, islandPaint);
+
+          canvas.drawPath(path, borderPaint);
+        }
       }
     }
 
@@ -128,98 +160,23 @@ class VietnamMapPainter extends CustomPainter {
       _drawDot(canvas, label.position);
     }
 
-    if (hoveredProvince != null) {
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: hoveredProvince!.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-
-      textPainter.layout();
-
-      final tooltipPosition = Offset(
-        mousePosition.dx + 12,
-        mousePosition.dy + 12,
-      );
-
-      final rect = Rect.fromLTWH(
-        tooltipPosition.dx - 6,
-        tooltipPosition.dy - 4,
-        textPainter.width + 12,
-        textPainter.height + 8,
-      );
-
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(6)),
-        Paint()..color = Colors.black87,
-      );
-
-      textPainter.paint(canvas, tooltipPosition);
-    }
-
     // =========================
     // DRAW LABELS
     // =========================
 
     for (var label in labels) {
-      _drawCalloutLabel(canvas, label.position, label.name, size);
-    }
-  }
-
-  // ====================================================
-  // DRAW POLYGON
-  // ====================================================
-  void drawPolygon(
-    Canvas canvas,
-    dynamic coordinates,
-    Paint fillPaint,
-    Paint borderPaint,
-  ) {
-    Path path = Path();
-
-    final firstRing = coordinates[0];
-
-    for (int i = 0; i < firstRing.length; i++) {
-      final point = firstRing[i];
-
-      // skip point lỗi
-      if (point is! List || point.length < 2) continue;
-
-      double lon = point[0].toDouble();
-      double lat = point[1].toDouble();
-
-      final p = GeoUtils.convert(lon, lat);
-
-      if (i == 0) {
-        path.moveTo(p.dx, p.dy);
-      } else {
-        path.lineTo(p.dx, p.dy);
-      }
+      drawCalloutLabel(canvas, label.position, label.name);
     }
 
-    path.close();
-
-    canvas.drawPath(path, fillPaint);
-    canvas.drawPath(path, borderPaint);
+    canvas.restore();
+    // _drawSpecialZoneInset(canvas, size);
   }
 
   // ====================================================
   // DRAW DOT
   // ====================================================
-  void _drawDot(Canvas canvas, Offset position) {
-    if (position.dx.isNaN ||
-        position.dy.isNaN ||
-        position.dx.isInfinite ||
-        position.dy.isInfinite) {
-      return;
-    }
 
+  void _drawDot(Canvas canvas, Offset position) {
     final paint = Paint()
       ..color = Colors.red
       ..style = PaintingStyle.fill;
@@ -228,9 +185,10 @@ class VietnamMapPainter extends CustomPainter {
   }
 
   // ====================================================
-  // DRAW CALLOUT LABLE
+  // DRAW LABEL
   // ====================================================
-  void _drawCalloutLabel(Canvas canvas, Offset anchor, String name, Size size) {
+
+  void drawCalloutLabel(Canvas canvas, Offset anchor, String name) {
     final linePaint = Paint()
       ..color = Colors.white.withOpacity(0.45)
       ..strokeWidth = 1.2;
@@ -257,8 +215,6 @@ class VietnamMapPainter extends CustomPainter {
     textPainter.layout();
 
     if (isLeftSide) {
-      // ===== LEFT =====
-
       lineEnd = Offset(anchor.dx - lineLength, anchor.dy);
 
       textOffset = Offset(
@@ -266,24 +222,125 @@ class VietnamMapPainter extends CustomPainter {
         lineEnd.dy - textPainter.height / 2,
       );
     } else {
-      // ===== RIGHT =====
-
       lineEnd = Offset(anchor.dx + lineLength, anchor.dy);
 
       textOffset = Offset(lineEnd.dx + 6, lineEnd.dy - textPainter.height / 2);
     }
 
-    // ===== LINE =====
-
     canvas.drawLine(anchor, lineEnd, linePaint);
 
-    // ===== TEXT =====
-
     textPainter.paint(canvas, textOffset);
+  }
+
+  void _drawSpecialZoneInset(Canvas canvas, Size size) {
+    final insetRect = Rect.fromLTWH(
+      size.width - 220,
+      size.height - 220,
+      180,
+      180,
+    );
+
+    // background box
+    final bgPaint = Paint()..color = Colors.black26;
+
+    // border
+    final borderPaint = Paint()
+      ..color = Colors.white54
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    canvas.drawRect(insetRect, bgPaint);
+
+    canvas.drawRect(insetRect, borderPaint);
+
+    // ===== SAVE =====
+
+    canvas.save();
+
+    // move island vào box
+    canvas.translate(insetRect.left + 20, insetRect.top + 20);
+
+    // scale nhỏ lại
+    canvas.scale(0.15);
+
+    for (final zone in specialZones) {
+      final geometry = zone.geometry;
+
+      final type = geometry['type'];
+      final coordinates = geometry['coordinates'];
+
+      final fillPaint = Paint()
+        ..color = Colors.orange
+        ..style = PaintingStyle.fill;
+
+      // =========================
+      // POLYGON
+      // =========================
+
+      if (type == 'Polygon') {
+        final path = PathUtils.createPolygonPath(coordinates);
+
+        canvas.drawPath(path, fillPaint);
+
+        canvas.drawPath(path, borderPaint);
+      }
+      // =========================
+      // MULTIPOLYGON
+      // =========================
+      else if (type == 'MultiPolygon') {
+        for (final polygon in coordinates) {
+          final path = PathUtils.createPolygonPath(polygon);
+
+          canvas.drawPath(path, fillPaint);
+
+          canvas.drawPath(path, borderPaint);
+        }
+      }
+    }
+
+    canvas.restore();
+
+    // ===== TITLE =====
+
+    final textPainter = TextPainter(
+      text: const TextSpan(
+        text: "Hoàng Sa - Trường Sa",
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+
+    textPainter.layout();
+
+    textPainter.paint(canvas, Offset(insetRect.left + 8, insetRect.top - 22));
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
+  }
+
+  Color getProvinceColor(ProvinceModel province, bool hovered) {
+    if (hovered) {
+      return Colors.orange;
+    }
+
+    switch (province.properties['type']) {
+      case 'Đặc khu':
+        return Colors.blueAccent;
+
+      case 'Thành phố':
+        return Colors.purple;
+
+      case 'Tỉnh':
+        return Colors.green;
+
+      default:
+        return Colors.grey;
+    }
   }
 }

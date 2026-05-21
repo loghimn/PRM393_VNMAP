@@ -65,13 +65,9 @@ class GeoUtils {
       return const Offset(0, 0);
     }
 
-    double minX = double.infinity;
-    double minY = double.infinity;
-
-    double maxX = -double.infinity;
-    double maxY = -double.infinity;
-
-    bool hasValidPoint = false;
+    double sumX = 0;
+    double sumY = 0;
+    int count = 0;
 
     for (var point in ring) {
       if (point is! List || point.length < 2) continue;
@@ -80,20 +76,16 @@ class GeoUtils {
 
       if (p.dx.isNaN || p.dy.isNaN) continue;
 
-      hasValidPoint = true;
+      sumX += p.dx;
+      sumY += p.dy;
 
-      if (p.dx < minX) minX = p.dx;
-      if (p.dy < minY) minY = p.dy;
-
-      if (p.dx > maxX) maxX = p.dx;
-      if (p.dy > maxY) maxY = p.dy;
+      count++;
     }
 
-    if (!hasValidPoint) {
+    if (count == 0) {
       return const Offset(0, 0);
     }
 
-    // center bbox
-    return Offset((minX + maxX) / 2, (minY + maxY) / 2);
+    return Offset(sumX / count, sumY / count);
   }
 }

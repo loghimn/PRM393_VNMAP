@@ -5,26 +5,34 @@ class PathUtils {
   static Path createPolygonPath(dynamic coordinates) {
     Path path = Path();
 
-    final firstRing = coordinates[0];
+    // Handle all rings: coordinates[0] is outer boundary, coordinates[1...n] are holes
+    for (var ringIndex = 0; ringIndex < coordinates.length; ringIndex++) {
+      final ring = coordinates[ringIndex];
 
-    for (int i = 0; i < firstRing.length; i++) {
-      final point = firstRing[i];
+      if (ring is! List || ring.isEmpty) continue;
 
-      if (point is! List || point.length < 2) continue;
+      bool isFirstPoint = true;
 
-      double lon = point[0].toDouble();
-      double lat = point[1].toDouble();
+      for (int i = 0; i < ring.length; i++) {
+        final point = ring[i];
 
-      final p = GeoUtils.convert(lon, lat);
+        if (point is! List || point.length < 2) continue;
 
-      if (i == 0) {
-        path.moveTo(p.dx, p.dy);
-      } else {
-        path.lineTo(p.dx, p.dy);
+        double lon = point[0].toDouble();
+        double lat = point[1].toDouble();
+
+        final p = GeoUtils.convert(lon, lat);
+
+        if (isFirstPoint) {
+          path.moveTo(p.dx, p.dy);
+          isFirstPoint = false;
+        } else {
+          path.lineTo(p.dx, p.dy);
+        }
       }
-    }
 
-    path.close();
+      path.close();
+    }
 
     return path;
   }
