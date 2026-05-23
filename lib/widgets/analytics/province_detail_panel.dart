@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vietnam_geo_dashboard/models/province_model.dart';
+import 'package:provider/provider.dart';
+import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
+import 'package:vietnam_geo_dashboard/widgets/weather/weather_info_panel.dart';
 
 class ProvinceDetailPanel extends StatelessWidget {
   final ProvinceModel? province;
@@ -43,7 +46,16 @@ class ProvinceDetailPanel extends StatelessWidget {
           ),
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+
+        Consumer<WeatherProvider>(
+          builder: (context, weatherProv, child) {
+            final w = weatherProv.getCachedWeatherForProvince(province!);
+            return WeatherInfoPanel(weather: w);
+          },
+        ),
+
+        const SizedBox(height: 12),
 
         _buildInfo("Code", province!.ma),
 
@@ -96,7 +108,16 @@ class ProvinceDetailPanel extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
+
+          Consumer<WeatherProvider>(
+            builder: (context, weatherProv, child) {
+              final w = weatherProv.getCachedWeatherForProvince(province!);
+              return WeatherInfoPanel(weather: w);
+            },
+          ),
+
+          const SizedBox(height: 12),
 
           _buildInfo("Type", province!.type),
 
