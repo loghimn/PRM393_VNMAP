@@ -176,21 +176,25 @@ class _VietnamMapState extends State<VietnamMap> {
                       ),
                     ),
 
-                    // Hovered province weather icon overlay
+                    // Hovered province or commune weather icon overlay
                     Consumer2<ProvinceProvider, WeatherProvider>(
                       builder: (context, prov, weatherProv, child) {
                         final hovered = prov.hoveredProvince;
 
                         if (hovered == null) return const SizedBox();
 
-                        // compute anchor and map transform to position icon
-                        final allRegions = [
-                          ...prov.provinces,
-                          ...prov.specialZones,
-                        ];
+                        final canvasSize = Size(
+                          constraints.maxWidth,
+                          constraints.maxHeight,
+                        );
+
+                        final mapRegions = prov.focusedProvince != null
+                            ? [prov.focusedProvince!]
+                            : [...prov.provinces, ...prov.specialZones];
+
                         final transform = calculateMapTransform(
-                          Size(constraints.maxWidth, constraints.maxHeight),
-                          allRegions,
+                          canvasSize,
+                          mapRegions,
                         );
 
                         // get anchor ring like painter
@@ -217,10 +221,6 @@ class _VietnamMapState extends State<VietnamMap> {
                         final weather = weatherProv.getCachedWeatherForProvince(
                           hovered,
                         );
-
-                        // fallback: try fetch by province key
-                        // find weather by fetching if not present
-                        // we already prefetch on hover so it should be available
 
                         return Positioned(
                           left: screen.dx - 16,
