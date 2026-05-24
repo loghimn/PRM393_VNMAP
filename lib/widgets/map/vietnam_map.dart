@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/weather/weather_icon.dart';
-import 'package:vietnam_geo_dashboard/models/weather_model.dart';
 
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map_painter.dart';
@@ -10,6 +9,7 @@ import '../../utils/map_hit_test.dart';
 import '../../utils/commune_hit_test.dart';
 import '../../utils/map_transform.dart';
 import '../../utils/geo_utils.dart';
+import '../../models/province_model.dart';
 
 class VietnamMap extends StatefulWidget {
   const VietnamMap({super.key});
@@ -43,18 +43,48 @@ class _VietnamMapState extends State<VietnamMap> {
                   constraints.maxHeight,
                 );
 
-                final province = getProvinceFromPosition(
-                  event.localPosition,
-                  provider.provinces,
-                  provider.specialZones,
-                  canvasSize,
-                );
+                ProvinceModel? province;
+                if (provider.focusedProvince != null) {
+                  // Check if the mouse is inside the focused province's bounds first
+                  final provinceHit = getProvinceFromPosition(
+                    event.localPosition,
+                    [provider.focusedProvince!],
+                    [],
+                    canvasSize,
+                  );
+
+                  if (provinceHit == null) {
+                    province = null;
+                  } else {
+                    // If inside, then check for communes
+                    final transform = calculateMapTransform(
+                        canvasSize, [provider.focusedProvince!]);
+                    final adjustedPos = Offset(
+                      (event.localPosition.dx - transform.offsetX) /
+                          transform.scale,
+                      (event.localPosition.dy - transform.offsetY) /
+                          transform.scale,
+                    );
+                    province = getCommuneFromPositionRaw(
+                          adjustedPos,
+                          provider.focusedCommunes,
+                          provider.focusedProvince!,
+                        ) ??
+                        provider.focusedProvince;
+                  }
+                } else {
+                  province = getProvinceFromPosition(
+                    event.localPosition,
+                    provider.provinces,
+                    provider.specialZones,
+                    canvasSize,
+                  );
+                }
 
                 if (province != provider.hoveredProvince) {
                   provider.setHoveredProvince(province);
 
                   if (province != null) {
-                    // prefetch weather for hovered province
                     final weatherProv = context.read<WeatherProvider>();
                     weatherProv.fetchWeatherForProvince(province);
                   }
@@ -63,8 +93,6 @@ class _VietnamMapState extends State<VietnamMap> {
               child: GestureDetector(
                 onTapDown: (details) async {
                   final provider = context.read<ProvinceProvider>();
-                  print("CLICK MAP");
-                  print("focusedProvince = ${provider.focusedProvince?.name}");
 
                   final canvasSize = Size(
                     constraints.maxWidth,
@@ -72,12 +100,9 @@ class _VietnamMapState extends State<VietnamMap> {
                   );
 
                   if (provider.focusedProvince != null) {
-                    final transform = calculateMapTransform(
-                      canvasSize,
-                      provider.focusedProvince == null
-                          ? provider.provinces
-                          : [provider.focusedProvince!],
-                    );
+                    final transform = calculateMapTransform(canvasSize, [
+                      provider.focusedProvince!,
+                    ]);
 
                     final adjustedClick = Offset(
                       (details.localPosition.dx - transform.offsetX) /
@@ -95,7 +120,6 @@ class _VietnamMapState extends State<VietnamMap> {
                     if (commune != null) {
                       provider.selectCommune(commune);
 
-                      // fetch weather for selected commune
                       final weatherProv = context.read<WeatherProvider>();
                       weatherProv.fetchWeatherForProvince(commune);
 
@@ -103,18 +127,17 @@ class _VietnamMapState extends State<VietnamMap> {
                     }
                   }
 
-                  // fallback: click tỉnh
                   final province = getProvinceFromPosition(
                     details.localPosition,
                     provider.provinces,
                     provider.specialZones,
                     canvasSize,
+                    onlyProvince: provider.focusedProvince,
                   );
 
                   if (province != null) {
                     provider.selectProvince(province);
 
-                    // fetch weather for selected province to show in info panel
                     final weatherProv = context.read<WeatherProvider>();
                     weatherProv.fetchWeatherForProvince(province);
                   }
@@ -122,7 +145,6 @@ class _VietnamMapState extends State<VietnamMap> {
                 onDoubleTapDown: (details) async {
                   final provider = context.read<ProvinceProvider>();
 
-                  // 🚫 CHẶN: nếu đang focus thì không cho đổi tỉnh
                   if (provider.focusedProvince != null) return;
 
                   final canvasSize = Size(
@@ -135,7 +157,6 @@ class _VietnamMapState extends State<VietnamMap> {
                     provider.provinces,
                     provider.specialZones,
                     canvasSize,
-                    onlyProvince: provider.focusedProvince,
                   );
 
                   if (province != null) {
@@ -163,7 +184,10 @@ class _VietnamMapState extends State<VietnamMap> {
                         if (hovered == null) return const SizedBox();
 
                         // compute anchor and map transform to position icon
-                        final allRegions = [...prov.provinces, ...prov.specialZones];
+                        final allRegions = [
+                          ...prov.provinces,
+                          ...prov.specialZones,
+                        ];
                         final transform = calculateMapTransform(
                           Size(constraints.maxWidth, constraints.maxHeight),
                           allRegions,
@@ -190,7 +214,9 @@ class _VietnamMapState extends State<VietnamMap> {
                           transform.offsetY + anchor.dy * transform.scale,
                         );
 
-                        final weather = weatherProv.getCachedWeatherForProvince(hovered);
+                        final weather = weatherProv.getCachedWeatherForProvince(
+                          hovered,
+                        );
 
                         // fallback: try fetch by province key
                         // find weather by fetching if not present

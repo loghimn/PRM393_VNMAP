@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map.dart';
 
 import '../../providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
-import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,8 +18,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
 
-    Future.microtask(() {
-      context.read<ProvinceProvider>().loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provinceProvider = context.read<ProvinceProvider>();
+      final weatherProvider = context.read<WeatherProvider>();
+
+      provinceProvider.loadData().then((_) {
+        if (!mounted) return;
+        weatherProvider.loadRegionalSummaries(provinceProvider.provinces);
+      });
     });
   }
 

@@ -357,84 +357,76 @@ class VietnamMapPainter extends CustomPainter {
 
   void drawFocusedProvinceMode(Canvas canvas, Size size) {
     final province = focusedProvince!;
-    List<CommuneDot> communeDots = [];
 
     final borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    final fillPaint = Paint()
-      ..color = Colors.green
-      ..style = PaintingStyle.fill;
-
-    // ===== FIT ONLY THIS PROVINCE =====
-
     final transform = calculateMapTransform(size, [province]);
 
     canvas.save();
-
     canvas.translate(transform.offsetX, transform.offsetY);
-
     canvas.scale(transform.scale);
 
+    // Determine if the province itself is hovered (and not a specific commune)
+    final isProvinceHovered = hoveredProvince?.name == province.name;
+
+    final fillPaint = Paint()
+      ..color = isProvinceHovered ? Colors.orange : Colors.green
+      ..style = PaintingStyle.fill;
+
     final geometry = province.geometry;
-
     final type = geometry['type'];
-
     final coordinates = geometry['coordinates'];
 
     // ===== DRAW BIG PROVINCE =====
-
     if (type == 'Polygon') {
       final path = PathUtils.createPolygonPath(coordinates);
-
       canvas.drawPath(path, fillPaint);
-
       canvas.drawPath(path, borderPaint);
     } else if (type == 'MultiPolygon') {
       for (final polygon in coordinates) {
         final path = PathUtils.createPolygonPath(polygon);
-
         canvas.drawPath(path, fillPaint);
-
         canvas.drawPath(path, borderPaint);
       }
     }
 
     // ===== DRAW COMMUNES =====
-
-    final relatedCommunes = communes.where((c) {
-      return c.parentTen == province.name;
-    }).toList();
+    final relatedCommunes =
+        communes.where((c) => c.parentTen == province.name).toList();
 
     for (final commune in relatedCommunes) {
-      final geometry = commune.geometry;
+      final communeGeometry = commune.geometry;
+      final communeCoords = communeGeometry['coordinates'];
+      if (communeCoords == null) continue;
 
-      final coords = geometry['coordinates'];
-
-      if (coords == null) continue;
-
-      List ring;
-
-      if (geometry['type'] == 'Polygon') {
-        ring = coords[0];
-      } else {
-        ring = coords[0][0];
-      }
-
-      final anchor = GeoUtils.getAnchorPoint(ring);
-
-      communeDots.add(CommuneDot(commune, anchor));
-
-      final isWard = commune.type == 'Phường';
-
-      final dotPaint = Paint()
-        ..color = isWard ? Colors.yellow : Colors.red
+      // Highlight hovered commune
+      final isCommuneHovered = hoveredProvince?.name == commune.name;
+      final communePaint = Paint()
+        ..color = isCommuneHovered
+            ? Colors.yellow.withOpacity(0.7)
+            : Colors.black.withOpacity(0.1)
         ..style = PaintingStyle.fill;
 
-      final double dotSize = 3 / transform.scale;
-      canvas.drawCircle(anchor, dotSize.clamp(1.5, 3), dotPaint);
+      final communeBorderPaint = Paint()
+        ..color = isCommuneHovered ? Colors.white : Colors.white.withOpacity(0.2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth =
+            isCommuneHovered ? 2 / transform.scale : 1 / transform.scale;
+
+      if (communeGeometry['type'] == 'Polygon') {
+        final path = PathUtils.createPolygonPath(communeCoords);
+        canvas.drawPath(path, communePaint);
+        canvas.drawPath(path, communeBorderPaint);
+      } else if (communeGeometry['type'] == 'MultiPolygon') {
+        for (var polygon in communeCoords) {
+          final path = PathUtils.createPolygonPath(polygon);
+          canvas.drawPath(path, communePaint);
+          canvas.drawPath(path, communeBorderPaint);
+        }
+      }
     }
 
     canvas.restore();
