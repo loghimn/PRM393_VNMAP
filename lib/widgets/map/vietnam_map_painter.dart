@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vietnam_geo_dashboard/models/commune_dot.dart';
 
 import '../../models/province_model.dart';
 import '../../models/provinceLabel.dart';
@@ -394,8 +393,9 @@ class VietnamMapPainter extends CustomPainter {
     }
 
     // ===== DRAW COMMUNES =====
-    final relatedCommunes =
-        communes.where((c) => c.parentTen == province.name).toList();
+    final relatedCommunes = communes
+        .where((c) => c.parentTen == province.name)
+        .toList();
 
     for (final commune in relatedCommunes) {
       final communeGeometry = commune.geometry;
@@ -411,10 +411,13 @@ class VietnamMapPainter extends CustomPainter {
         ..style = PaintingStyle.fill;
 
       final communeBorderPaint = Paint()
-        ..color = isCommuneHovered ? Colors.white : Colors.white.withOpacity(0.2)
+        ..color = isCommuneHovered
+            ? Colors.white
+            : Colors.white.withOpacity(0.2)
         ..style = PaintingStyle.stroke
-        ..strokeWidth =
-            isCommuneHovered ? 2 / transform.scale : 1 / transform.scale;
+        ..strokeWidth = isCommuneHovered
+            ? 2 / transform.scale
+            : 1 / transform.scale;
 
       if (communeGeometry['type'] == 'Polygon') {
         final path = PathUtils.createPolygonPath(communeCoords);
