@@ -44,13 +44,12 @@ class _VietnamMapState extends State<VietnamMap> {
                   constraints.maxHeight,
                 );
 
-                final province = getProvinceFromPosition(
+                var province = getProvinceFromPosition(
                   event.localPosition,
                   provider.provinces,
                   provider.specialZones,
                   canvasSize,
                 );
-                ProvinceModel? province;
                 if (provider.focusedProvince != null) {
                   // Check if the mouse is inside the focused province's bounds first
                   final provinceHit = getProvinceFromPosition(
@@ -64,15 +63,17 @@ class _VietnamMapState extends State<VietnamMap> {
                     province = null;
                   } else {
                     // If inside, then check for communes
-                    final transform = calculateMapTransform(
-                        canvasSize, [provider.focusedProvince!]);
+                    final transform = calculateMapTransform(canvasSize, [
+                      provider.focusedProvince!,
+                    ]);
                     final adjustedPos = Offset(
                       (event.localPosition.dx - transform.offsetX) /
                           transform.scale,
                       (event.localPosition.dy - transform.offsetY) /
                           transform.scale,
                     );
-                    province = getCommuneFromPositionRaw(
+                    province =
+                        getCommuneFromPositionRaw(
                           adjustedPos,
                           provider.focusedCommunes,
                           provider.focusedProvince!,
@@ -199,13 +200,6 @@ class _VietnamMapState extends State<VietnamMap> {
                         if (hovered == null) return const SizedBox();
 
                         // compute anchor and map transform to position icon
-                        final allRegions = [
-                          ...prov.provinces,
-                          ...prov.specialZones,
-                        ];
-                        final transform = calculateMapTransform(
-                          Size(constraints.maxWidth, constraints.maxHeight),
-                          allRegions,
                         final canvasSize = Size(
                           constraints.maxWidth,
                           constraints.maxHeight,
