@@ -4,6 +4,7 @@ import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map.dart';
 
 import '../../providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
+import 'package:vietnam_geo_dashboard/widgets/analytics/population_density_chart.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -13,14 +14,23 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen>
+    with TickerProviderStateMixin {
+  late TabController _tabController;
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
 
     Future.microtask(() {
       context.read<ProvinceProvider>().loadData();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -88,17 +98,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
 
+                  // Tab Bar
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: Colors.white24)),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      tabs: const [
+                        Tab(text: 'Mật Độ Dân Số'),
+                        Tab(text: 'Chi Tiết Tỉnh'),
+                      ],
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white54,
+                      indicatorColor: Colors.blue,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Tab Content
                   Expanded(
-                    child: Consumer<ProvinceProvider>(
-                      builder: (context, provider, child) {
-                        return ProvinceDetailPanel(
-                          province:
-                              provider.selectedCommune ??
-                              provider.selectedProvince,
-                        );
-                      },
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // Tab 1: Population Density Chart
+                        Consumer<ProvinceProvider>(
+                          builder: (context, provider, child) {
+                            return PopulationDensityChart(
+                              provinces: provider.provinces,
+                            );
+                          },
+                        ),
+
+                        // Tab 2: Province Detail Panel
+                        Consumer<ProvinceProvider>(
+                          builder: (context, provider, child) {
+                            return ProvinceDetailPanel(
+                              province:
+                                  provider.selectedCommune ??
+                                  provider.selectedProvince,
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ],
