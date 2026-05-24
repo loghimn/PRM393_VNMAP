@@ -127,12 +127,15 @@ class ProvinceDetailPanel extends StatelessWidget {
     }
 
     final isSpecialZone = province!.type == 'Đặc khu';
+    final isCommune = province!.type == 'Phường' || province!.type == 'Xã';
 
     return Container(
       color: const Color(0xff111827),
       padding: const EdgeInsets.all(20),
 
-      child: isSpecialZone ? _buildSpecialZoneDetail() : _buildProvinceDetail(),
+      child: (isSpecialZone || isCommune)
+          ? _buildSpecialZoneDetail()
+          : _buildProvinceDetail(),
     );
   }
 
@@ -151,16 +154,16 @@ class ProvinceDetailPanel extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
 
-        Consumer<WeatherProvider>(
-          builder: (context, weatherProv, child) {
-            final w = weatherProv.getCachedWeatherForProvince(province!);
-            return WeatherInfoPanel(weather: w);
-          },
-        ),
+          Consumer<WeatherProvider>(
+            builder: (context, weatherProv, child) {
+              final w = weatherProv.getCachedWeatherForProvince(province!);
+              return WeatherInfoPanel(weather: w);
+            },
+          ),
 
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
 
           Consumer<WeatherProvider>(
             builder: (context, weatherProv, child) {
