@@ -154,16 +154,6 @@ class ProvinceDetailPanel extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-          const SizedBox(height: 12),
-
-          Consumer<WeatherProvider>(
-            builder: (context, weatherProv, child) {
-              final w = weatherProv.getCachedWeatherForProvince(province!);
-              return WeatherInfoPanel(weather: w);
-            },
-          ),
-
-          const SizedBox(height: 12),
 
           Consumer<WeatherProvider>(
             builder: (context, weatherProv, child) {
