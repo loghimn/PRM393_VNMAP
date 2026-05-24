@@ -139,7 +139,11 @@ class _VietnamMapState extends State<VietnamMap> {
                   );
 
                   if (province != null) {
-                    await provider.focusProvince(province);
+                    try {
+                      await provider.focusProvince(province);
+                    } catch (e) {
+                      print('Error focusing province: $e');
+                    }
                   }
                 },
                 child: Stack(
@@ -163,7 +167,10 @@ class _VietnamMapState extends State<VietnamMap> {
                         if (hovered == null) return const SizedBox();
 
                         // compute anchor and map transform to position icon
-                        final allRegions = [...prov.provinces, ...prov.specialZones];
+                        final allRegions = [
+                          ...prov.provinces,
+                          ...prov.specialZones,
+                        ];
                         final transform = calculateMapTransform(
                           Size(constraints.maxWidth, constraints.maxHeight),
                           allRegions,
@@ -190,7 +197,9 @@ class _VietnamMapState extends State<VietnamMap> {
                           transform.offsetY + anchor.dy * transform.scale,
                         );
 
-                        final weather = weatherProv.getCachedWeatherForProvince(hovered);
+                        final weather = weatherProv.getCachedWeatherForProvince(
+                          hovered,
+                        );
 
                         // fallback: try fetch by province key
                         // find weather by fetching if not present

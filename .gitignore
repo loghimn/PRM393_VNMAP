@@ -46,6 +46,4 @@ app.*.map.json
 
 # Geojson
 assets/geojson/
-assets/communes.geojson
-assets/provinces.geojson
 
