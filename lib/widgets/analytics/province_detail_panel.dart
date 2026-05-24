@@ -14,11 +14,114 @@ class ProvinceDetailPanel extends StatelessWidget {
     if (province == null) {
       return Container(
         color: const Color(0xff111827),
-        child: const Center(
-          child: Text(
-            "Select a province",
-            style: TextStyle(color: Colors.white70, fontSize: 18),
-          ),
+        padding: const EdgeInsets.all(20),
+        child: Consumer<WeatherProvider>(
+          builder: (context, weatherProv, child) {
+            final summary = weatherProv.nationalWeatherSummary;
+            final regions = weatherProv.regionalSummaries.values.toList()
+              ..sort((a, b) => a.label.compareTo(b.label));
+
+            if (summary == null && weatherProv.nationalTextSummary.isEmpty) {
+              return const Center(
+                child: Text(
+                  "Đang tải tổng quan thời tiết quốc gia...",
+                  style: TextStyle(color: Colors.white70, fontSize: 18),
+                ),
+              );
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Vietnam Weather Summary',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  if (summary != null) WeatherInfoPanel(weather: summary),
+                  if (summary != null) const SizedBox(height: 20),
+                  if (regions.isNotEmpty) ...[
+                    const Text(
+                      'Regional Weather Overview',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: regions.map((region) {
+                        return Container(
+                          width: 220,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xff1f2937),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                region.label,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                region.status,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Nhiệt độ: ${region.temperatureLabel}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              if (region.weather?.humidity != null) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Độ ẩm: ${region.weather!.humidity!.toStringAsFixed(0)}%',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  if (regions.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 20),
+                      child: Text(
+                        'Không tìm thấy dữ liệu thời tiết vùng. Vui lòng thử lại sau.',
+                        style: TextStyle(color: Colors.white60, fontSize: 14),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       );
     }
@@ -48,6 +151,16 @@ class ProvinceDetailPanel extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
+        const SizedBox(height: 12),
+
+        Consumer<WeatherProvider>(
+          builder: (context, weatherProv, child) {
+            final w = weatherProv.getCachedWeatherForProvince(province!);
+            return WeatherInfoPanel(weather: w);
+          },
+        ),
+
+        const SizedBox(height: 12),
 
           Consumer<WeatherProvider>(
             builder: (context, weatherProv, child) {

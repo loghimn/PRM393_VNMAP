@@ -13,7 +13,9 @@ ProvinceModel? getProvinceFromPosition(
 }) {
   final provinceList = onlyProvince != null ? [onlyProvince] : provinces;
 
-  final allRegions = [...provinceList, ...specialZones];
+  final allRegions = onlyProvince != null
+      ? [...provinceList]
+      : [...provinceList, ...specialZones];
 
   final transform = calculateMapTransform(canvasSize, allRegions);
 
