@@ -85,6 +85,7 @@ class _VietnamMapState extends State<VietnamMap> {
                   provider.setHoveredProvince(province);
 
                   if (province != null) {
+                    // prefetch weather for hovered province
                     final weatherProv = context.read<WeatherProvider>();
                     weatherProv.fetchWeatherForProvince(province);
                   }
@@ -120,6 +121,7 @@ class _VietnamMapState extends State<VietnamMap> {
                     if (commune != null) {
                       provider.selectCommune(commune);
 
+                      // fetch weather for selected commune
                       final weatherProv = context.read<WeatherProvider>();
                       weatherProv.fetchWeatherForProvince(commune);
 
@@ -138,6 +140,7 @@ class _VietnamMapState extends State<VietnamMap> {
                   if (province != null) {
                     provider.selectProvince(province);
 
+                    // fetch weather for selected province to show in info panel
                     final weatherProv = context.read<WeatherProvider>();
                     weatherProv.fetchWeatherForProvince(province);
                   }
@@ -188,6 +191,7 @@ class _VietnamMapState extends State<VietnamMap> {
                           constraints.maxHeight,
                         );
 
+                        // compute anchor and map transform to position icon
                         final mapRegions = prov.focusedProvince != null
                             ? [prov.focusedProvince!]
                             : [...prov.provinces, ...prov.specialZones];
@@ -221,6 +225,10 @@ class _VietnamMapState extends State<VietnamMap> {
                         final weather = weatherProv.getCachedWeatherForProvince(
                           hovered,
                         );
+
+                        // fallback: try fetch by province key
+                        // find weather by fetching if not present
+                        // we already prefetch on hover so it should be available
 
                         return Positioned(
                           left: screen.dx - 16,
