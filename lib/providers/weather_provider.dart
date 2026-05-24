@@ -58,6 +58,10 @@ class WeatherProvider extends ChangeNotifier {
     final w = await _service.fetchCurrentWeather(lat, lon);
 
     _cache[key] = w;
+
+    notifyListeners();
+
+    return w;
     notifyListeners();
     return w;
   }

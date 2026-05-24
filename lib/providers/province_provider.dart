@@ -32,18 +32,37 @@ class ProvinceProvider extends ChangeNotifier {
   Future<void> loadCommunes() async {
     if (allCommunes.isNotEmpty) return;
 
+    print('Loading communes...');
     allCommunes = await _service.fetchCommunes();
+    print('Total communes loaded: ${allCommunes.length}');
+
+    if (allCommunes.isNotEmpty) {
+      print(
+        'Sample commune: ${allCommunes.first.name}, parent: ${allCommunes.first.properties['parent_ten']}',
+      );
+    }
   }
 
   Future<void> focusProvince(ProvinceModel province) async {
-    await loadCommunes();
+    try {
+      await loadCommunes();
+    } catch (e) {
+      print('Error loading communes: $e');
+      // Continue without communes data
+    }
 
-    focusedProvince = province; // 👈 THÊM DÒNG NÀY
+    focusedProvince = province;
     selectedProvince = province;
 
     focusedCommunes = allCommunes.where((c) {
       return c.properties['parent_ten'] == province.name;
     }).toList();
+
+    print('Focus province: ${province.name}');
+    print('Focused communes count: ${focusedCommunes.length}');
+    if (focusedCommunes.isNotEmpty) {
+      print('First commune: ${focusedCommunes.first.name}');
+    }
 
     notifyListeners();
   }

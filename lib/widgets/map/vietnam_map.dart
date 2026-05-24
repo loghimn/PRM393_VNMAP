@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/weather/weather_icon.dart';
+import 'package:vietnam_geo_dashboard/models/weather_model.dart';
 
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map_painter.dart';
@@ -43,6 +44,12 @@ class _VietnamMapState extends State<VietnamMap> {
                   constraints.maxHeight,
                 );
 
+                final province = getProvinceFromPosition(
+                  event.localPosition,
+                  provider.provinces,
+                  provider.specialZones,
+                  canvasSize,
+                );
                 ProvinceModel? province;
                 if (provider.focusedProvince != null) {
                   // Check if the mouse is inside the focused province's bounds first
@@ -163,7 +170,11 @@ class _VietnamMapState extends State<VietnamMap> {
                   );
 
                   if (province != null) {
-                    await provider.focusProvince(province);
+                    try {
+                      await provider.focusProvince(province);
+                    } catch (e) {
+                      print('Error focusing province: $e');
+                    }
                   }
                 },
                 child: Stack(
@@ -179,6 +190,7 @@ class _VietnamMapState extends State<VietnamMap> {
                       ),
                     ),
 
+                    // Hovered province weather icon overlay
                     // Hovered province or commune weather icon overlay
                     Consumer2<ProvinceProvider, WeatherProvider>(
                       builder: (context, prov, weatherProv, child) {
@@ -186,6 +198,14 @@ class _VietnamMapState extends State<VietnamMap> {
 
                         if (hovered == null) return const SizedBox();
 
+                        // compute anchor and map transform to position icon
+                        final allRegions = [
+                          ...prov.provinces,
+                          ...prov.specialZones,
+                        ];
+                        final transform = calculateMapTransform(
+                          Size(constraints.maxWidth, constraints.maxHeight),
+                          allRegions,
                         final canvasSize = Size(
                           constraints.maxWidth,
                           constraints.maxHeight,

@@ -25,27 +25,8 @@ class GeoJsonService {
   }
 
   Future<List<ProvinceModel>> fetchSpecialZones() async {
-    final String response = await rootBundle.loadString(
-      'assets/geojson/communes.geojson',
-    );
-
-    String fixedJson = response.replaceAll('NaN', 'null');
-
-    final data = jsonDecode(fixedJson);
-
-    final features = data['features'];
-
-    List<ProvinceModel> zones = [];
-
-    for (var item in features) {
-      final props = item['properties'];
-
-      if (props['type'] == 'Đặc khu') {
-        zones.add(ProvinceModel.fromJson(item));
-      }
-    }
-
-    return zones;
+    // File communes.geojson not available yet
+    return [];
   }
 
   Future<List<ProvinceModel>> fetchCommunes() async {
