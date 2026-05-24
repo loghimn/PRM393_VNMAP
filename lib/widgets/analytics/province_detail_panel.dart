@@ -34,63 +34,65 @@ class ProvinceDetailPanel extends StatelessWidget {
   }
 
   Widget _buildProvinceDetail() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          province!.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            province!.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
 
-        const SizedBox(height: 12),
+          const SizedBox(height: 12),
 
-        Consumer<WeatherProvider>(
-          builder: (context, weatherProv, child) {
-            final w = weatherProv.getCachedWeatherForProvince(province!);
-            return WeatherInfoPanel(weather: w);
-          },
-        ),
-
-        const SizedBox(height: 12),
-
-        _buildInfo("Code", province!.ma),
-
-        _buildInfo("Area", "${province!.areaKm2} km²"),
-
-        _buildInfo("Population", province!.population),
-
-        _buildInfo("Density", province!.density),
-
-        _buildInfo("Capital", province!.capital),
-
-        _buildInfo("Region", province!.macroRegion),
-
-        const SizedBox(height: 24),
-
-        const Divider(color: Colors.white24),
-
-        const SizedBox(height: 24),
-
-        Text(
-          "Decree",
-          style: TextStyle(
-            color: Colors.orange.shade300,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+          Consumer<WeatherProvider>(
+            builder: (context, weatherProv, child) {
+              final w = weatherProv.getCachedWeatherForProvince(province!);
+              return WeatherInfoPanel(weather: w);
+            },
           ),
-        ),
 
-        const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-        Text(
-          province!.decree ?? "-",
-          style: const TextStyle(color: Colors.white70, height: 1.5),
-        ),
-      ],
+          _buildInfo("Code", province!.ma),
+
+          _buildInfo("Area", "${province!.areaKm2} km²"),
+
+          _buildInfo("Population", province!.population),
+
+          _buildInfo("Density", province!.density),
+
+          _buildInfo("Capital", province!.capital),
+
+          _buildInfo("Region", province!.macroRegion),
+
+          const SizedBox(height: 24),
+
+          const Divider(color: Colors.white24),
+
+          const SizedBox(height: 24),
+
+          Text(
+            "Decree",
+            style: TextStyle(
+              color: Colors.orange.shade300,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            province!.decree ?? "-",
+            style: const TextStyle(color: Colors.white70, height: 1.5),
+          ),
+        ],
+      ),
     );
   }
 
