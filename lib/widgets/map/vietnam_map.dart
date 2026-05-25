@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/weather/weather_icon.dart';
-import 'package:vietnam_geo_dashboard/models/weather_model.dart';
 
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map_painter.dart';
@@ -10,7 +9,6 @@ import '../../utils/map_hit_test.dart';
 import '../../utils/commune_hit_test.dart';
 import '../../utils/map_transform.dart';
 import '../../utils/geo_utils.dart';
-import '../../models/province_model.dart';
 
 class VietnamMap extends StatefulWidget {
   const VietnamMap({super.key});
@@ -63,9 +61,15 @@ class _VietnamMapState extends State<VietnamMap> {
                     province = null;
                   } else {
                     // If inside, then check for communes
-                    final transform = calculateMapTransform(canvasSize, [
+                    // IMPORTANT: Include communes in transform calculation to match painter
+                    final regionsForTransform = [
                       provider.focusedProvince!,
-                    ]);
+                      ...provider.focusedCommunes,
+                    ];
+                    final transform = calculateMapTransform(
+                      canvasSize,
+                      regionsForTransform,
+                    );
                     final adjustedPos = Offset(
                       (event.localPosition.dx - transform.offsetX) /
                           transform.scale,
@@ -109,9 +113,15 @@ class _VietnamMapState extends State<VietnamMap> {
                   );
 
                   if (provider.focusedProvince != null) {
-                    final transform = calculateMapTransform(canvasSize, [
+                    // IMPORTANT: Include communes in transform calculation to match painter
+                    final regionsForTransform = [
                       provider.focusedProvince!,
-                    ]);
+                      ...provider.focusedCommunes,
+                    ];
+                    final transform = calculateMapTransform(
+                      canvasSize,
+                      regionsForTransform,
+                    );
 
                     final adjustedClick = Offset(
                       (details.localPosition.dx - transform.offsetX) /

@@ -55,13 +55,25 @@ class ProvinceProvider extends ChangeNotifier {
     selectedProvince = province;
 
     focusedCommunes = allCommunes.where((c) {
-      return c.properties['parent_ten'] == province.name;
+      final isSameProvince = c.properties['parent_ten'] == province.name;
+      final notSpecialZone = c.properties['type'] != 'Đặc khu';
+      return isSameProvince && notSpecialZone;
     }).toList();
 
     print('Focus province: ${province.name}');
     print('Focused communes count: ${focusedCommunes.length}');
     if (focusedCommunes.isNotEmpty) {
       print('First commune: ${focusedCommunes.first.name}');
+
+      // Debug: Check first 5 communes
+      print('First 5 communes:');
+      for (int i = 0; i < focusedCommunes.take(5).length; i++) {
+        final c = focusedCommunes[i];
+        print(
+          // ignore: unnecessary_null_comparison
+          '  ${i + 1}. ${c.name} - type: ${c.properties['type']}, has geometry: ${c.geometry != null}',
+        );
+      }
     }
 
     notifyListeners();

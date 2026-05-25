@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:vietnam_geo_dashboard/models/commune_dot.dart';
+// import 'package:vietnam_geo_dashboard/models/commune_dot.dart';
 
 import '../../models/province_model.dart';
 import '../../models/provinceLabel.dart';
@@ -7,6 +7,7 @@ import '../../models/provinceLabel.dart';
 import '../../utils/geo_utils.dart';
 import '../../utils/map_transform.dart';
 import '../../utils/path_utils.dart';
+import '../../utils/province_special_handler.dart';
 import 'package:vietnam_geo_dashboard/utils/province_anchor_overrides.dart';
 
 class VietnamMapPainter extends CustomPainter {
@@ -363,72 +364,148 @@ class VietnamMapPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    final transform = calculateMapTransform(size, [province]);
+    try {
+      // Include both province AND communes in transform calculation
+      final regionsForTransform = [
+        province,
+        ...communes.where((c) => c.parentTen == province.name),
+      ];
+      final transform = calculateMapTransform(size, regionsForTransform);
 
-    canvas.save();
-    canvas.translate(transform.offsetX, transform.offsetY);
-    canvas.scale(transform.scale);
+      canvas.save();
+      canvas.translate(transform.offsetX, transform.offsetY);
+      canvas.scale(transform.scale);
 
-    // Determine if the province itself is hovered (and not a specific commune)
-    final isProvinceHovered = hoveredProvince?.name == province.name;
+      // Determine if the province itself is hovered (and not a specific commune)
+      final isProvinceHovered = hoveredProvince?.name == province.name;
 
-    final fillPaint = Paint()
-      ..color = isProvinceHovered ? Colors.orange : Colors.green
-      ..style = PaintingStyle.fill;
-
-    final geometry = province.geometry;
-    final type = geometry['type'];
-    final coordinates = geometry['coordinates'];
-
-    // ===== DRAW BIG PROVINCE =====
-    if (type == 'Polygon') {
-      final path = PathUtils.createPolygonPath(coordinates);
-      canvas.drawPath(path, fillPaint);
-      canvas.drawPath(path, borderPaint);
-    } else if (type == 'MultiPolygon') {
-      for (final polygon in coordinates) {
-        final path = PathUtils.createPolygonPath(polygon);
-        canvas.drawPath(path, fillPaint);
-        canvas.drawPath(path, borderPaint);
-      }
-    }
-
-    // ===== DRAW COMMUNES =====
-    final relatedCommunes =
-        communes.where((c) => c.parentTen == province.name).toList();
-
-    for (final commune in relatedCommunes) {
-      final communeGeometry = commune.geometry;
-      final communeCoords = communeGeometry['coordinates'];
-      if (communeCoords == null) continue;
-
-      // Highlight hovered commune
-      final isCommuneHovered = hoveredProvince?.name == commune.name;
-      final communePaint = Paint()
-        ..color = isCommuneHovered
-            ? Colors.yellow.withOpacity(0.7)
-            : Colors.black.withOpacity(0.1)
+      final fillPaint = Paint()
+        ..color = isProvinceHovered ? Colors.orange : Colors.green
         ..style = PaintingStyle.fill;
 
-      final communeBorderPaint = Paint()
-        ..color = isCommuneHovered ? Colors.white : Colors.white.withOpacity(0.2)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth =
-            isCommuneHovered ? 2 / transform.scale : 1 / transform.scale;
+      final geometry = province.geometry;
+      // if (geometry == null) {
+      //   canvas.restore();
+      //   return;
+      // }
 
-      if (communeGeometry['type'] == 'Polygon') {
-        final path = PathUtils.createPolygonPath(communeCoords);
-        canvas.drawPath(path, communePaint);
-        canvas.drawPath(path, communeBorderPaint);
-      } else if (communeGeometry['type'] == 'MultiPolygon') {
-        for (var polygon in communeCoords) {
-          final path = PathUtils.createPolygonPath(polygon);
-          canvas.drawPath(path, communePaint);
-          canvas.drawPath(path, communeBorderPaint);
-        }
+      final type = geometry['type'];
+      final coordinates = geometry['coordinates'];
+
+      if (coordinates == null || coordinates.isEmpty) {
+        canvas.restore();
+        return;
       }
-    }
 
-    canvas.restore();
+      // ===== DRAW BIG PROVINCE =====
+      try {
+        if (type == 'Polygon') {
+          final path = PathUtils.createPolygonPathSafe(
+            coordinates,
+            provinceName: province.name,
+          );
+          canvas.drawPath(path, fillPaint);
+          canvas.drawPath(path, borderPaint);
+        } else if (type == 'MultiPolygon') {
+          for (final polygon in coordinates) {
+            if (polygon == null || polygon.isEmpty) continue;
+            final path = PathUtils.createPolygonPathSafe(
+              polygon,
+              provinceName: province.name,
+            );
+            canvas.drawPath(path, fillPaint);
+            canvas.drawPath(path, borderPaint);
+          }
+        }
+      } catch (e) {
+        print('Error drawing province ${province.name}: $e');
+      }
+
+      // ===== DRAW COMMUNES =====
+      // Skip commune rendering for provinces with known data issues
+      if (!ProvinceSpecialHandler.shouldSkipCommuneRender(province)) {
+        final relatedCommunes = communes
+            .where((c) => c.parentTen == province.name)
+            .toList();
+
+        print(
+          'Drawing communes for ${province.name}: ${relatedCommunes.length} communes',
+        );
+
+        if (relatedCommunes.isEmpty) {
+          print('No communes found for ${province.name}');
+        }
+
+        int drawnCount = 0;
+        int skippedCount = 0;
+
+        for (final commune in relatedCommunes) {
+          try {
+            final communeGeometry = commune.geometry;
+            // if (communeGeometry == null) {
+            //   skippedCount++;
+            //   continue;
+            // }
+
+            final communeCoords = communeGeometry['coordinates'];
+            if (communeCoords == null || communeCoords.isEmpty) {
+              skippedCount++;
+              continue;
+            }
+
+            // Highlight hovered commune
+            final isCommuneHovered = hoveredProvince?.name == commune.name;
+            final communePaint = Paint()
+              ..color = isCommuneHovered
+                  ? Colors.yellow.withOpacity(0.7)
+                  : Colors.black.withOpacity(0.1)
+              ..style = PaintingStyle.fill;
+
+            final communeBorderPaint = Paint()
+              ..color = isCommuneHovered
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.2)
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = isCommuneHovered
+                  ? 2 / transform.scale
+                  : 1 / transform.scale;
+
+            if (communeGeometry['type'] == 'Polygon') {
+              final path = PathUtils.createPolygonPathSafe(
+                communeCoords,
+                provinceName: commune.name,
+              );
+              canvas.drawPath(path, communePaint);
+              canvas.drawPath(path, communeBorderPaint);
+              drawnCount++;
+            } else if (communeGeometry['type'] == 'MultiPolygon') {
+              for (var polygon in communeCoords) {
+                if (polygon == null || polygon.isEmpty) continue;
+                final path = PathUtils.createPolygonPathSafe(
+                  polygon,
+                  provinceName: commune.name,
+                );
+                canvas.drawPath(path, communePaint);
+                canvas.drawPath(path, communeBorderPaint);
+              }
+              drawnCount++;
+            }
+          } catch (e) {
+            print('Error drawing commune ${commune.name}: $e');
+            skippedCount++;
+            continue;
+          }
+        }
+
+        print('Communes drawn: $drawnCount, skipped: $skippedCount');
+      } else {
+        print('Skipping commune rendering for ${province.name} (known issue)');
+      }
+
+      canvas.restore();
+    } catch (e) {
+      print('Error in drawFocusedProvinceMode for ${province.name}: $e');
+      canvas.restore();
+    }
   }
 }

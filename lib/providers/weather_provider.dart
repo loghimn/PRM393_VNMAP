@@ -62,8 +62,8 @@ class WeatherProvider extends ChangeNotifier {
     notifyListeners();
 
     return w;
-    notifyListeners();
-    return w;
+    // notifyListeners();
+    // return w;
   }
 
   Future<void> loadRegionalSummaries(List<ProvinceModel> provinces) async {
