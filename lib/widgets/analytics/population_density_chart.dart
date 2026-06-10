@@ -45,11 +45,23 @@ class PopulationDensityChart extends StatelessWidget {
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceEvenly,
-              maxY: topProvinces.first.density! * 1.1,
+              maxY: topProvinces.first.density! * 1,
               barTouchData: BarTouchData(
                 enabled: true,
                 touchTooltipData: BarTouchTooltipData(
                   getTooltipColor: (group) => Colors.grey[800]!,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final province = topProvinces[group.x.toInt()];
+                    final density = province.density ?? 0;
+                    return BarTooltipItem(
+                      '${province.name}\n${density.toStringAsFixed(2)} người/km²',
+                      const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    );
+                  },
                 ),
               ),
               titlesData: FlTitlesData(
@@ -155,7 +167,7 @@ class PopulationDensityChart extends StatelessWidget {
                 ),
               const SizedBox(height: 8),
               Text(
-                'Hiển thị: Top 15 tỉnh có mật độ dân số cao nhất',
+                'Hiển thị: Top 10 tỉnh có mật độ dân số cao nhất',
                 style: TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
