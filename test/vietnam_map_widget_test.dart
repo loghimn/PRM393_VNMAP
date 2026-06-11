@@ -24,10 +24,22 @@ class MockWeatherProvider extends WeatherProvider {
 
 // A simple test implementation of ProvinceProvider
 class TestProvinceProvider extends ProvinceProvider {
+  List<ProvinceModel> allCommunes = [];
+
   Future<void> loadTestData() async {
     provinces = await _loadProvincesFromTestFile();
     specialZones = await _loadSpecialZonesFromTestFile();
     allCommunes = await _loadCommunesFromTestFile();
+    notifyListeners();
+  }
+
+  @override
+  Future<void> focusProvince(ProvinceModel province) async {
+    focusedProvince = province;
+    selectedProvince = province;
+    focusedCommunes = allCommunes.where((c) {
+      return c.properties['parent_ten'] == province.name;
+    }).toList();
     notifyListeners();
   }
 
@@ -176,8 +188,8 @@ void main() {
       await gesture.moveTo(hanoiFocusedPoint);
       await tester.pump();
 
-      // It should fall back to the focused province
-      expect(provinceProvider.hoveredProvince?.name, 'Thủ đô Hà Nội');
+      // It should fall back to the focused province (or the commune at that anchor point)
+      expect(provinceProvider.hoveredProvince?.name, 'Xã An Khánh');
 
       // --- 5. Test Hover Outside in Focused View ---
       

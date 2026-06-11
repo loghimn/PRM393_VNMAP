@@ -4,8 +4,7 @@ import '../../models/province_model.dart';
 class ProvinceComparison extends StatefulWidget {
   final List<ProvinceModel> provinces;
 
-  const ProvinceComparison({Key? key, required this.provinces})
-    : super(key: key);
+  const ProvinceComparison({super.key, required this.provinces});
 
   @override
   State<ProvinceComparison> createState() => _ProvinceComparisonState();
@@ -131,13 +130,13 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
       },
       {
         'label': 'Mã Tỉnh',
-        'p1': '${p1.ma ?? 'N/A'}',
-        'p2': '${p2.ma ?? 'N/A'}',
+        'p1': p1.ma ?? 'N/A',
+        'p2': p2.ma ?? 'N/A',
       },
       {
         'label': 'Khu Vực',
-        'p1': '${p1.macroRegion ?? 'N/A'}',
-        'p2': '${p2.macroRegion ?? 'N/A'}',
+        'p1': p1.macroRegionVietnamese,
+        'p2': p2.macroRegionVietnamese,
       },
     ];
 
@@ -242,7 +241,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

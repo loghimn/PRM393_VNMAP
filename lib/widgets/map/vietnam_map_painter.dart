@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:vietnam_geo_dashboard/models/commune_dot.dart';
 
 import '../../models/province_model.dart';
 import '../../models/provinceLabel.dart';

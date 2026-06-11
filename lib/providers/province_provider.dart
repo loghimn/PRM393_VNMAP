@@ -9,7 +9,7 @@ class ProvinceProvider extends ChangeNotifier {
   List<ProvinceModel> communes = [];
   ProvinceModel? focusedProvince;
 
-  List<ProvinceModel> allCommunes = [];
+  final Map<String, List<ProvinceModel>> _provinceCommunesCache = {};
   List<ProvinceModel> focusedCommunes = [];
 
   ProvinceModel? selectedCommune;
@@ -29,36 +29,23 @@ class ProvinceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadCommunes() async {
-    if (allCommunes.isNotEmpty) return;
-
-    print('Loading communes...');
-    allCommunes = await _service.fetchCommunes();
-    print('Total communes loaded: ${allCommunes.length}');
-
-    if (allCommunes.isNotEmpty) {
-      print(
-        'Sample commune: ${allCommunes.first.name}, parent: ${allCommunes.first.properties['parent_ten']}',
-      );
-    }
-  }
-
   Future<void> focusProvince(ProvinceModel province) async {
-    try {
-      await loadCommunes();
-    } catch (e) {
-      print('Error loading communes: $e');
-      // Continue without communes data
-    }
-
     focusedProvince = province;
     selectedProvince = province;
+    final String cacheKey = province.name;
+    if (!_provinceCommunesCache.containsKey(cacheKey)) {
+      print('Loading communes for province: ${province.name}...');
+      try {
+        final loaded = await _service.fetchCommunesForProvince(province.name);
+        _provinceCommunesCache[cacheKey] = loaded;
+        print('Loaded ${loaded.length} communes for province: ${province.name}');
+      } catch (e) {
+        print('Error loading communes for ${province.name}: $e');
+        _provinceCommunesCache[cacheKey] = [];
+      }
+    }
 
-    focusedCommunes = allCommunes.where((c) {
-      final isSameProvince = c.properties['parent_ten'] == province.name;
-      final notSpecialZone = c.properties['type'] != 'Đặc khu';
-      return isSameProvince && notSpecialZone;
-    }).toList();
+    focusedCommunes = _provinceCommunesCache[cacheKey]!;
 
     print('Focus province: ${province.name}');
     print('Focused communes count: ${focusedCommunes.length}');
@@ -100,6 +87,7 @@ class ProvinceProvider extends ChangeNotifier {
     focusedCommunes.clear();
 
     selectedCommune = null; // 👈 thêm dòng này
+    selectedProvince = null;
 
     notifyListeners();
   }

@@ -35,7 +35,7 @@ class ProvinceDetailPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Vietnam Weather Summary',
+                    'Tổng quan thời tiết Việt Nam',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 26,
@@ -47,7 +47,7 @@ class ProvinceDetailPanel extends StatelessWidget {
                   if (summary != null) const SizedBox(height: 20),
                   if (regions.isNotEmpty) ...[
                     const Text(
-                      'Regional Weather Overview',
+                      'Tổng quan thời tiết vùng',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -155,26 +155,17 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          Consumer<WeatherProvider>(
-            builder: (context, weatherProv, child) {
-              final w = weatherProv.getCachedWeatherForProvince(province!);
-              return WeatherInfoPanel(weather: w);
-            },
-          ),
+          _buildInfo("Mã hành chính", province!.ma),
 
-          const SizedBox(height: 12),
+          _buildInfo("Diện tích", "${province!.areaKm2} km²"),
 
-          _buildInfo("Code", province!.ma),
+          _buildInfo("Dân số", province!.population),
 
-          _buildInfo("Area", "${province!.areaKm2} km²"),
+          _buildInfo("Mật độ dân số", province!.density),
 
-          _buildInfo("Population", province!.population),
+          _buildInfo("Tỉnh lỵ", province!.capital),
 
-          _buildInfo("Density", province!.density),
-
-          _buildInfo("Capital", province!.capital),
-
-          _buildInfo("Region", province!.macroRegion),
+          _buildInfo("Vùng địa lý", province!.macroRegionVietnamese),
 
           const SizedBox(height: 24),
 
@@ -183,7 +174,7 @@ class ProvinceDetailPanel extends StatelessWidget {
           const SizedBox(height: 24),
 
           Text(
-            "Decree",
+            "Nghị định / Quyết định",
             style: TextStyle(
               color: Colors.orange.shade300,
               fontSize: 18,
@@ -227,28 +218,28 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          _buildInfo("Type", province!.type),
+          _buildInfo("Phân loại", province!.type),
 
-          _buildInfo("Code", province!.ma),
+          _buildInfo("Mã hành chính", province!.ma),
 
-          _buildInfo("Area", "${province!.areaKm2} km²"),
+          _buildInfo("Diện tích", "${province!.areaKm2} km²"),
 
-          _buildInfo("Population", province!.population),
+          _buildInfo("Dân số", province!.population),
 
-          _buildInfo("Density", province!.density),
+          _buildInfo("Mật độ dân số", province!.density),
 
-          _buildInfo("Capital", province!.capital),
+          _buildInfo("Trung tâm hành chính", province!.capital),
 
-          _buildInfo("Macro Region", province!.macroRegion),
+          _buildInfo("Vùng địa lý", province!.macroRegionVietnamese),
 
-          _buildInfo("Parent Code", province!.parentMa),
+          _buildInfo("Mã cấp trên", province!.parentMa),
 
-          _buildInfo("Parent", province!.parentTen),
+          _buildInfo("Đơn vị cấp trên", province!.parentTen),
 
           const SizedBox(height: 20),
 
           Text(
-            "Predecessors",
+            "Đơn vị tiền thân",
             style: TextStyle(
               color: Colors.cyan.shade200,
               fontSize: 18,
@@ -266,7 +257,7 @@ class ProvinceDetailPanel extends StatelessWidget {
           const SizedBox(height: 24),
 
           Text(
-            "Decree",
+            "Nghị định / Quyết định",
             style: TextStyle(
               color: Colors.orange.shade300,
               fontSize: 18,

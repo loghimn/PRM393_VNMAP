@@ -62,7 +62,8 @@ flutter:
 
   assets:
     - assets/geojson/provinces.geojson
-    - assets/geojson/communes.geojson
+    - assets/geojson/special_zones.geojson
+    - assets/geojson/communes/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

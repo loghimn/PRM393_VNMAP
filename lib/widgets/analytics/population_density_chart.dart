@@ -17,8 +17,10 @@ class PopulationDensityChart extends StatelessWidget {
     // Sắp xếp theo mật độ dân số giảm dần (TPHCM sẽ là cao nhất)
     validProvinces.sort((a, b) => (b.density ?? 0).compareTo(a.density ?? 0));
 
-    // Lấy top 15 tỉnh có mật độ cao nhất
-    final topProvinces = validProvinces.take(15).toList();
+    // Lấy top tỉnh có mật độ cao nhất (điều chỉnh theo độ rộng màn hình tránh chồng lấn trên di động)
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final int displayCount = screenWidth < 600 ? 8 : 15;
+    final topProvinces = validProvinces.take(displayCount).toList();
 
     if (topProvinces.isEmpty) {
       return const Center(
@@ -167,8 +169,8 @@ class PopulationDensityChart extends StatelessWidget {
                 ),
               const SizedBox(height: 8),
               Text(
-                'Hiển thị: Top 10 tỉnh có mật độ dân số cao nhất',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
+                'Hiển thị: Top ${topProvinces.length} tỉnh có mật độ dân số cao nhất',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
               ),
             ],
           ),

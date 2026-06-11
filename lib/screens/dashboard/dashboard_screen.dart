@@ -7,7 +7,6 @@ import '../../providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/population_density_chart.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_comparison.dart';
-import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -52,6 +51,41 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 768;
+
+    if (isMobile) {
+      return Scaffold(
+        backgroundColor: const Color(0xff0f172a),
+        body: SafeArea(
+          child: _selectedView == 0
+              ? _buildDashboardView()
+              : _buildMapView(isMobile: true),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedView,
+          onTap: (index) {
+            setState(() {
+              _selectedView = index;
+            });
+          },
+          backgroundColor: const Color(0xff1e293b),
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.white54,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Text('📊', style: TextStyle(fontSize: 20)),
+              label: 'Bảng điều khiển',
+            ),
+            BottomNavigationBarItem(
+              icon: Text('🗺️', style: TextStyle(fontSize: 20)),
+              label: 'Bản Đồ',
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xff0f172a),
       body: Row(
@@ -72,7 +106,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   },
                   child: Container(
                     width: 70,
-                    height: 70,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       color: _selectedView == 0
                           ? Colors.blue
@@ -82,10 +116,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('📊', style: TextStyle(fontSize: 32)),
+                        const Text('📊', style: TextStyle(fontSize: 24)),
                         const SizedBox(height: 4),
                         Text(
-                          'Dashboard',
+                          'Bảng điều khiển',
                           style: TextStyle(
                             color: _selectedView == 0
                                 ? Colors.white
@@ -109,7 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   },
                   child: Container(
                     width: 70,
-                    height: 70,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       color: _selectedView == 1
                           ? Colors.blue
@@ -119,7 +153,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('🗺️', style: TextStyle(fontSize: 32)),
+                        const Text('🗺️', style: TextStyle(fontSize: 24)),
                         const SizedBox(height: 4),
                         Text(
                           'Bản Đồ',
@@ -141,7 +175,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           // MAIN CONTENT
           Expanded(
-            child: _selectedView == 0 ? _buildDashboardView() : _buildMapView(),
+            child: _selectedView == 0
+                ? _buildDashboardView()
+                : _buildMapView(isMobile: false),
           ),
         ],
       ),
@@ -156,7 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Vietnam Analytics Dashboard",
+            "Bảng phân tích dữ liệu Việt Nam",
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -166,7 +202,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           const SizedBox(height: 20),
           // Tab Bar for Analytics
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.white24)),
             ),
             child: TabBar(
@@ -209,7 +245,110 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildMapView() {
+  Widget _buildMapView({required bool isMobile}) {
+    if (isMobile) {
+      return Consumer<ProvinceProvider>(
+        builder: (context, provider, child) {
+          final showDetails = provider.selectedProvince != null ||
+              provider.selectedCommune != null;
+
+          return Stack(
+            children: [
+              // MAP (takes full screen)
+              Container(
+                color: Colors.blueGrey,
+                child: const VietnamMap(),
+              ),
+              // Back Button if focused
+              if (provider.focusedProvince != null)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      provider.clearFocus();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff1e293b),
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Text("← Quay lại", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              // Bottom Sheet Detail Panel (Native styled overlay)
+              if (showDetails)
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: MediaQuery.of(context).size.height * 0.45,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xff1e293b),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black54,
+                          blurRadius: 15,
+                          offset: Offset(0, -3),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Drag Indicator & Close Header
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                provider.selectedCommune != null
+                                    ? "Chi Tiết Xã"
+                                    : "Chi Tiết Tỉnh",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              IconButton(
+                                constraints: const BoxConstraints(),
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.close, color: Colors.white70),
+                                onPressed: () {
+                                  provider.clearFocus();
+                                },
+                              )
+                            ],
+                          ),
+                        ),
+                        const Divider(color: Colors.white24, height: 1),
+                        Expanded(
+                          child: ProvinceDetailPanel(
+                            province: provider.selectedCommune ??
+                                provider.selectedProvince,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
+    }
+
     return Row(
       children: [
         // MAP (Main)
@@ -232,7 +371,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         onPressed: () {
                           provider.clearFocus();
                         },
-                        child: const Text("← Back"),
+                        child: const Text("← Quay lại"),
                       );
                     },
                   ),
@@ -263,8 +402,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: Consumer<ProvinceProvider>(
                     builder: (context, provider, child) {
                       return ProvinceDetailPanel(
-                        province:
-                            provider.selectedCommune ??
+                        province: provider.selectedCommune ??
                             provider.selectedProvince,
                       );
                     },
