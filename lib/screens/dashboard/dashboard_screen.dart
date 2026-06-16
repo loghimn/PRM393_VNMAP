@@ -326,7 +326,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 padding: EdgeInsets.zero,
                                 icon: const Icon(Icons.close, color: Colors.white70),
                                 onPressed: () {
-                                  provider.clearFocus();
+                                  provider.clearSelection(); // chỉ đóng panel, không thoát focus
                                 },
                               )
                             ],

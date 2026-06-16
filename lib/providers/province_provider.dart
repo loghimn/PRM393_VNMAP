@@ -30,9 +30,10 @@ class ProvinceProvider extends ChangeNotifier {
   }
 
   Future<void> focusProvince(ProvinceModel province) async {
-    focusedProvince = province;
     selectedProvince = province;
     final String cacheKey = province.name;
+
+    // Load communes first (from cache or network) before updating UI
     if (!_provinceCommunesCache.containsKey(cacheKey)) {
       print('Loading communes for province: ${province.name}...');
       try {
@@ -45,6 +46,9 @@ class ProvinceProvider extends ChangeNotifier {
       }
     }
 
+    // Set focusedProvince and focusedCommunes atomically so the painter
+    // always sees them in sync (prevents drawing focused mode with empty communes)
+    focusedProvince = province;
     focusedCommunes = _provinceCommunesCache[cacheKey]!;
 
     print('Focus province: ${province.name}');
@@ -67,17 +71,16 @@ class ProvinceProvider extends ChangeNotifier {
   }
 
   void selectProvince(ProvinceModel province) {
+    print("SELECT PROVINCE: ${province.name}");
     selectedProvince = province;
-
+    selectedCommune = null;
     notifyListeners();
   }
 
   void selectCommune(ProvinceModel commune) {
     print("SELECT COMMUNE: ${commune.name}");
     selectedCommune = commune;
-    selectedProvince = null; // 👈 tránh conflict panel
-
-    selectedCommune = commune;
+    selectedProvince = null;
     notifyListeners();
   }
 
@@ -86,9 +89,12 @@ class ProvinceProvider extends ChangeNotifier {
 
     focusedCommunes.clear();
 
-    selectedCommune = null; // 👈 thêm dòng này
-    selectedProvince = null;
+    notifyListeners();
+  }
 
+  void clearSelection() {
+    selectedCommune = null;
+    selectedProvince = null;
     notifyListeners();
   }
 }
