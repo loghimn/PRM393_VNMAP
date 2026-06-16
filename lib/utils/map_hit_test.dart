@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/province_model.dart';
 import 'map_transform.dart';
 import 'path_utils.dart';
+import 'island_insets.dart';
 
 ProvinceModel? getProvinceFromPosition(
   Offset position,
@@ -11,13 +12,27 @@ ProvinceModel? getProvinceFromPosition(
   Size canvasSize, {
   ProvinceModel? onlyProvince,
 }) {
+  if (onlyProvince == null) {
+    // Check Hoàng Sa
+    final hoangSaRect = getHoangSaInsetRect(canvasSize);
+    if (hoangSaRect.contains(position)) {
+      try {
+        return specialZones.firstWhere((z) => z.name.contains('Hoàng Sa'));
+      } catch (_) {}
+    }
+
+    // Check Trường Sa
+    final truongSaRect = getTruongSaInsetRect(canvasSize);
+    if (truongSaRect.contains(position)) {
+      try {
+        return specialZones.firstWhere((z) => z.name.contains('Trường Sa'));
+      } catch (_) {}
+    }
+  }
+
   final provinceList = onlyProvince != null ? [onlyProvince] : provinces;
 
-  final allRegions = onlyProvince != null
-      ? [...provinceList]
-      : [...provinceList, ...specialZones];
-
-  final transform = calculateMapTransform(canvasSize, allRegions);
+  final transform = calculateMapTransform(canvasSize, provinceList);
 
   final adjusted = Offset(
     (position.dx - transform.offsetX) / transform.scale,
@@ -50,6 +65,11 @@ ProvinceModel? getProvinceFromPosition(
   }
 
   for (var zone in specialZones) {
+    // Skip Hoàng Sa & Trường Sa since they are handled via inset boxes
+    if (zone.name.contains('Hoàng Sa') || zone.name.contains('Trường Sa')) {
+      continue;
+    }
+
     final geometry = zone.geometry;
 
     final type = geometry['type'];
@@ -76,3 +96,4 @@ ProvinceModel? getProvinceFromPosition(
 
   return null;
 }
+

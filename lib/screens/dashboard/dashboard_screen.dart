@@ -7,6 +7,7 @@ import '../../providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/population_density_chart.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_comparison.dart';
+import 'package:vietnam_geo_dashboard/widgets/analytics/overview_statistics_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -20,11 +21,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   late TabController _tabController;
   late TabController _viewModeController;
   int _selectedView = 0; // 0 = Dashboard, 1 = Map
+  String _chartMetric = 'density';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _viewModeController = TabController(
       length: 2,
       vsync: this,
@@ -207,9 +209,16 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             child: TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(text: 'Mật Độ Dân Số'),
-                Tab(text: 'So Sánh Tỉnh'),
+              tabs: [
+                Tab(
+                  text: _chartMetric == 'density'
+                      ? 'Mật Độ Dân Số'
+                      : _chartMetric == 'area'
+                          ? 'Diện Tích'
+                          : 'Dân Số',
+                ),
+                const Tab(text: 'So Sánh Tỉnh'),
+                const Tab(text: 'Tổng Quan & Thống Kê'),
               ],
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white54,
@@ -224,11 +233,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               controller: _tabController,
               children: [
                 // Tab 1: Population Density Chart
-                Consumer<ProvinceProvider>(
-                  builder: (context, provider, child) {
-                    return PopulationDensityChart(
-                      provinces: provider.provinces,
-                    );
+                PopulationDensityChart(
+                  onMetricChanged: (metric) {
+                    setState(() {
+                      _chartMetric = metric;
+                    });
                   },
                 ),
                 // Tab 2: Province Comparison
@@ -237,6 +246,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                     return ProvinceComparison(provinces: provider.provinces);
                   },
                 ),
+                // Tab 3: Overview & Statistics
+                const OverviewStatisticsTab(),
               ],
             ),
           ),
