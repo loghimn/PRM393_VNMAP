@@ -9,6 +9,7 @@ import '../../utils/map_hit_test.dart';
 import '../../utils/commune_hit_test.dart';
 import '../../utils/map_transform.dart';
 import '../../utils/geo_utils.dart';
+import '../../utils/island_insets.dart';
 
 class VietnamMap extends StatefulWidget {
   const VietnamMap({super.key});
@@ -191,13 +192,14 @@ class _VietnamMapState extends State<VietnamMap> {
                 child: Stack(
                   children: [
                     CustomPaint(
-                      size: Size(constraints.maxWidth, constraints.maxHeight),
+                      size: Size(constraints.maxWidth * 1.6, constraints.maxHeight),
                       painter: VietnamMapPainter(
                         provinces: provider.provinces,
                         specialZones: provider.specialZones,
                         mousePosition: mousePosition,
                         communes: provider.focusedCommunes,
                         focusedProvince: provider.focusedProvince,
+                        viewportSize: Size(constraints.maxWidth, constraints.maxHeight),
                       ),
                     ),
 
@@ -216,9 +218,11 @@ class _VietnamMapState extends State<VietnamMap> {
                         );
 
                         // compute anchor and map transform to position icon
+                        // Must use same regions as painter (provinces only, not specialZones)
+                        // to keep weather icon aligned with the drawn province
                         final mapRegions = prov.focusedProvince != null
                             ? [prov.focusedProvince!]
-                            : [...prov.provinces, ...prov.specialZones];
+                            : prov.provinces;
 
                         final transform = calculateMapTransform(
                           canvasSize,
@@ -241,10 +245,19 @@ class _VietnamMapState extends State<VietnamMap> {
 
                         final anchor = GeoUtils.getAnchorPoint(ring);
 
-                        final screen = Offset(
-                          transform.offsetX + anchor.dx * transform.scale,
-                          transform.offsetY + anchor.dy * transform.scale,
-                        );
+                        final Offset screen;
+                        if (hovered.name.contains('Hoàng Sa') && prov.focusedProvince == null) {
+                          final rect = getHoangSaInsetRect(canvasSize);
+                          screen = Offset(rect.left - 20, rect.top + rect.height / 2);
+                        } else if (hovered.name.contains('Trường Sa') && prov.focusedProvince == null) {
+                          final rect = getTruongSaInsetRect(canvasSize);
+                          screen = Offset(rect.left - 20, rect.top + rect.height / 2);
+                        } else {
+                          screen = Offset(
+                            transform.offsetX + anchor.dx * transform.scale,
+                            transform.offsetY + anchor.dy * transform.scale,
+                          );
+                        }
 
                         final weather = weatherProv.getCachedWeatherForProvince(
                           hovered,
