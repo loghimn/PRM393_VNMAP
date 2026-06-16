@@ -1,12 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/province_model.dart';
-import '../services/geojson_service.dart';
+import '../services/database_service.dart';
 
 class ProvinceProvider extends ChangeNotifier {
-  final GeoJsonService _service = GeoJsonService();
+  final DatabaseService _service = DatabaseService();
   ProvinceModel? hoveredProvince;
   List<ProvinceModel> communes = [];
   ProvinceModel? focusedProvince;
@@ -20,96 +18,7 @@ class ProvinceProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final List<String> communeKeys = [
-        'thanh_pho_can_tho',
-        'thanh_pho_da_nang',
-        'thanh_pho_dong_nai',
-        'thanh_pho_hai_phong',
-        'thanh_pho_ho_chi_minh',
-        'thanh_pho_hue',
-        'thu_do_ha_noi',
-        'tinh_an_giang',
-        'tinh_bac_ninh',
-        'tinh_ca_mau',
-        'tinh_cao_bang',
-        'tinh_dak_lak',
-        'tinh_dien_bien',
-        'tinh_dong_thap',
-        'tinh_gia_lai',
-        'tinh_ha_tinh',
-        'tinh_hung_yen',
-        'tinh_khanh_hoa',
-        'tinh_lai_chau',
-        'tinh_lam_dong',
-        'tinh_lang_son',
-        'tinh_lao_cai',
-        'tinh_nghe_an',
-        'tinh_ninh_binh',
-        'tinh_phu_tho',
-        'tinh_quang_ngai',
-        'tinh_quang_ninh',
-        'tinh_quang_tri',
-        'tinh_son_la',
-        'tinh_tay_ninh',
-        'tinh_thai_nguyen',
-        'tinh_thanh_hoa',
-        'tinh_tuyen_quang',
-        'tinh_vinh_long',
-      ];
-
-      final List<Map<String, dynamic>> results = [];
-
-      for (final key in communeKeys) {
-        try {
-          final String response = await rootBundle.loadString(
-            'assets/geojson/communes/$key.json',
-          );
-          final String fixedJson = response.replaceAll('NaN', 'null');
-          final data = jsonDecode(fixedJson);
-          final features = data['features'] as List;
-
-          double totalArea = 0.0;
-          double totalPopulation = 0.0;
-          String provinceName = '';
-
-          for (final feature in features) {
-            final props = feature['properties'];
-            if (props != null) {
-              if (provinceName.isEmpty && props['parent_ten'] != null) {
-                provinceName = props['parent_ten'];
-              }
-              final area = props['area_km2'];
-              final pop = props['population'];
-              if (area != null) {
-                totalArea += (area as num).toDouble();
-              }
-              if (pop != null) {
-                totalPopulation += (pop as num).toDouble();
-              }
-            }
-          }
-
-          if (provinceName.isEmpty) {
-            provinceName = key.replaceAll('_', ' ');
-          }
-
-          final density = totalArea > 0 ? totalPopulation / totalArea : 0.0;
-
-          results.add({
-            'name': provinceName,
-            'density': density,
-            'population': totalPopulation,
-            'area': totalArea,
-            'key': key,
-          });
-        } catch (e) {
-          print("Error calculating density for key $key: $e");
-        }
-        await Future.delayed(Duration.zero); // yield to prevent UI freeze
-      }
-
-      results.sort((a, b) => (b['density'] as double).compareTo(a['density'] as double));
-      calculatedDensities = results;
+      calculatedDensities = await _service.fetchCalculatedDensities();
     } catch (e) {
       print("Error calculating commune densities: $e");
     } finally {
@@ -203,5 +112,33 @@ class ProvinceProvider extends ChangeNotifier {
     selectedCommune = null;
     selectedProvince = null;
     notifyListeners();
+  }
+
+  Future<List<SearchResult>> searchLocations(String query) async {
+    return await _service.searchLocations(query);
+  }
+
+  Future<void> selectSearchResult(SearchResult result) async {
+    if (result.type == 'province' || result.type == 'special_zone') {
+      clearFocus();
+      selectProvince(result.model);
+    } else if (result.type == 'commune') {
+      final ProvinceModel commune = result.model;
+      final parentName = commune.parentTen;
+      if (parentName != null) {
+        try {
+          final parentProvince = provinces.firstWhere(
+            (p) => p.name.trim().toLowerCase() == parentName.trim().toLowerCase(),
+            orElse: () => specialZones.firstWhere(
+              (z) => z.name.trim().toLowerCase() == parentName.trim().toLowerCase(),
+            ),
+          );
+          await focusProvince(parentProvince);
+        } catch (e) {
+          print('Parent province not found in cache for commune search: $e');
+        }
+      }
+      selectCommune(commune);
+    }
   }
 }

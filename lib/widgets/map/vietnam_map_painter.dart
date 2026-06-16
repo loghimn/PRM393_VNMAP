@@ -17,6 +17,8 @@ class VietnamMapPainter extends CustomPainter {
   final Offset mousePosition;
   final List<ProvinceModel> communes;
   final ProvinceModel? focusedProvince;
+  final ProvinceModel? selectedProvince;
+  final ProvinceModel? selectedCommune;
   final Size viewportSize;
 
   VietnamMapPainter({
@@ -26,6 +28,8 @@ class VietnamMapPainter extends CustomPainter {
     required this.mousePosition,
     required this.communes,
     required this.focusedProvince,
+    this.selectedProvince,
+    this.selectedCommune,
     required this.viewportSize,
   });
 
@@ -228,7 +232,9 @@ class VietnamMapPainter extends CustomPainter {
   }
 
   Color getProvinceColor(ProvinceModel province, bool hovered) {
-    if (hovered) {
+    final isSelected = selectedProvince != null &&
+        (selectedProvince!.name == province.name || selectedProvince!.ma == province.ma);
+    if (hovered || isSelected) {
       return Colors.orange;
     }
 
@@ -344,20 +350,24 @@ class VietnamMapPainter extends CustomPainter {
               continue;
             }
 
-            // Highlight hovered commune
+            // Highlight hovered or selected commune
+            final isCommuneSelected = selectedCommune != null &&
+                (selectedCommune!.name == commune.name || selectedCommune!.ma == commune.ma);
             final isCommuneHovered = hoveredProvince?.name == commune.name;
+            final isCommuneHighlighted = isCommuneHovered || isCommuneSelected;
+
             final communePaint = Paint()
-              ..color = isCommuneHovered
+              ..color = isCommuneHighlighted
                   ? Colors.yellow.withOpacity(0.7)
                   : Colors.black.withOpacity(0.1)
               ..style = PaintingStyle.fill;
 
             final communeBorderPaint = Paint()
-              ..color = isCommuneHovered
+              ..color = isCommuneHighlighted
                   ? Colors.white
                   : Colors.white.withOpacity(0.2)
               ..style = PaintingStyle.stroke
-              ..strokeWidth = isCommuneHovered
+              ..strokeWidth = isCommuneHighlighted
                   ? 2 / transform.scale
                   : 1 / transform.scale;
 

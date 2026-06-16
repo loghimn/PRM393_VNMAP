@@ -5,6 +5,7 @@ import 'package:vietnam_geo_dashboard/widgets/weather/weather_icon.dart';
 
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map_painter.dart';
+import '../../services/database_service.dart';
 import '../../utils/map_hit_test.dart';
 import '../../utils/commune_hit_test.dart';
 import '../../utils/map_transform.dart';
@@ -23,6 +24,7 @@ class _VietnamMapState extends State<VietnamMap> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 768;
     return Consumer<ProvinceProvider>(
       builder: (context, provider, child) {
         if (provider.provinces.isEmpty) {
@@ -199,6 +201,8 @@ class _VietnamMapState extends State<VietnamMap> {
                         mousePosition: mousePosition,
                         communes: provider.focusedCommunes,
                         focusedProvince: provider.focusedProvince,
+                        selectedProvince: provider.selectedProvince,
+                        selectedCommune: provider.selectedCommune,
                         viewportSize: Size(constraints.maxWidth, constraints.maxHeight),
                       ),
                     ),
@@ -273,6 +277,133 @@ class _VietnamMapState extends State<VietnamMap> {
                           child: WeatherIcon(weather: weather),
                         );
                       },
+                    ),
+
+                    // Beautiful responsive search bar overlay
+                    Positioned(
+                      top: 16,
+                      right: 16,
+                      left: isMobile ? (provider.focusedProvince != null ? 150 : 16) : null,
+                      width: isMobile ? null : 320,
+                      child: Autocomplete<SearchResult>(
+                        optionsBuilder: (TextEditingValue textEditingValue) async {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<SearchResult>.empty();
+                          }
+                          return await provider.searchLocations(textEditingValue.text);
+                        },
+                        displayStringForOption: (SearchResult option) => option.name,
+                        onSelected: (SearchResult selection) {
+                          provider.selectSearchResult(selection);
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 8.0,
+                              borderRadius: BorderRadius.circular(12),
+                              color: const Color(0xff1e293b),
+                              child: Container(
+                                width: isMobile ? MediaQuery.of(context).size.width - (provider.focusedProvince != null ? 166 : 32) : 320,
+                                constraints: const BoxConstraints(maxHeight: 250),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white10),
+                                ),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (BuildContext context, int index) {
+                                    final SearchResult option = options.elementAt(index);
+                                    return ListTile(
+                                      hoverColor: Colors.white10,
+                                      dense: true,
+                                      title: Text(
+                                        option.name,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      trailing: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: option.type == 'province' || option.type == 'special_zone'
+                                              ? Colors.blueAccent.withOpacity(0.15)
+                                              : Colors.orangeAccent.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color: option.type == 'province' || option.type == 'special_zone'
+                                                ? Colors.blueAccent
+                                                : Colors.orangeAccent,
+                                            width: 0.5,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          option.type == 'province' || option.type == 'special_zone' ? 'Tỉnh' : 'Xã',
+                                          style: TextStyle(
+                                            color: option.type == 'province' || option.type == 'special_zone'
+                                                ? Colors.blueAccent
+                                                : Colors.orangeAccent,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      onTap: () => onSelected(option),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                          return Container(
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xff1e293b).withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: TextField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              decoration: InputDecoration(
+                                hintText: 'Tìm kiếm tỉnh thành, xã phường...',
+                                hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                border: InputBorder.none,
+                                prefixIcon: const Icon(Icons.search, color: Colors.white54, size: 18),
+                                suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: textEditingController,
+                                  builder: (context, value, child) {
+                                    if (value.text.isEmpty) return const SizedBox.shrink();
+                                    return GestureDetector(
+                                      onTap: () {
+                                        textEditingController.clear();
+                                        provider.clearSelection();
+                                      },
+                                      child: const Icon(Icons.clear, color: Colors.white54, size: 16),
+                                    );
+                                  },
+                                ),
+                              ),
+                              onSubmitted: (_) => onFieldSubmitted(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
