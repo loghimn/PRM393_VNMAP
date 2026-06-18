@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/province_model.dart';
+import '../models/high_school_model.dart';
 import '../services/database_service.dart';
 
 class ProvinceProvider extends ChangeNotifier {
@@ -31,6 +32,25 @@ class ProvinceProvider extends ChangeNotifier {
   List<ProvinceModel> focusedCommunes = [];
 
   ProvinceModel? selectedCommune;
+  List<HighSchool> selectedCommuneHighSchools = [];
+  bool isLoadingHighSchools = false;
+
+  Future<void> loadHighSchoolsForCommune(ProvinceModel commune) async {
+    if (commune.name.isEmpty) return;
+    isLoadingHighSchools = true;
+    selectedCommuneHighSchools = [];
+    notifyListeners();
+    try {
+      selectedCommuneHighSchools = await _service.fetchHighSchoolsByCommuneName(
+        commune.name,
+      );
+    } catch (e) {
+      print("Error loading high schools for commune ${commune.name}: $e");
+    } finally {
+      isLoadingHighSchools = false;
+      notifyListeners();
+    }
+  }
 
   void setHoveredProvince(ProvinceModel? province) {
     hoveredProvince = province;
@@ -57,7 +77,9 @@ class ProvinceProvider extends ChangeNotifier {
       try {
         final loaded = await _service.fetchCommunesForProvince(province.name);
         _provinceCommunesCache[cacheKey] = loaded;
-        print('Loaded ${loaded.length} communes for province: ${province.name}');
+        print(
+          'Loaded ${loaded.length} communes for province: ${province.name}',
+        );
       } catch (e) {
         print('Error loading communes for ${province.name}: $e');
         _provinceCommunesCache[cacheKey] = [];
@@ -100,6 +122,8 @@ class ProvinceProvider extends ChangeNotifier {
     selectedCommune = commune;
     selectedProvince = null;
     notifyListeners();
+    // Auto-load high schools for this commune
+    loadHighSchoolsForCommune(commune);
   }
 
   void clearFocus() {
@@ -128,9 +152,12 @@ class ProvinceProvider extends ChangeNotifier {
       if (parentName != null) {
         try {
           final parentProvince = provinces.firstWhere(
-            (p) => p.name.trim().toLowerCase() == parentName.trim().toLowerCase(),
+            (p) =>
+                p.name.trim().toLowerCase() == parentName.trim().toLowerCase(),
             orElse: () => specialZones.firstWhere(
-              (z) => z.name.trim().toLowerCase() == parentName.trim().toLowerCase(),
+              (z) =>
+                  z.name.trim().toLowerCase() ==
+                  parentName.trim().toLowerCase(),
             ),
           );
           await focusProvince(parentProvince);

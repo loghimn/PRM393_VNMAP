@@ -214,8 +214,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   text: _chartMetric == 'density'
                       ? 'Mật Độ Dân Số'
                       : _chartMetric == 'area'
-                          ? 'Diện Tích'
-                          : 'Dân Số',
+                      ? 'Diện Tích'
+                      : 'Dân Số',
                 ),
                 const Tab(text: 'So Sánh Tỉnh'),
                 const Tab(text: 'Tổng Quan & Thống Kê'),
@@ -260,16 +260,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (isMobile) {
       return Consumer<ProvinceProvider>(
         builder: (context, provider, child) {
-          final showDetails = provider.selectedProvince != null ||
+          final showDetails =
+              provider.selectedProvince != null ||
               provider.selectedCommune != null;
 
           return Stack(
             children: [
               // MAP (takes full screen)
-              Container(
-                color: Colors.blueGrey,
-                child: const VietnamMap(),
-              ),
+              Container(color: Colors.blueGrey, child: const VietnamMap()),
               // Back Button if focused
               if (provider.focusedProvince != null)
                 Positioned(
@@ -283,12 +281,18 @@ class _DashboardScreenState extends State<DashboardScreen>
                       backgroundColor: const Color(0xff1e293b),
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
                     ),
-                    child: const Text("← Quay lại", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      "← Quay lại",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               // Bottom Sheet Detail Panel (Native styled overlay)
@@ -310,7 +314,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           color: Colors.black54,
                           blurRadius: 15,
                           offset: Offset(0, -3),
-                        )
+                        ),
                       ],
                     ),
                     child: Column(
@@ -324,7 +328,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             children: [
                               Text(
                                 provider.selectedCommune != null
-                                    ? "Chi Tiết Xã"
+                                    ? "Chi Tiết Xã/Phường"
                                     : "Chi Tiết Tỉnh",
                                 style: const TextStyle(
                                   color: Colors.white,
@@ -335,18 +339,23 @@ class _DashboardScreenState extends State<DashboardScreen>
                               IconButton(
                                 constraints: const BoxConstraints(),
                                 padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.close, color: Colors.white70),
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white70,
+                                ),
                                 onPressed: () {
-                                  provider.clearSelection(); // chỉ đóng panel, không thoát focus
+                                  provider
+                                      .clearSelection(); // chỉ đóng panel, không thoát focus
                                 },
-                              )
+                              ),
                             ],
                           ),
                         ),
                         const Divider(color: Colors.white24, height: 1),
                         Expanded(
                           child: ProvinceDetailPanel(
-                            province: provider.selectedCommune ??
+                            province:
+                                provider.selectedCommune ??
                                 provider.selectedProvince,
                           ),
                         ),
@@ -400,20 +409,27 @@ class _DashboardScreenState extends State<DashboardScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Chi Tiết Tỉnh",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Consumer<ProvinceProvider>(
+                  builder: (context, provider, child) {
+                    return Text(
+                      provider.selectedCommune != null
+                          ? "Chi Tiết Xã/Phường"
+                          : "Chi Tiết Tỉnh",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
                 Expanded(
                   child: Consumer<ProvinceProvider>(
                     builder: (context, provider, child) {
                       return ProvinceDetailPanel(
-                        province: provider.selectedCommune ??
+                        province:
+                            provider.selectedCommune ??
                             provider.selectedProvince,
                       );
                     },

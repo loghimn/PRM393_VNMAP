@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:vietnam_geo_dashboard/models/province_model.dart';
 import 'package:provider/provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
+import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
+import 'package:vietnam_geo_dashboard/models/high_school_model.dart';
 import 'package:vietnam_geo_dashboard/widgets/weather/weather_info_panel.dart';
 
 class ProvinceDetailPanel extends StatelessWidget {
@@ -133,9 +135,11 @@ class ProvinceDetailPanel extends StatelessWidget {
       color: const Color(0xff111827),
       padding: const EdgeInsets.all(20),
 
-      child: (isSpecialZone || isCommune)
-          ? _buildSpecialZoneDetail()
-          : _buildProvinceDetail(),
+      child: isCommune
+          ? _buildCommuneDetail()
+          : (isSpecialZone
+                ? _buildSpecialZoneDetail()
+                : _buildProvinceDetail()),
     );
   }
 
@@ -278,6 +282,182 @@ class ProvinceDetailPanel extends StatelessWidget {
             province!.decree ?? "-",
             style: const TextStyle(color: Colors.white70, height: 1.5),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommuneDetail() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Commune name header
+          Text(
+            province!.name,
+            style: const TextStyle(
+              color: Colors.orangeAccent,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Commune basic info
+          _buildInfo("Phân loại", province!.type),
+          _buildInfo("Mã hành chính", province!.ma),
+          _buildInfo("Diện tích", "${province!.areaKm2} km²"),
+          _buildInfo("Dân số", province!.population),
+          _buildInfo("Mật độ dân số", province!.density),
+          _buildInfo("Thuộc tỉnh", province!.parentTen ?? ""),
+
+          const SizedBox(height: 24),
+
+          // Weather widget
+          Consumer<WeatherProvider>(
+            builder: (context, weatherProv, child) {
+              final w = weatherProv.getCachedWeatherForProvince(province!);
+              return WeatherInfoPanel(weather: w);
+            },
+          ),
+
+          const SizedBox(height: 24),
+
+          const Divider(color: Colors.white24),
+
+          const SizedBox(height: 16),
+
+          // High Schools section
+          _buildHighSchoolsSection(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighSchoolsSection() {
+    return Consumer<ProvinceProvider>(
+      builder: (context, prov, child) {
+        final schools = prov.selectedCommuneHighSchools;
+        final isLoading = prov.isLoadingHighSchools;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.school, color: Colors.orange.shade300, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  "Trường THPT trên địa bàn",
+                  style: TextStyle(
+                    color: Colors.orange.shade300,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.orangeAccent,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (!isLoading && schools.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  "Không có dữ liệu trường THPT cho xã/phường này.",
+                  style: TextStyle(color: Colors.white54, fontSize: 14),
+                ),
+              ),
+            if (!isLoading && schools.isNotEmpty)
+              ...schools.map((school) => _buildHighSchoolCard(school)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHighSchoolCard(HighSchool school) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xff1f2937),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            school.tenTruong ?? "",
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (school.diaChi != null && school.diaChi!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  color: Colors.white54,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    school.diaChi!,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (school.khuVuc != null && school.khuVuc!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(
+                  Icons.category_outlined,
+                  color: Colors.white54,
+                  size: 16,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  school.khuVuc!,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
+            ),
+          ],
+          if (school.maTruong != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.tag, color: Colors.white54, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  "Mã trường: ${school.maTruong!}",
+                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
