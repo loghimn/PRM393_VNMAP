@@ -1,8 +1,10 @@
 import 'package:postgres/postgres.dart';
 import '../models/province_model.dart';
+import '../models/high_school_model.dart';
 
 class DatabaseService {
-  static const String _host = 'ep-nameless-glitter-aopvc4hg-pooler.c-2.ap-southeast-1.aws.neon.tech';
+  static const String _host =
+      'ep-nameless-glitter-aopvc4hg-pooler.c-2.ap-southeast-1.aws.neon.tech';
   static const String _dbName = 'neondb';
   static const String _username = 'neondb_owner';
   static const String _password = 'npg_iB5FdLA6DESp';
@@ -15,9 +17,7 @@ class DatabaseService {
         username: _username,
         password: _password,
       ),
-      settings: const ConnectionSettings(
-        sslMode: SslMode.require,
-      ),
+      settings: const ConnectionSettings(sslMode: SslMode.require),
     );
   }
 
@@ -69,8 +69,12 @@ class DatabaseService {
   Future<List<ProvinceModel>> fetchProvinces() async {
     final conn = await _connect();
     try {
-      final res = await conn.execute('SELECT * FROM provinces ORDER BY name ASC');
-      return res.map((row) => _mapRowToProvinceModel(row.toColumnMap())).toList();
+      final res = await conn.execute(
+        'SELECT * FROM provinces ORDER BY name ASC',
+      );
+      return res
+          .map((row) => _mapRowToProvinceModel(row.toColumnMap()))
+          .toList();
     } finally {
       await conn.close();
     }
@@ -79,21 +83,29 @@ class DatabaseService {
   Future<List<ProvinceModel>> fetchSpecialZones() async {
     final conn = await _connect();
     try {
-      final res = await conn.execute('SELECT * FROM special_zones ORDER BY name ASC');
-      return res.map((row) => _mapRowToProvinceModel(row.toColumnMap())).toList();
+      final res = await conn.execute(
+        'SELECT * FROM special_zones ORDER BY name ASC',
+      );
+      return res
+          .map((row) => _mapRowToProvinceModel(row.toColumnMap()))
+          .toList();
     } finally {
       await conn.close();
     }
   }
 
-  Future<List<ProvinceModel>> fetchCommunesForProvince(String provinceName) async {
+  Future<List<ProvinceModel>> fetchCommunesForProvince(
+    String provinceName,
+  ) async {
     final conn = await _connect();
     try {
       final res = await conn.execute(
         'SELECT * FROM communes WHERE parent_name = \$1 ORDER BY name ASC',
         parameters: [provinceName],
       );
-      return res.map((row) => _mapRowToProvinceModel(row.toColumnMap())).toList();
+      return res
+          .map((row) => _mapRowToProvinceModel(row.toColumnMap()))
+          .toList();
     } finally {
       await conn.close();
     }
@@ -120,8 +132,38 @@ class DatabaseService {
           'density': _cleanDouble(map['density']),
           'population': _cleanDouble(map['population']),
           'area': _cleanDouble(map['area']),
-          'key': _cleanNan(map['key']) ?? getProvinceKey(_cleanNan(map['name']) ?? ''),
+          'key':
+              _cleanNan(map['key']) ??
+              getProvinceKey(_cleanNan(map['name']) ?? ''),
         };
+      }).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<HighSchool>> fetchHighSchoolsByCommuneName(
+    String communeName,
+  ) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM truong_thpt WHERE ten_xa_phuong = \$1 ORDER BY ten_truong ASC',
+        parameters: [communeName],
+      );
+      return res.map((row) {
+        final map = row.toColumnMap();
+        return HighSchool.fromJson({
+          'stt': map['stt'],
+          'ma_tinh_tp': map['ma_tinh_tp'],
+          'ten_tinh_tp': map['ten_tinh_tp'],
+          'ma_xa_phuong': map['ma_xa_phuong'],
+          'ten_xa_phuong': map['ten_xa_phuong'],
+          'ma_truong': map['ma_truong'],
+          'ten_truong': map['ten_truong'],
+          'dia_chi': map['dia_chi'],
+          'khu_vuc': map['khu_vuc'],
+        });
       }).toList();
     } finally {
       await conn.close();
@@ -131,18 +173,72 @@ class DatabaseService {
   String getProvinceKey(String name) {
     var str = name.toLowerCase();
     const accentMap = {
-      'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
-      'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
-      'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
-      'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
-      'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
-      'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
-      'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
-      'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
-      'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
-      'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
-      'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
-      'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+      'á': 'a',
+      'à': 'a',
+      'ả': 'a',
+      'ã': 'a',
+      'ạ': 'a',
+      'â': 'a',
+      'ấ': 'a',
+      'ầ': 'a',
+      'ẩ': 'a',
+      'ẫ': 'a',
+      'ậ': 'a',
+      'ă': 'a',
+      'ắ': 'a',
+      'ằ': 'a',
+      'ẳ': 'a',
+      'ẵ': 'a',
+      'ặ': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ẻ': 'e',
+      'ẽ': 'e',
+      'ẹ': 'e',
+      'ê': 'e',
+      'ế': 'e',
+      'ề': 'e',
+      'ể': 'e',
+      'ễ': 'e',
+      'ệ': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'ỉ': 'i',
+      'ĩ': 'i',
+      'ị': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ỏ': 'o',
+      'õ': 'o',
+      'ọ': 'o',
+      'ô': 'o',
+      'ố': 'o',
+      'ồ': 'o',
+      'ổ': 'o',
+      'ỗ': 'o',
+      'ộ': 'o',
+      'ơ': 'o',
+      'ớ': 'o',
+      'ờ': 'o',
+      'ở': 'o',
+      'ỡ': 'o',
+      'ợ': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'ủ': 'u',
+      'ũ': 'u',
+      'ụ': 'u',
+      'ư': 'u',
+      'ứ': 'u',
+      'ừ': 'u',
+      'ử': 'u',
+      'ữ': 'u',
+      'ự': 'u',
+      'ý': 'y',
+      'ỳ': 'y',
+      'ỷ': 'y',
+      'ỹ': 'y',
+      'ỵ': 'y',
       'đ': 'd',
     };
     accentMap.forEach((key, value) {
@@ -159,7 +255,7 @@ class DatabaseService {
     try {
       final List<SearchResult> results = [];
       final escapedQuery = '%${query.trim()}%';
-      
+
       // 1. Search provinces
       final provs = await conn.execute(
         'SELECT * FROM provinces WHERE name ILIKE \$1 LIMIT 5',
@@ -167,11 +263,9 @@ class DatabaseService {
       );
       for (final row in provs) {
         final model = _mapRowToProvinceModel(row.toColumnMap());
-        results.add(SearchResult(
-          name: model.name,
-          type: 'province',
-          model: model,
-        ));
+        results.add(
+          SearchResult(name: model.name, type: 'province', model: model),
+        );
       }
 
       // 2. Search special zones
@@ -181,11 +275,9 @@ class DatabaseService {
       );
       for (final row in zones) {
         final model = _mapRowToProvinceModel(row.toColumnMap());
-        results.add(SearchResult(
-          name: model.name,
-          type: 'special_zone',
-          model: model,
-        ));
+        results.add(
+          SearchResult(name: model.name, type: 'special_zone', model: model),
+        );
       }
 
       // 3. Search communes
@@ -195,11 +287,13 @@ class DatabaseService {
       );
       for (final row in coms) {
         final model = _mapRowToProvinceModel(row.toColumnMap());
-        results.add(SearchResult(
-          name: '${model.name} (${model.parentTen ?? ''})',
-          type: 'commune',
-          model: model,
-        ));
+        results.add(
+          SearchResult(
+            name: '${model.name} (${model.parentTen ?? ''})',
+            type: 'commune',
+            model: model,
+          ),
+        );
       }
 
       return results;
@@ -214,10 +308,5 @@ class SearchResult {
   final String type; // 'province', 'special_zone', 'commune'
   final ProvinceModel model;
 
-  SearchResult({
-    required this.name,
-    required this.type,
-    required this.model,
-  });
+  SearchResult({required this.name, required this.type, required this.model});
 }
-
