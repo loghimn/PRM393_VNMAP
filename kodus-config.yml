@@ -1,0 +1,7 @@
+runOnDraft: false
+reviewOptions:
+  business_logic: false
+suggestionControl:
+  maxSuggestions: 6
+  severityLevelFilter: critical
+  applyFiltersToKodyRules: true
