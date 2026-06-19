@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/province_model.dart';
+import '../../services/database_service.dart';
 
 class ProvinceComparison extends StatefulWidget {
   final List<ProvinceModel> provinces;
@@ -11,8 +12,19 @@ class ProvinceComparison extends StatefulWidget {
 }
 
 class _ProvinceComparisonState extends State<ProvinceComparison> {
+  // Mode selection: 0 = Province, 1 = Commune
+  int _comparisonMode = 0;
+
+  // States for Province comparison (existing)
   ProvinceModel? selectedProvince1;
   ProvinceModel? selectedProvince2;
+
+  // States for Commune comparison (new)
+  ProvinceModel? selectedProvinceForCommunes;
+  List<ProvinceModel> communes = [];
+  bool isLoadingCommunes = false;
+  ProvinceModel? selectedCommune1;
+  ProvinceModel? selectedCommune2;
 
   @override
   void initState() {
@@ -25,125 +37,402 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
     }
   }
 
+  Future<void> _loadCommunesForProvince(ProvinceModel province) async {
+    setState(() {
+      selectedProvinceForCommunes = province;
+      isLoadingCommunes = true;
+      communes = [];
+      selectedCommune1 = null;
+      selectedCommune2 = null;
+    });
+
+    try {
+      final databaseService = DatabaseService();
+      final fetched = await databaseService.fetchCommunesForProvince(province.name);
+      setState(() {
+        communes = fetched;
+        if (fetched.isNotEmpty) {
+          selectedCommune1 = fetched[0];
+          if (fetched.length > 1) {
+            selectedCommune2 = fetched[1];
+          }
+        }
+        isLoadingCommunes = false;
+      });
+    } catch (e) {
+      print("Error fetching communes for ${province.name}: $e");
+      setState(() {
+        isLoadingCommunes = false;
+      });
+    }
+  }
+
+  void _onComparisonModeChanged(int mode) {
+    setState(() {
+      _comparisonMode = mode;
+    });
+    if (mode == 1 && selectedProvinceForCommunes == null && widget.provinces.isNotEmpty) {
+      _loadCommunesForProvince(widget.provinces[0]);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'So Sánh Hai Tỉnh',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Province Selection Row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Tỉnh 1',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButton<ProvinceModel>(
-                      value: selectedProvince1,
-                      dropdownColor: const Color(0xff0f172a),
-                      isExpanded: true,
-                      items: widget.provinces
-                          .where((p) => p.name != selectedProvince2?.name)
-                          .map((province) {
-                        return DropdownMenuItem(
-                          value: province,
-                          child: Text(
-                            province.name,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedProvince1 = value;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Tỉnh 2',
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                    const SizedBox(height: 8),
-                    DropdownButton<ProvinceModel>(
-                      value: selectedProvince2,
-                      dropdownColor: const Color(0xff0f172a),
-                      isExpanded: true,
-                      items: widget.provinces
-                          .where((p) => p.name != selectedProvince1?.name)
-                          .map((province) {
-                        return DropdownMenuItem(
-                          value: province,
-                          child: Text(
-                            province.name,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedProvince2 = value;
-                        });
-                      },
-                    ),
-                  ],
+              Text(
+                _comparisonMode == 0 ? 'So Sánh Hai Tỉnh' : 'So Sánh Hai Xã/Phường',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 30),
-          // Comparison Dashboard
-          if (selectedProvince1 != null && selectedProvince2 != null) ...[
-            _buildMetricChart(
-              title: 'Dân Số',
-              icon: Icons.people_alt,
-              val1: (selectedProvince1!.population ?? 0).toDouble(),
-              val2: (selectedProvince2!.population ?? 0).toDouble(),
-              unit: 'người',
-              p1Name: selectedProvince1!.name,
-              p2Name: selectedProvince2!.name,
+          const SizedBox(height: 20),
+          // Mode Toggle Control
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xff1e293b),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
-            _buildMetricChart(
-              title: 'Diện Tích',
-              icon: Icons.landscape,
-              val1: selectedProvince1!.areaKm2 ?? 0.0,
-              val2: selectedProvince2!.areaKm2 ?? 0.0,
-              unit: 'km²',
-              p1Name: selectedProvince1!.name,
-              p2Name: selectedProvince2!.name,
-              isDecimal: true,
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _onComparisonModeChanged(0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _comparisonMode == 0
+                            ? Colors.blue.withOpacity(0.15)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _comparisonMode == 0
+                              ? Colors.blue.withOpacity(0.3)
+                              : Colors.transparent,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Tỉnh/Thành Phố',
+                          style: TextStyle(
+                            color: _comparisonMode == 0 ? Colors.blueAccent : Colors.white70,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _onComparisonModeChanged(1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _comparisonMode == 1
+                            ? Colors.blue.withOpacity(0.15)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _comparisonMode == 1
+                              ? Colors.blue.withOpacity(0.3)
+                              : Colors.transparent,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Xã/Phường',
+                          style: TextStyle(
+                            color: _comparisonMode == 1 ? Colors.blueAccent : Colors.white70,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            _buildMetricChart(
-              title: 'Mật Độ Dân Số',
-              icon: Icons.density_medium,
-              val1: selectedProvince1!.density ?? 0.0,
-              val2: selectedProvince2!.density ?? 0.0,
-              unit: 'người/km²',
-              p1Name: selectedProvince1!.name,
-              p2Name: selectedProvince2!.name,
-              isDecimal: true,
+          ),
+          const SizedBox(height: 24),
+
+          if (_comparisonMode == 0) ...[
+            // Province Selection Row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Tỉnh 1',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButton<ProvinceModel>(
+                        value: selectedProvince1,
+                        dropdownColor: const Color(0xff0f172a),
+                        isExpanded: true,
+                        items: widget.provinces
+                            .where((p) => p.name != selectedProvince2?.name)
+                            .map((province) {
+                          return DropdownMenuItem(
+                            value: province,
+                            child: Text(
+                              province.name,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedProvince1 = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Tỉnh 2',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButton<ProvinceModel>(
+                        value: selectedProvince2,
+                        dropdownColor: const Color(0xff0f172a),
+                        isExpanded: true,
+                        items: widget.provinces
+                            .where((p) => p.name != selectedProvince1?.name)
+                            .map((province) {
+                          return DropdownMenuItem(
+                            value: province,
+                            child: Text(
+                              province.name,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedProvince2 = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 30),
+            // Comparison Dashboard
+            if (selectedProvince1 != null && selectedProvince2 != null) ...[
+              _buildMetricChart(
+                title: 'Dân Số',
+                icon: Icons.people_alt,
+                val1: (selectedProvince1!.population ?? 0).toDouble(),
+                val2: (selectedProvince2!.population ?? 0).toDouble(),
+                unit: 'người',
+                p1Name: selectedProvince1!.name,
+                p2Name: selectedProvince2!.name,
+              ),
+              _buildMetricChart(
+                title: 'Diện Tích',
+                icon: Icons.landscape,
+                val1: selectedProvince1!.areaKm2 ?? 0.0,
+                val2: selectedProvince2!.areaKm2 ?? 0.0,
+                unit: 'km²',
+                p1Name: selectedProvince1!.name,
+                p2Name: selectedProvince2!.name,
+                isDecimal: true,
+              ),
+              _buildMetricChart(
+                title: 'Mật Độ Dân Số',
+                icon: Icons.density_medium,
+                val1: selectedProvince1!.density ?? 0.0,
+                val2: selectedProvince2!.density ?? 0.0,
+                unit: 'người/km²',
+                p1Name: selectedProvince1!.name,
+                p2Name: selectedProvince2!.name,
+                isDecimal: true,
+              ),
+            ],
+          ] else ...[
+            // Commune Selection / Loading
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Chọn Tỉnh/Thành phố',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                DropdownButton<ProvinceModel>(
+                  value: selectedProvinceForCommunes,
+                  dropdownColor: const Color(0xff0f172a),
+                  isExpanded: true,
+                  items: widget.provinces.map((province) {
+                    return DropdownMenuItem(
+                      value: province,
+                      child: Text(
+                        province.name,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      _loadCommunesForProvince(value);
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (isLoadingCommunes)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.blueAccent),
+                ),
+              )
+            else if (communes.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: Text(
+                    'Không tìm thấy dữ liệu xã/phường cho tỉnh/thành phố này.',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ),
+              )
+            else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Xã/Phường 1',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButton<ProvinceModel>(
+                          value: selectedCommune1,
+                          dropdownColor: const Color(0xff0f172a),
+                          isExpanded: true,
+                          items: communes
+                              .where((c) => c.name != selectedCommune2?.name)
+                              .map((commune) {
+                            return DropdownMenuItem(
+                              value: commune,
+                              child: Text(
+                                commune.name,
+                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCommune1 = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Xã/Phường 2',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButton<ProvinceModel>(
+                          value: selectedCommune2,
+                          dropdownColor: const Color(0xff0f172a),
+                          isExpanded: true,
+                          items: communes
+                              .where((c) => c.name != selectedCommune1?.name)
+                              .map((commune) {
+                            return DropdownMenuItem(
+                              value: commune,
+                              child: Text(
+                                commune.name,
+                                style: const TextStyle(color: Colors.white, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCommune2 = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              // Commune Comparison Dashboard
+              if (selectedCommune1 != null && selectedCommune2 != null) ...[
+                _buildMetricChart(
+                  title: 'Dân Số',
+                  icon: Icons.people_alt,
+                  val1: (selectedCommune1!.population ?? 0).toDouble(),
+                  val2: (selectedCommune2!.population ?? 0).toDouble(),
+                  unit: 'người',
+                  p1Name: selectedCommune1!.name,
+                  p2Name: selectedCommune2!.name,
+                ),
+                _buildMetricChart(
+                  title: 'Diện Tích',
+                  icon: Icons.landscape,
+                  val1: selectedCommune1!.areaKm2 ?? 0.0,
+                  val2: selectedCommune2!.areaKm2 ?? 0.0,
+                  unit: 'km²',
+                  p1Name: selectedCommune1!.name,
+                  p2Name: selectedCommune2!.name,
+                  isDecimal: true,
+                ),
+                _buildMetricChart(
+                  title: 'Mật Độ Dân Số',
+                  icon: Icons.density_medium,
+                  val1: selectedCommune1!.density ?? 0.0,
+                  val2: selectedCommune2!.density ?? 0.0,
+                  unit: 'người/km²',
+                  p1Name: selectedCommune1!.name,
+                  p2Name: selectedCommune2!.name,
+                  isDecimal: true,
+                ),
+              ],
+            ],
           ],
         ],
       ),

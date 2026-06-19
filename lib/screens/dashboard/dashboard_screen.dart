@@ -217,7 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ? 'Diện Tích'
                       : 'Dân Số',
                 ),
-                const Tab(text: 'So Sánh Tỉnh'),
+                const Tab(text: 'So Sánh'),
                 const Tab(text: 'Tổng Quan & Thống Kê'),
               ],
               labelColor: Colors.white,
