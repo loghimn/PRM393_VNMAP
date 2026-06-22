@@ -25,10 +25,13 @@ class ProvinceDetailPanel extends StatelessWidget {
               ..sort((a, b) => a.label.compareTo(b.label));
 
             if (summary == null && weatherProv.nationalTextSummary.isEmpty) {
-              return const Center(
+              return Center(
                 child: Text(
                   "Đang tải tổng quan thời tiết quốc gia...",
-                  style: TextStyle(color: Colors.white70, fontSize: 18),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 18,
+                  ),
                 ),
               );
             }
@@ -96,11 +99,14 @@ class ProvinceDetailPanel extends StatelessWidget {
                     ),
                   ],
                   if (regions.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 20),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 20),
                       child: Text(
                         'Không tìm thấy dữ liệu thời tiết vùng. Vui lòng thử lại sau.',
-                        style: TextStyle(color: Colors.white60, fontSize: 14),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                 ],
@@ -176,7 +182,7 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           Text(
             province!.decree ?? "-",
-            style: const TextStyle(color: Colors.white70, height: 1.5),
+            style: TextStyle(color: AppColors.textSecondary, height: 1.5),
           ),
         ],
       ),
@@ -239,7 +245,7 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           Text(
             province!.predecessors ?? "-",
-            style: const TextStyle(color: Colors.white70, height: 1.5),
+            style: TextStyle(color: AppColors.textSecondary, height: 1.5),
           ),
 
           const SizedBox(height: 24),
@@ -257,7 +263,7 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           Text(
             province!.decree ?? "-",
-            style: const TextStyle(color: Colors.white70, height: 1.5),
+            style: TextStyle(color: AppColors.textSecondary, height: 1.5),
           ),
         ],
       ),
@@ -347,11 +353,14 @@ class ProvinceDetailPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (!isLoading && schools.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
                 child: Text(
                   "Không có dữ liệu trường THPT cho xã/phường này.",
-                  style: TextStyle(color: Colors.white54, fontSize: 14),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             if (!isLoading && schools.isNotEmpty)
@@ -378,8 +387,8 @@ class ProvinceDetailPanel extends StatelessWidget {
         children: [
           Text(
             school.tenTruong ?? "",
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -389,16 +398,19 @@ class ProvinceDetailPanel extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
+                Icon(
                   Icons.location_on_outlined,
-                  color: Colors.white54,
+                  color: AppColors.textMuted,
                   size: 16,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     school.diaChi!,
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -408,15 +420,18 @@ class ProvinceDetailPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.category_outlined,
-                  color: Colors.white54,
+                  color: AppColors.textMuted,
                   size: 16,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   school.khuVuc!,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -425,11 +440,11 @@ class ProvinceDetailPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.tag, color: Colors.white54, size: 16),
+                Icon(Icons.tag, color: AppColors.textMuted, size: 16),
                 const SizedBox(width: 6),
                 Text(
                   "Mã trường: ${school.maTruong!}",
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                 ),
               ],
             ),

@@ -7,7 +7,7 @@ class AppColors {
   AppColors._();
 
   // ── Light Backgrounds ──
-  static const Color backgroundLight = Color(0xFFF8FAFC);
+  static const Color backgroundLight = Color(0xFFDEE4EC);
   static const Color surfaceLight = Color(0xFFFFFFFF);
   static const Color surfaceSubtleLight = Color(0xFFF1F5F9);
   static const Color surfaceExtraLight = Color(0xFFFAFBFC);
