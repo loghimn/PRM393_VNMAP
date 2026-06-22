@@ -5,6 +5,7 @@ import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/models/high_school_model.dart';
 import 'package:vietnam_geo_dashboard/widgets/weather/weather_info_panel.dart';
+import 'package:vietnam_geo_dashboard/utils/app_theme.dart';
 
 class ProvinceDetailPanel extends StatelessWidget {
   final ProvinceModel? province;
@@ -15,7 +16,7 @@ class ProvinceDetailPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (province == null) {
       return Container(
-        color: const Color(0xff111827),
+        color: AppColors.background,
         padding: const EdgeInsets.all(20),
         child: Consumer<WeatherProvider>(
           builder: (context, weatherProv, child) {
@@ -36,25 +37,17 @@ class ProvinceDetailPanel extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Tổng quan thời tiết Việt Nam',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 18),
                   if (summary != null) WeatherInfoPanel(weather: summary),
                   if (summary != null) const SizedBox(height: 20),
                   if (regions.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Tổng quan thời tiết vùng',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 14),
                     Wrap(
@@ -65,45 +58,32 @@ class ProvinceDetailPanel extends StatelessWidget {
                           width: 220,
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: const Color(0xff1f2937),
+                            color: AppColors.surface,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white12),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 region.label,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 10),
                               Text(
                                 region.status,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 'Nhiệt độ: ${region.temperatureLabel}',
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               if (region.weather?.humidity != null) ...[
                                 const SizedBox(height: 6),
                                 Text(
                                   'Độ ẩm: ${region.weather!.humidity!.toStringAsFixed(0)}%',
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ],
                             ],
@@ -132,29 +112,25 @@ class ProvinceDetailPanel extends StatelessWidget {
     final isCommune = province!.type == 'Phường' || province!.type == 'Xã';
 
     return Container(
-      color: const Color(0xff111827),
+      color: AppColors.background,
       padding: const EdgeInsets.all(20),
 
       child: isCommune
-          ? _buildCommuneDetail()
+          ? _buildCommuneDetail(context)
           : (isSpecialZone
-                ? _buildSpecialZoneDetail()
-                : _buildProvinceDetail()),
+                ? _buildSpecialZoneDetail(context)
+                : _buildProvinceDetail(context)),
     );
   }
 
-  Widget _buildProvinceDetail() {
+  Widget _buildProvinceDetail(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             province!.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.headlineLarge,
           ),
 
           Consumer<WeatherProvider>(
@@ -180,14 +156,14 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          const Divider(color: Colors.white24),
+          Divider(color: AppColors.divider),
 
           const SizedBox(height: 24),
 
           Text(
             "Nghị định / Quyết định",
             style: TextStyle(
-              color: Colors.orange.shade300,
+              color: AppColors.accentLight,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -204,18 +180,16 @@ class ProvinceDetailPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildSpecialZoneDetail() {
+  Widget _buildSpecialZoneDetail(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             province!.name,
-            style: const TextStyle(
-              color: Colors.cyan,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineLarge?.copyWith(color: AppColors.secondary),
           ),
 
           const SizedBox(height: 12),
@@ -252,7 +226,7 @@ class ProvinceDetailPanel extends StatelessWidget {
           Text(
             "Đơn vị tiền thân",
             style: TextStyle(
-              color: Colors.cyan.shade200,
+              color: AppColors.secondary,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -270,7 +244,7 @@ class ProvinceDetailPanel extends StatelessWidget {
           Text(
             "Nghị định / Quyết định",
             style: TextStyle(
-              color: Colors.orange.shade300,
+              color: AppColors.accentLight,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -287,7 +261,7 @@ class ProvinceDetailPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildCommuneDetail() {
+  Widget _buildCommuneDetail(BuildContext context) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,11 +269,9 @@ class ProvinceDetailPanel extends StatelessWidget {
           // Commune name header
           Text(
             province!.name,
-            style: const TextStyle(
-              color: Colors.orangeAccent,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineLarge?.copyWith(color: AppColors.accent),
           ),
 
           const SizedBox(height: 12),
@@ -324,18 +296,18 @@ class ProvinceDetailPanel extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          const Divider(color: Colors.white24),
+          Divider(color: AppColors.divider),
 
           const SizedBox(height: 16),
 
           // High Schools section
-          _buildHighSchoolsSection(),
+          _buildHighSchoolsSection(context),
         ],
       ),
     );
   }
 
-  Widget _buildHighSchoolsSection() {
+  Widget _buildHighSchoolsSection(BuildContext context) {
     return Consumer<ProvinceProvider>(
       builder: (context, prov, child) {
         final schools = prov.selectedCommuneHighSchools;
@@ -346,12 +318,12 @@ class ProvinceDetailPanel extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.school, color: Colors.orange.shade300, size: 22),
+                Icon(Icons.school, color: AppColors.accentLight, size: 22),
                 const SizedBox(width: 8),
                 Text(
                   "Trường THPT trên địa bàn",
                   style: TextStyle(
-                    color: Colors.orange.shade300,
+                    color: AppColors.accentLight,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -393,9 +365,9 @@ class ProvinceDetailPanel extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xff1f2937),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,7 +435,7 @@ class ProvinceDetailPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildInfo(String title, dynamic value) {
+  Widget _buildInfo(String title, dynamic value, [BuildContext? context]) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -474,7 +446,7 @@ class ProvinceDetailPanel extends StatelessWidget {
             child: Text(
               title,
               style: const TextStyle(
-                color: Colors.white54,
+                color: AppColors.textMuted,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -483,7 +455,10 @@ class ProvinceDetailPanel extends StatelessWidget {
           Expanded(
             child: Text(
               "$value",
-              style: const TextStyle(color: Colors.white, fontSize: 15),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 15,
+              ),
             ),
           ),
         ],

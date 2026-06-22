@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:vietnam_geo_dashboard/models/weather_model.dart';
+import '../../utils/app_theme.dart';
 
+// Custom weather icon mapping using Material Icons that don't look like generic AI output
 IconData _iconForCode(int code) {
-  if (code == 0) return Icons.wb_sunny;
-  if (code == 1 || code == 2 || code == 3) return Icons.cloud;
-  if (code >= 45 && code <= 48) return Icons.blur_on;
-  if (code >= 51 && code <= 67) return Icons.grain;
-  if (code >= 71 && code <= 77) return Icons.ac_unit;
-  if (code >= 80 && code <= 82) return Icons.grain;
-  if (code >= 95) return Icons.flash_on;
-  return Icons.cloud_queue;
+  if (code == 0) return Icons.wb_sunny; // clear / sunny
+  if (code == 1 || code == 2 || code == 3) return Icons.wb_cloudy; // cloudy
+  if (code >= 45 && code <= 48) return Icons.foggy; // fog
+  if (code >= 51 && code <= 55) return Icons.water_drop; // drizzle
+  if (code >= 56 && code <= 57) return Icons.ac_unit; // freezing drizzle
+  if (code >= 61 && code <= 67) return Icons.umbrella; // rain
+  if (code >= 71 && code <= 77) return Icons.ac_unit; // snow
+  if (code >= 80 && code <= 82) return Icons.thunderstorm; // rain showers
+  if (code >= 85 && code <= 86) return Icons.snowing; // snow showers
+  if (code >= 95) return Icons.flash_on; // thunderstorm
+  return Icons.cloud; // default
 }
 
 Color _colorForCode(int code) {
-  if (code == 0) return Colors.orangeAccent;
-  if (code >= 1 && code <= 3) return Colors.blueGrey;
-  if (code >= 45 && code <= 48) return Colors.blue.shade200;
-  if (code >= 51 && code <= 67) return Colors.indigoAccent;
-  if (code >= 71 && code <= 77) return Colors.cyan;
-  if (code >= 80 && code <= 82) return Colors.lightBlue;
-  if (code >= 95) return Colors.deepPurpleAccent;
-  return Colors.grey;
+  if (code == 0) return AppColors.weatherSunny;
+  if (code >= 1 && code <= 3) return AppColors.weatherCloud;
+  if (code >= 45 && code <= 48) return AppColors.weatherFog;
+  if (code >= 51 && code <= 67) return AppColors.weatherRain;
+  if (code >= 71 && code <= 77) return AppColors.weatherSnow;
+  if (code >= 80 && code <= 82) return AppColors.weatherRain;
+  if (code >= 95) return AppColors.weatherStorm;
+  return AppColors.weatherCloud;
 }
 
 class WeatherIcon extends StatelessWidget {
@@ -41,34 +46,42 @@ class WeatherIcon extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: RadialGradient(
-          colors: [color.withOpacity(0.95), color.withOpacity(0.6)],
-          center: Alignment(-0.2, -0.2),
+          colors: [color.withOpacity(0.85), color.withOpacity(0.4)],
+          center: const Alignment(-0.3, -0.3),
           focal: Alignment.center,
-          focalRadius: 0.8,
+          focalRadius: 0.6,
         ),
         boxShadow: [
-          BoxShadow(color: color.withOpacity(0.35), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: color.withOpacity(0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Icon(_iconForCode(code), color: Colors.white, size: 20),
+          Icon(_iconForCode(code), color: AppColors.textPrimary, size: 20),
           Positioned(
             bottom: 2,
             right: 2,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: Colors.black26,
+                color: AppColors.surfaceDark.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 '${weather!.temperature?.toStringAsFixed(0) ?? '-'}°',
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

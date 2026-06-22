@@ -1,8 +1,8 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/province_model.dart';
 import '../../providers/province_provider.dart';
+import 'package:vietnam_geo_dashboard/utils/app_theme.dart';
 
 class OverviewStatisticsTab extends StatefulWidget {
   const OverviewStatisticsTab({super.key});
@@ -12,7 +12,6 @@ class OverviewStatisticsTab extends StatefulWidget {
 }
 
 class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
-  // Current active metric for ranking view: 'population', 'area', 'density'
   String _activeRankingMetric = 'population';
 
   @override
@@ -22,7 +21,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
 
     if (provinces.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.blue),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 
@@ -70,9 +69,13 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
       });
     });
 
-    // Sort regions by population descending
-    regionStats.sort((a, b) => (b['population'] as double).compareTo(a['population'] as double));
-    final double maxRegionPop = regionStats.isNotEmpty ? regionStats.first['population'] as double : 1.0;
+    regionStats.sort(
+      (a, b) =>
+          (b['population'] as double).compareTo(a['population'] as double),
+    );
+    final double maxRegionPop = regionStats.isNotEmpty
+        ? regionStats.first['population'] as double
+        : 1.0;
 
     // Sorting for rankings
     final List<ProvinceModel> sortedByPop = List.from(provinces)
@@ -109,70 +112,75 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // National KPI Summary Grid
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.5,
+          // ── KPI Cards (Redesigned) ──
+          Row(
             children: [
-              _buildKPICard(
-                title: 'Tổng dân số',
-                value: _formatNumber(totalPopulation),
-                unit: 'người',
-                icon: Icons.people_alt,
-                gradient: const [Color(0xff2563eb), Color(0xff06b6d4)],
+              Expanded(
+                child: _buildKPI(
+                  value: _formatNumber(totalPopulation),
+                  label: 'Tổng dân số',
+                  icon: Icons.people_alt,
+                  gradientColors: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                ),
               ),
-              _buildKPICard(
-                title: 'Tổng diện tích',
-                value: _formatNumber(totalArea, isDecimal: true),
-                unit: 'km²',
-                icon: Icons.landscape,
-                gradient: const [Color(0xff059669), Color(0xff10b981)],
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildKPI(
+                  value: '${_formatNumber(totalArea, isDecimal: true)} km²',
+                  label: 'Tổng diện tích',
+                  icon: Icons.straighten,
+                  gradientColors: const [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                ),
               ),
-              _buildKPICard(
-                title: 'Mật độ trung bình',
-                value: _formatNumber(avgDensity, isDecimal: true),
-                unit: 'người/km²',
-                icon: Icons.density_medium,
-                gradient: const [Color(0xff7c3aed), Color(0xffa855f7)],
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildKPI(
+                  value: '${_formatNumber(avgDensity, isDecimal: true)}',
+                  label: 'Mật độ TB (/km²)',
+                  icon: Icons.density_medium,
+                  gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
+                ),
               ),
-              _buildKPICard(
-                title: 'Đơn vị hành chính',
-                value: '${provinces.length}',
-                unit: 'Tỉnh/Thành',
-                icon: Icons.location_city,
-                subtext: '$cityCount TP • $provinceCount Tỉnh',
-                gradient: const [Color(0xffdb2777), Color(0xfff43f5e)],
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildKPI(
+                  value: '${provinces.length}',
+                  label: 'Tỉnh/Thành phố',
+                  icon: Icons.location_city,
+                  gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
+                  sublabel: '$cityCount TP • $provinceCount Tỉnh',
+                ),
               ),
             ],
           ),
           const SizedBox(height: 24),
 
-          // Region Statistics
-          const Text(
+          // ── Region Statistics ──
+          Text(
             'Phân Tích Theo Vùng Địa Lý',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xff1e293b).withOpacity(0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              color: AppColors.surfaceBackground,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border.withOpacity(0.4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: regionStats.length,
-              separatorBuilder: (context, index) => const Divider(color: Colors.white12, height: 20),
+              separatorBuilder: (context, index) =>
+                  Divider(color: AppColors.divider, height: 24),
               itemBuilder: (context, index) {
                 final stat = regionStats[index];
                 final String name = stat['name'];
@@ -192,63 +200,80 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                           child: Text(
                             name,
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
                               fontSize: 13,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
+                            gradient: AppColors.primaryGradient,
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             '$count địa phương',
-                            style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    // Visual Population share bar
+                    const SizedBox(height: 10),
+                    // Population share bar
                     LayoutBuilder(
                       builder: (context, constraints) {
                         return Container(
                           height: 8,
                           width: constraints.maxWidth,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(4),
+                            color: AppColors.border.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(999),
                           ),
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: Container(
-                              width: constraints.maxWidth * pct,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.blue.withOpacity(0.8), Colors.cyanAccent],
+                            child: FractionallySizedBox(
+                              widthFactor: pct,
+                              child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF3B82F6),
+                                      Color(0xFF2563EB),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(999),
                                 ),
-                                borderRadius: BorderRadius.circular(4),
                               ),
                             ),
                           ),
                         );
                       },
                     ),
-                    const SizedBox(height: 8),
-                    // Stat numbers row
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildSubStat('Dân số', '${_formatNumber(rPop)} người'),
-                        _buildSubStat('Diện tích', '${_formatNumber(rArea, isDecimal: true)} km²'),
-                        _buildSubStat('Mật độ', '${_formatNumber(rDensity, isDecimal: true)} /km²'),
+                        _buildSubStat(
+                          'Diện tích',
+                          '${_formatNumber(rArea, isDecimal: true)} km²',
+                        ),
+                        _buildSubStat(
+                          'Mật độ',
+                          '${_formatNumber(rDensity, isDecimal: true)} /km²',
+                        ),
                       ],
-                    )
+                    ),
                   ],
                 );
               },
@@ -256,24 +281,20 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
           ),
           const SizedBox(height: 24),
 
-          // Rankings Header & Tab Buttons
+          // ── Rankings ──
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Xếp Hạng Địa Phương',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              // Segmented selector
               Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: const Color(0xff1e293b),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.surfaceBackground,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border.withOpacity(0.4)),
                 ),
                 child: Row(
                   children: [
@@ -287,37 +308,56 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
           ),
           const SizedBox(height: 12),
 
-          // Rankings Side-by-Side
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Top 3 Card
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.green.withOpacity(0.2)),
+                    color: AppColors.surfaceBackground,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.border.withOpacity(0.4),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.trending_up, color: Colors.greenAccent, size: 18),
-                          SizedBox(width: 6),
-                          Text(
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.trending_up,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
                             'Cao Nhất',
                             style: TextStyle(
-                              color: Colors.greenAccent,
+                              color: AppColors.textPrimary,
                               fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 14),
                       ...top3.asMap().entries.map((entry) {
                         final index = entry.key;
                         final p = entry.value;
@@ -332,34 +372,55 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 9,
-                                    backgroundColor: Colors.greenAccent.withOpacity(0.2),
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: const TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  gradient: index == 0
+                                      ? const LinearGradient(
+                                          colors: [
+                                            Color(0xFFF59E0B),
+                                            Color(0xFFD97706),
+                                          ],
+                                        )
+                                      : const LinearGradient(
+                                          colors: [
+                                            Color(0xFF94A3B8),
+                                            Color(0xFF64748B),
+                                          ],
+                                        ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      p.name,
-                                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 24.0),
+                              const SizedBox(width: 8),
+                              Expanded(
                                 child: Text(
-                                  '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
-                                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                                  p.name,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 10,
                                 ),
                               ),
                             ],
@@ -374,30 +435,52 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
               // Bottom 3 Card
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                    color: AppColors.surfaceBackground,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.border.withOpacity(0.4),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.trending_down, color: Colors.redAccent, size: 18),
-                          SizedBox(width: 6),
-                          Text(
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.trending_down,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
                             'Thấp Nhất',
                             style: TextStyle(
-                              color: Colors.redAccent,
+                              color: AppColors.textPrimary,
                               fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 14),
                       ...bottom3.asMap().entries.map((entry) {
                         final index = entry.key;
                         final p = entry.value;
@@ -412,34 +495,48 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 9,
-                                    backgroundColor: Colors.redAccent.withOpacity(0.2),
-                                    child: Text(
-                                      '${index + 1}',
-                                      style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFEF4444),
+                                      Color(0xFFDC2626),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      p.name,
-                                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 24.0),
+                              const SizedBox(width: 8),
+                              Expanded(
                                 child: Text(
-                                  '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
-                                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                                  p.name,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 10,
                                 ),
                               ),
                             ],
@@ -467,104 +564,95 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          gradient: isSelected ? AppColors.primaryGradient : null,
+          color: isSelected ? null : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white70,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : AppColors.textMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildKPICard({
-    required String title,
+  Widget _buildKPI({
     required String value,
-    required String unit,
+    required String label,
     required IconData icon,
-    required List<Color> gradient,
-    String? subtext,
+    required List<Color> gradientColors,
+    String? sublabel,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xff1e293b).withOpacity(0.3),
+        color: AppColors.surfaceBackground,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title.toUpperCase(),
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: gradient),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: Colors.white, size: 12),
-              )
-            ],
+        border: Border.all(color: AppColors.border.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Flexible(
-                    child: Text(
-                      value,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    unit,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 9,
-                    ),
-                  ),
-                ],
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              if (subtext != null) ...[
-                const SizedBox(height: 2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  subtext,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 8,
+                  value,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (sublabel != null) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    sublabel,
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 9),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -577,19 +665,20 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
       children: [
         Text(
           label.toUpperCase(),
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.3),
+          style: const TextStyle(
+            color: AppColors.textMuted,
             fontSize: 8,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 2),
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white70,
+            color: AppColors.textSecondary,
             fontSize: 10,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

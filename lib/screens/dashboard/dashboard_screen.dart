@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vietnam_geo_dashboard/providers/theme_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map.dart';
+import 'package:vietnam_geo_dashboard/utils/app_theme.dart';
 
 import '../../providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
@@ -57,7 +59,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     if (isMobile) {
       return Scaffold(
-        backgroundColor: const Color(0xff0f172a),
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: _selectedView == 0
               ? _buildDashboardView()
@@ -70,17 +72,17 @@ class _DashboardScreenState extends State<DashboardScreen>
               _selectedView = index;
             });
           },
-          backgroundColor: const Color(0xff1e293b),
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.white54,
+          backgroundColor: AppColors.surface,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textMuted,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           items: const [
             BottomNavigationBarItem(
-              icon: Text('📊', style: TextStyle(fontSize: 20)),
+              icon: Icon(Icons.dashboard_rounded),
               label: 'Bảng điều khiển',
             ),
             BottomNavigationBarItem(
-              icon: Text('🗺️', style: TextStyle(fontSize: 20)),
+              icon: Icon(Icons.map_rounded),
               label: 'Bản Đồ',
             ),
           ],
@@ -89,89 +91,93 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xff0f172a),
+      backgroundColor: AppColors.background,
       body: Row(
         children: [
-          // LEFT SIDEBAR
+          // ── LEFT SIDEBAR (Redesigned) ──
           Container(
             width: 80,
-            color: const Color(0xff1e293b),
+            decoration: BoxDecoration(
+              color: AppColors.navBackground,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(2, 0),
+                ),
+              ],
+            ),
             child: Column(
               children: [
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
+                // App Logo
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'VN',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
                 // Dashboard Button
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedView = 0;
-                    });
-                  },
-                  child: Container(
-                    width: 70,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _selectedView == 0
-                          ? Colors.blue
-                          : Colors.grey[800],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('📊', style: TextStyle(fontSize: 24)),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Bảng điều khiển',
-                          style: TextStyle(
-                            color: _selectedView == 0
-                                ? Colors.white
-                                : Colors.white70,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+                _buildSidebarItem(
+                  icon: Icons.dashboard_rounded,
+                  label: 'Dashboard',
+                  isSelected: _selectedView == 0,
+                  onTap: () => setState(() => _selectedView = 0),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 // Map Button
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedView = 1;
-                    });
-                  },
-                  child: Container(
-                    width: 70,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _selectedView == 1
-                          ? Colors.blue
-                          : Colors.grey[800],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('🗺️', style: TextStyle(fontSize: 24)),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Bản Đồ',
-                          style: TextStyle(
-                            color: _selectedView == 1
-                                ? Colors.white
-                                : Colors.white70,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+                _buildSidebarItem(
+                  icon: Icons.map_rounded,
+                  label: 'Bản Đồ',
+                  isSelected: _selectedView == 1,
+                  onTap: () => setState(() => _selectedView = 1),
                 ),
+                const Spacer(),
+                // Theme Toggle
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, child) {
+                    return Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceBackground,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: AppColors.border.withOpacity(0.3),
+                        ),
+                      ),
+                      child: IconButton(
+                        onPressed: () {
+                          themeProvider.toggleTheme();
+                          setState(() {});
+                        },
+                        icon: Icon(
+                          themeProvider.isDarkMode
+                              ? Icons.light_mode_rounded
+                              : Icons.dark_mode_rounded,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                        splashRadius: 20,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -186,74 +192,362 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  Widget _buildSidebarItem({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 64,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : AppColors.surfaceBackground,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : AppColors.textMuted,
+              size: 22,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textMuted,
+                fontSize: 9,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDashboardView() {
     return Container(
-      color: const Color(0xff1e293b),
-      padding: const EdgeInsets.all(24),
+      color: AppColors.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Bảng phân tích dữ liệu Việt Nam",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Tab Bar for Analytics
+          // ── Header ──
           Container(
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Colors.white24)),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              tabs: [
-                Tab(
-                  text: _chartMetric == 'density'
-                      ? 'Mật Độ Dân Số'
-                      : _chartMetric == 'area'
-                      ? 'Diện Tích'
-                      : 'Dân Số',
-                ),
-                const Tab(text: 'So Sánh'),
-                const Tab(text: 'Tổng Quan & Thống Kê'),
-              ],
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white54,
-              indicatorColor: Colors.blue,
-              indicatorSize: TabBarIndicatorSize.tab,
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
+            padding: const EdgeInsets.fromLTRB(32, 28, 32, 20),
+            color: AppColors.surfaceBackground,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tab 1: Population Density Chart
-                PopulationDensityChart(
-                  onMetricChanged: (metric) {
-                    setState(() {
-                      _chartMetric = metric;
-                    });
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Bảng phân tích dữ liệu Việt Nam",
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Phân tích dân số, diện tích và mật độ 34 tỉnh/thành phố',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Consumer<ProvinceProvider>(
+                      builder: (context, provider, child) {
+                        return Text(
+                          '${provider.provinces.length} tỉnh/thành phố',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                // Tab 2: Province Comparison
+                const SizedBox(height: 20),
+                // ── KPI Cards Row ──
                 Consumer<ProvinceProvider>(
                   builder: (context, provider, child) {
-                    return ProvinceComparison(provinces: provider.provinces);
+                    return _buildKPIRow(provider);
                   },
                 ),
-                // Tab 3: Overview & Statistics
-                const OverviewStatisticsTab(),
               ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // ── Content Section ──
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tab Bar with Icons
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: AppColors.divider.withOpacity(0.5),
+                        ),
+                      ),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.textMuted,
+                      indicatorColor: AppColors.primary,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                      tabs: [
+                        Tab(
+                          icon: Icon(
+                            _chartMetric == 'density'
+                                ? Icons.density_small
+                                : _chartMetric == 'area'
+                                ? Icons.straighten
+                                : Icons.people,
+                            size: 18,
+                          ),
+                          text: _chartMetric == 'density'
+                              ? 'Mật Độ Dân Số'
+                              : _chartMetric == 'area'
+                              ? 'Diện Tích'
+                              : 'Dân Số',
+                        ),
+                        const Tab(
+                          icon: Icon(Icons.compare_arrows, size: 18),
+                          text: 'So Sánh',
+                        ),
+                        const Tab(
+                          icon: Icon(Icons.insights, size: 18),
+                          text: 'Tổng Quan',
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Tab Content
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        PopulationDensityChart(
+                          onMetricChanged: (metric) {
+                            setState(() {
+                              _chartMetric = metric;
+                            });
+                          },
+                        ),
+                        Consumer<ProvinceProvider>(
+                          builder: (context, provider, child) {
+                            return ProvinceComparison(
+                              provinces: provider.provinces,
+                            );
+                          },
+                        ),
+                        const OverviewStatisticsTab(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildKPIRow(ProvinceProvider provider) {
+    final provinces = provider.provinces;
+    if (provinces.isEmpty) return const SizedBox.shrink();
+
+    double totalPopulation = 0;
+    double totalArea = 0;
+    for (final p in provinces) {
+      totalPopulation += (p.population ?? 0);
+      totalArea += (p.areaKm2 ?? 0);
+    }
+    final avgDensity = totalArea > 0 ? totalPopulation / totalArea : 0;
+
+    // Find highest density province
+    String highestName = '';
+    double highestValue = 0;
+    String lowestName = '';
+    double lowestValue = double.infinity;
+    for (final p in provinces) {
+      final d = p.density ?? 0;
+      if (d > highestValue) {
+        highestValue = d;
+        highestName = p.name;
+      }
+      if (d < lowestValue && d > 0) {
+        lowestValue = d;
+        lowestName = p.name;
+      }
+    }
+
+    return Row(
+      children: [
+        _buildKPI(
+          value: '${provinces.length}',
+          label: 'Tỉnh/TP',
+          icon: Icons.location_city,
+          gradientColors: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
+        ),
+        const SizedBox(width: 16),
+        _buildKPI(
+          value: _formatCompact(totalPopulation),
+          label: 'Tổng dân số',
+          icon: Icons.people_alt,
+          gradientColors: const [Color(0xFF06B6D4), Color(0xFF0891B2)],
+        ),
+        const SizedBox(width: 16),
+        _buildKPI(
+          value: _formatCompact(avgDensity.toInt()),
+          label: 'Mật độ TB',
+          icon: Icons.density_medium,
+          gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
+        ),
+        const SizedBox(width: 16),
+        _buildKPI(
+          value: highestName.isNotEmpty
+              ? '${_formatCompact(highestValue.toInt())}'
+              : '-',
+          label: 'Cao nhất: $highestName',
+          icon: Icons.arrow_upward,
+          gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
+        ),
+        const SizedBox(width: 16),
+        _buildKPI(
+          value: lowestName.isNotEmpty
+              ? '${_formatCompact(lowestValue.toInt())}'
+              : '-',
+          label: 'Thấp nhất: $lowestName',
+          icon: Icons.arrow_downward,
+          gradientColors: const [Color(0xFFEF4444), Color(0xFFDC2626)],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKPI({
+    required String value,
+    required String label,
+    required IconData icon,
+    required List<Color> gradientColors,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border.withOpacity(0.4)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatCompact(num value) {
+    if (value >= 1000000000) {
+      return '${(value / 1000000000).toStringAsFixed(1)}B';
+    } else if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    } else if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}K';
+    }
+    return value.toStringAsFixed(0);
   }
 
   Widget _buildMapView({required bool isMobile}) {
@@ -267,7 +561,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           return Stack(
             children: [
               // MAP (takes full screen)
-              Container(color: Colors.blueGrey, child: const VietnamMap()),
+              Container(
+                color: AppColors.mapBackground,
+                child: const VietnamMap(),
+              ),
               // Back Button if focused
               if (provider.focusedProvince != null)
                 Positioned(
@@ -278,8 +575,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                       provider.clearFocus();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xff1e293b),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.surface,
+                      foregroundColor: AppColors.textPrimary,
                       elevation: 4,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -303,9 +600,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   right: 0,
                   height: MediaQuery.of(context).size.height * 0.45,
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xff1e293b),
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: AppColors.panelBackground,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(24),
                         topRight: Radius.circular(24),
                       ),
@@ -313,7 +610,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         BoxShadow(
                           color: Colors.black54,
                           blurRadius: 15,
-                          offset: Offset(0, -3),
+                          offset: const Offset(0, -3),
                         ),
                       ],
                     ),
@@ -330,18 +627,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 provider.selectedCommune != null
                                     ? "Chi Tiết Xã/Phường"
                                     : "Chi Tiết Tỉnh",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context).textTheme.titleLarge,
                               ),
                               IconButton(
                                 constraints: const BoxConstraints(),
                                 padding: EdgeInsets.zero,
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.close,
-                                  color: Colors.white70,
+                                  color: AppColors.textSecondary,
                                 ),
                                 onPressed: () {
                                   provider
@@ -351,7 +644,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             ],
                           ),
                         ),
-                        const Divider(color: Colors.white24, height: 1),
+                        Divider(color: AppColors.divider, height: 1),
                         Expanded(
                           child: ProvinceDetailPanel(
                             province:
@@ -375,7 +668,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         Expanded(
           flex: 6,
           child: Container(
-            color: Colors.blueGrey,
+            color: AppColors.mapBackground,
             child: Stack(
               children: [
                 const VietnamMap(),
@@ -404,7 +697,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         Expanded(
           flex: 4,
           child: Container(
-            color: const Color(0xff1e293b),
+            color: AppColors.navBackground,
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,11 +708,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       provider.selectedCommune != null
                           ? "Chi Tiết Xã/Phường"
                           : "Chi Tiết Tỉnh",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium,
                     );
                   },
                 ),
