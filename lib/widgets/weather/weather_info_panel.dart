@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:vietnam_geo_dashboard/models/weather_model.dart';
+import '../../utils/app_theme.dart';
 
 String _describeWeatherCode(int code) {
   if (code == 0) return 'Trời quang / Nắng';
@@ -29,9 +30,9 @@ class WeatherInfoPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xff0b1220),
+        color: AppColors.panelBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,9 +40,18 @@ class WeatherInfoPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Thời tiết', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+              Text(
+                'Thời tiết',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               if (weather!.time != null)
-                Text(weather!.time!, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+                Text(
+                  weather!.time!,
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                ),
             ],
           ),
 
@@ -53,9 +63,19 @@ class WeatherInfoPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${weather!.temperature?.toStringAsFixed(1) ?? '-'} °C', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text(
+                      '${weather!.temperature?.toStringAsFixed(1) ?? '-'} °C',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(_describeWeatherCode(weather!.weathercode), style: const TextStyle(color: Colors.white70)),
+                    Text(
+                      _describeWeatherCode(weather!.weathercode),
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
                   ],
                 ),
               ),
@@ -63,8 +83,14 @@ class WeatherInfoPanel extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('Gió: ${weather!.windspeed?.toStringAsFixed(1) ?? '-'} m/s', style: const TextStyle(color: Colors.white70)),
-                  Text('Hướng: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°', style: const TextStyle(color: Colors.white70)),
+                  Text(
+                    'Gió: ${weather!.windspeed?.toStringAsFixed(1) ?? '-'} m/s',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  Text(
+                    'Hướng: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
                 ],
               ),
             ],
@@ -74,9 +100,30 @@ class WeatherInfoPanel extends StatelessWidget {
 
           Row(
             children: [
-              Expanded(child: _smallInfo('Độ ẩm', weather!.humidity != null ? '${weather!.humidity!.toStringAsFixed(0)} %' : '-')),
-              Expanded(child: _smallInfo('Áp suất', weather!.pressure != null ? '${weather!.pressure!.toStringAsFixed(0)} hPa' : '-')),
-              Expanded(child: _smallInfo('Lượng mưa', weather!.precipitation != null ? '${weather!.precipitation!.toStringAsFixed(1)} mm' : '-')),
+              Expanded(
+                child: _smallInfo(
+                  'Độ ẩm',
+                  weather!.humidity != null
+                      ? '${weather!.humidity!.toStringAsFixed(0)} %'
+                      : '-',
+                ),
+              ),
+              Expanded(
+                child: _smallInfo(
+                  'Áp suất',
+                  weather!.pressure != null
+                      ? '${weather!.pressure!.toStringAsFixed(0)} hPa'
+                      : '-',
+                ),
+              ),
+              Expanded(
+                child: _smallInfo(
+                  'Lượng mưa',
+                  weather!.precipitation != null
+                      ? '${weather!.precipitation!.toStringAsFixed(1)} mm'
+                      : '-',
+                ),
+              ),
             ],
           ),
         ],
@@ -90,9 +137,18 @@ class WeatherInfoPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white38, fontSize: 12)),
+          Text(
+            title,
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+          Text(
+            value,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/province_model.dart';
 import '../../services/database_service.dart';
+import 'package:vietnam_geo_dashboard/utils/app_theme.dart';
 
 class ProvinceComparison extends StatefulWidget {
   final List<ProvinceModel> provinces;
@@ -12,14 +13,11 @@ class ProvinceComparison extends StatefulWidget {
 }
 
 class _ProvinceComparisonState extends State<ProvinceComparison> {
-  // Mode selection: 0 = Province, 1 = Commune
   int _comparisonMode = 0;
 
-  // States for Province comparison (existing)
   ProvinceModel? selectedProvince1;
   ProvinceModel? selectedProvince2;
 
-  // States for Commune comparison (new)
   ProvinceModel? selectedProvinceForCommunes;
   List<ProvinceModel> communes = [];
   bool isLoadingCommunes = false;
@@ -48,7 +46,9 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
 
     try {
       final databaseService = DatabaseService();
-      final fetched = await databaseService.fetchCommunesForProvince(province.name);
+      final fetched = await databaseService.fetchCommunesForProvince(
+        province.name,
+      );
       setState(() {
         communes = fetched;
         if (fetched.isNotEmpty) {
@@ -60,6 +60,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
         isLoadingCommunes = false;
       });
     } catch (e) {
+      // ignore: avoid_print
       print("Error fetching communes for ${province.name}: $e");
       setState(() {
         isLoadingCommunes = false;
@@ -71,7 +72,9 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
     setState(() {
       _comparisonMode = mode;
     });
-    if (mode == 1 && selectedProvinceForCommunes == null && widget.provinces.isNotEmpty) {
+    if (mode == 1 &&
+        selectedProvinceForCommunes == null &&
+        widget.provinces.isNotEmpty) {
       _loadCommunesForProvince(widget.provinces[0]);
     }
   }
@@ -82,52 +85,65 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header with title ──
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _comparisonMode == 0 ? 'So Sánh Hai Tỉnh' : 'So Sánh Hai Xã/Phường',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: Icon(
+                  _comparisonMode == 0
+                      ? Icons.compare_arrows
+                      : Icons.swap_horiz,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                _comparisonMode == 0
+                    ? 'So Sánh Hai Tỉnh'
+                    : 'So Sánh Hai Xã/Phường',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
           ),
           const SizedBox(height: 20),
-          // Mode Toggle Control
+
+          // ── Mode Toggle ──
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: const Color(0xff1e293b),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.05)),
+              color: AppColors.surfaceBackground,
+              borderRadius: BorderRadius.circular(AppColors.cardRadius),
+              border: Border.all(color: AppColors.border.withOpacity(0.5)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: GestureDetector(
                     onTap: () => _onComparisonModeChanged(0),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _comparisonMode == 0
-                            ? Colors.blue.withOpacity(0.15)
-                            : Colors.transparent,
+                        gradient: _comparisonMode == 0
+                            ? AppColors.primaryGradient
+                            : null,
+                        color: _comparisonMode == 0 ? null : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: _comparisonMode == 0
-                              ? Colors.blue.withOpacity(0.3)
-                              : Colors.transparent,
-                        ),
                       ),
                       child: Center(
                         child: Text(
                           'Tỉnh/Thành Phố',
                           style: TextStyle(
-                            color: _comparisonMode == 0 ? Colors.blueAccent : Colors.white70,
-                            fontWeight: FontWeight.bold,
+                            color: _comparisonMode == 0
+                                ? Colors.white
+                                : AppColors.textMuted,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
                         ),
@@ -139,25 +155,24 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                 Expanded(
                   child: GestureDetector(
                     onTap: () => _onComparisonModeChanged(1),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: _comparisonMode == 1
-                            ? Colors.blue.withOpacity(0.15)
-                            : Colors.transparent,
+                        gradient: _comparisonMode == 1
+                            ? AppColors.primaryGradient
+                            : null,
+                        color: _comparisonMode == 1 ? null : Colors.transparent,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: _comparisonMode == 1
-                              ? Colors.blue.withOpacity(0.3)
-                              : Colors.transparent,
-                        ),
                       ),
                       child: Center(
                         child: Text(
                           'Xã/Phường',
                           style: TextStyle(
-                            color: _comparisonMode == 1 ? Colors.blueAccent : Colors.white70,
-                            fontWeight: FontWeight.bold,
+                            color: _comparisonMode == 1
+                                ? Colors.white
+                                : AppColors.textMuted,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
                         ),
@@ -171,80 +186,43 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
           const SizedBox(height: 24),
 
           if (_comparisonMode == 0) ...[
-            // Province Selection Row
+            // ── Province Selection ──
             Row(
               children: [
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Tỉnh 1',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButton<ProvinceModel>(
-                        value: selectedProvince1,
-                        dropdownColor: const Color(0xff0f172a),
-                        isExpanded: true,
-                        items: widget.provinces
-                            .where((p) => p.name != selectedProvince2?.name)
-                            .map((province) {
-                          return DropdownMenuItem(
-                            value: province,
-                            child: Text(
-                              province.name,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedProvince1 = value;
-                          });
-                        },
-                      ),
-                    ],
+                  child: _buildDropdown(
+                    label: 'Tỉnh 1',
+                    value: selectedProvince1,
+                    items: widget.provinces
+                        .where((p) => p.name != selectedProvince2?.name)
+                        .toList(),
+                    color: AppColors.compareA,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedProvince1 = value;
+                      });
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Tỉnh 2',
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButton<ProvinceModel>(
-                        value: selectedProvince2,
-                        dropdownColor: const Color(0xff0f172a),
-                        isExpanded: true,
-                        items: widget.provinces
-                            .where((p) => p.name != selectedProvince1?.name)
-                            .map((province) {
-                          return DropdownMenuItem(
-                            value: province,
-                            child: Text(
-                              province.name,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedProvince2 = value;
-                          });
-                        },
-                      ),
-                    ],
+                  child: _buildDropdown(
+                    label: 'Tỉnh 2',
+                    value: selectedProvince2,
+                    items: widget.provinces
+                        .where((p) => p.name != selectedProvince1?.name)
+                        .toList(),
+                    color: AppColors.compareB,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedProvince2 = value;
+                      });
+                    },
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 30),
-            // Comparison Dashboard
             if (selectedProvince1 != null && selectedProvince2 != null) ...[
               _buildMetricChart(
                 title: 'Dân Số',
@@ -257,7 +235,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
               ),
               _buildMetricChart(
                 title: 'Diện Tích',
-                icon: Icons.landscape,
+                icon: Icons.straighten,
                 val1: selectedProvince1!.areaKm2 ?? 0.0,
                 val2: selectedProvince2!.areaKm2 ?? 0.0,
                 unit: 'km²',
@@ -277,51 +255,33 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
               ),
             ],
           ] else ...[
-            // Commune Selection / Loading
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Chọn Tỉnh/Thành phố',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-                const SizedBox(height: 8),
-                DropdownButton<ProvinceModel>(
-                  value: selectedProvinceForCommunes,
-                  dropdownColor: const Color(0xff0f172a),
-                  isExpanded: true,
-                  items: widget.provinces.map((province) {
-                    return DropdownMenuItem(
-                      value: province,
-                      child: Text(
-                        province.name,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      _loadCommunesForProvince(value);
-                    }
-                  },
-                ),
-              ],
+            // ── Commune Mode ──
+            _buildDropdown(
+              label: 'Chọn Tỉnh/Thành phố',
+              value: selectedProvinceForCommunes,
+              items: widget.provinces,
+              color: AppColors.primary,
+              onChanged: (value) {
+                if (value != null) {
+                  _loadCommunesForProvince(value);
+                }
+              },
             ),
             const SizedBox(height: 16),
             if (isLoadingCommunes)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
                 child: Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               )
             else if (communes.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Center(
                   child: Text(
                     'Không tìm thấy dữ liệu xã/phường cho tỉnh/thành phố này.',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
                   ),
                 ),
               )
@@ -329,78 +289,39 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
               Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Xã/Phường 1',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        DropdownButton<ProvinceModel>(
-                          value: selectedCommune1,
-                          dropdownColor: const Color(0xff0f172a),
-                          isExpanded: true,
-                          items: communes
-                              .where((c) => c.name != selectedCommune2?.name)
-                              .map((commune) {
-                            return DropdownMenuItem(
-                              value: commune,
-                              child: Text(
-                                commune.name,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedCommune1 = value;
-                            });
-                          },
-                        ),
-                      ],
+                    child: _buildDropdown(
+                      label: 'Xã/Phường 1',
+                      value: selectedCommune1,
+                      items: communes
+                          .where((c) => c.name != selectedCommune2?.name)
+                          .toList(),
+                      color: AppColors.compareA,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCommune1 = value;
+                        });
+                      },
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Xã/Phường 2',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        DropdownButton<ProvinceModel>(
-                          value: selectedCommune2,
-                          dropdownColor: const Color(0xff0f172a),
-                          isExpanded: true,
-                          items: communes
-                              .where((c) => c.name != selectedCommune1?.name)
-                              .map((commune) {
-                            return DropdownMenuItem(
-                              value: commune,
-                              child: Text(
-                                commune.name,
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedCommune2 = value;
-                            });
-                          },
-                        ),
-                      ],
+                    child: _buildDropdown(
+                      label: 'Xã/Phường 2',
+                      value: selectedCommune2,
+                      items: communes
+                          .where((c) => c.name != selectedCommune1?.name)
+                          .toList(),
+                      color: AppColors.compareB,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCommune2 = value;
+                        });
+                      },
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 30),
-              // Commune Comparison Dashboard
               if (selectedCommune1 != null && selectedCommune2 != null) ...[
                 _buildMetricChart(
                   title: 'Dân Số',
@@ -413,7 +334,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                 ),
                 _buildMetricChart(
                   title: 'Diện Tích',
-                  icon: Icons.landscape,
+                  icon: Icons.straighten,
                   val1: selectedCommune1!.areaKm2 ?? 0.0,
                   val2: selectedCommune2!.areaKm2 ?? 0.0,
                   unit: 'km²',
@@ -436,6 +357,66 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required ProvinceModel? value,
+    required List<ProvinceModel> items,
+    required Color color,
+    required ValueChanged<ProvinceModel?> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceBackground,
+            borderRadius: BorderRadius.circular(AppColors.cardRadius),
+            border: Border.all(color: AppColors.border.withOpacity(0.5)),
+            boxShadow: AppColors.cardShadow,
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<ProvinceModel>(
+              value: value,
+              dropdownColor: AppColors.surfaceBackground,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18),
+              items: items.map((province) {
+                return DropdownMenuItem(
+                  value: province,
+                  child: Text(
+                    province.name,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 13,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -484,7 +465,6 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
     final isP1Winner = val1 > val2;
     final isP2Winner = val2 > val1;
 
-    // Calculate ratio comparison
     String ratioText = '';
     if (val1 > 0 && val2 > 0) {
       if (val1 > val2) {
@@ -500,44 +480,53 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xff1e293b).withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: AppColors.surfaceBackground,
+        borderRadius: BorderRadius.circular(AppColors.cardRadius),
+        border: Border.all(color: AppColors.border.withOpacity(0.4)),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
           Row(
             children: [
-              Icon(icon, color: Colors.blueAccent, size: 20),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: Colors.white, size: 16),
+              ),
+              const SizedBox(width: 10),
               Text(
                 title.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
                   fontSize: 13,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0.5,
                 ),
               ),
               const Spacer(),
               if (ratioText.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                    color: AppColors.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     ratioText,
                     style: const TextStyle(
-                      color: Colors.blueAccent,
+                      color: AppColors.primary,
                       fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -545,7 +534,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
           ),
           const SizedBox(height: 20),
 
-          // Province 1 Progress Row
+          // Province 1
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -559,8 +548,12 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                           child: Text(
                             p1Name,
                             style: TextStyle(
-                              color: isP1Winner ? Colors.white : Colors.white70,
-                              fontWeight: isP1Winner ? FontWeight.bold : FontWeight.normal,
+                              color: isP1Winner
+                                  ? AppColors.textPrimary
+                                  : AppColors.textMuted,
+                              fontWeight: isP1Winner
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -568,7 +561,11 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                         ),
                         if (isP1Winner) ...[
                           const SizedBox(width: 4),
-                          const Icon(Icons.check_circle, color: Colors.blueAccent, size: 12),
+                          const Icon(
+                            Icons.check_circle,
+                            color: AppColors.compareA,
+                            size: 12,
+                          ),
                         ],
                       ],
                     ),
@@ -576,42 +573,45 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                   Text(
                     '${_formatNumber(val1, isDecimal: isDecimal)} $unit',
                     style: TextStyle(
-                      color: isP1Winner ? Colors.blueAccent : Colors.white70,
-                      fontWeight: FontWeight.bold,
+                      color: isP1Winner
+                          ? AppColors.compareA
+                          : AppColors.textMuted,
+                      fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              // Progress Bar P1
+              const SizedBox(height: 8),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Container(
-                    height: 10,
+                    height: 14,
                     width: constraints.maxWidth,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(5),
+                      color: AppColors.border.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 500),
                         width: constraints.maxWidth * pct1,
-                        height: 10,
+                        height: 14,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Colors.blue, Colors.cyanAccent],
+                            colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
                           ),
-                          borderRadius: BorderRadius.circular(5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.withOpacity(0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: isP1Winner
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.compareA.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : [],
                         ),
                       ),
                     ),
@@ -621,9 +621,9 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Province 2 Progress Row
+          // Province 2
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -637,8 +637,12 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                           child: Text(
                             p2Name,
                             style: TextStyle(
-                              color: isP2Winner ? Colors.white : Colors.white70,
-                              fontWeight: isP2Winner ? FontWeight.bold : FontWeight.normal,
+                              color: isP2Winner
+                                  ? AppColors.textPrimary
+                                  : AppColors.textMuted,
+                              fontWeight: isP2Winner
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -646,7 +650,11 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                         ),
                         if (isP2Winner) ...[
                           const SizedBox(width: 4),
-                          const Icon(Icons.check_circle, color: Colors.orangeAccent, size: 12),
+                          const Icon(
+                            Icons.check_circle,
+                            color: AppColors.compareB,
+                            size: 12,
+                          ),
                         ],
                       ],
                     ),
@@ -654,42 +662,45 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                   Text(
                     '${_formatNumber(val2, isDecimal: isDecimal)} $unit',
                     style: TextStyle(
-                      color: isP2Winner ? Colors.orangeAccent : Colors.white70,
-                      fontWeight: FontWeight.bold,
+                      color: isP2Winner
+                          ? AppColors.compareB
+                          : AppColors.textMuted,
+                      fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              // Progress Bar P2
+              const SizedBox(height: 8),
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Container(
-                    height: 10,
+                    height: 14,
                     width: constraints.maxWidth,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(5),
+                      color: AppColors.border.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 500),
                         width: constraints.maxWidth * pct2,
-                        height: 10,
+                        height: 14,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Colors.orange, Colors.pinkAccent],
+                            colors: [Color(0xFF34D399), Color(0xFF10B981)],
                           ),
-                          borderRadius: BorderRadius.circular(5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.orange.withOpacity(0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: isP2Winner
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.compareB.withOpacity(0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : [],
                         ),
                       ),
                     ),
