@@ -112,14 +112,13 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── KPI Cards (Redesigned) ──
+          // ── KPI Cards ──
           Row(
             children: [
               Expanded(
                 child: _buildKPI(
                   value: _formatNumber(totalPopulation),
                   label: 'Tổng dân số',
-                  icon: Icons.people_alt,
                   gradientColors: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
                 ),
               ),
@@ -128,16 +127,14 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                 child: _buildKPI(
                   value: '${_formatNumber(totalArea, isDecimal: true)} km²',
                   label: 'Tổng diện tích',
-                  icon: Icons.straighten,
                   gradientColors: const [Color(0xFF06B6D4), Color(0xFF0891B2)],
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildKPI(
-                  value: '${_formatNumber(avgDensity, isDecimal: true)}',
+                  value: _formatNumber(avgDensity, isDecimal: true),
                   label: 'Mật độ TB (/km²)',
-                  icon: Icons.density_medium,
                   gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
                 ),
               ),
@@ -146,7 +143,6 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                 child: _buildKPI(
                   value: '${provinces.length}',
                   label: 'Tỉnh/Thành phố',
-                  icon: Icons.location_city,
                   gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
                   sublabel: '$cityCount TP • $provinceCount Tỉnh',
                 ),
@@ -165,15 +161,11 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: AppColors.surfaceBackground,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border.withOpacity(0.4)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(AppColors.cardRadius),
+              border: Border.all(
+                color: AppColors.border.withValues(alpha: 0.4),
+              ),
+              boxShadow: AppColors.cardShadow,
             ),
             child: ListView.separated(
               shrinkWrap: true,
@@ -199,7 +191,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                         Expanded(
                           child: Text(
                             name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                               fontSize: 13,
@@ -228,14 +220,13 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    // Population share bar
                     LayoutBuilder(
                       builder: (context, constraints) {
                         return Container(
                           height: 8,
                           width: constraints.maxWidth,
                           decoration: BoxDecoration(
-                            color: AppColors.border.withOpacity(0.25),
+                            color: AppColors.border.withValues(alpha: 0.25),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Align(
@@ -294,7 +285,9 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                 decoration: BoxDecoration(
                   color: AppColors.surfaceBackground,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border.withOpacity(0.4)),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -317,17 +310,11 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceBackground,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppColors.cardRadius),
                     border: Border.all(
-                      color: AppColors.border.withOpacity(0.4),
+                      color: AppColors.border.withValues(alpha: 0.4),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: AppColors.cardShadow,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,7 +334,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Cao Nhất',
                             style: TextStyle(
                               color: AppColors.textPrimary,
@@ -408,7 +395,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                               Expanded(
                                 child: Text(
                                   p.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.textPrimary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -418,7 +405,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                               ),
                               Text(
                                 '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppColors.textMuted,
                                   fontSize: 10,
                                 ),
@@ -438,17 +425,11 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceBackground,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppColors.cardRadius),
                     border: Border.all(
-                      color: AppColors.border.withOpacity(0.4),
+                      color: AppColors.border.withValues(alpha: 0.4),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    boxShadow: AppColors.cardShadow,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -470,7 +451,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
+                          Text(
                             'Thấp Nhất',
                             style: TextStyle(
                               color: AppColors.textPrimary,
@@ -524,7 +505,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                               Expanded(
                                 child: Text(
                                   p.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.textPrimary,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
@@ -534,7 +515,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                               ),
                               Text(
                                 '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppColors.textMuted,
                                   fontSize: 10,
                                 ),
@@ -585,7 +566,6 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
   Widget _buildKPI({
     required String value,
     required String label,
-    required IconData icon,
     required List<Color> gradientColors,
     String? sublabel,
   }) {
@@ -593,15 +573,9 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surfaceBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppColors.cardRadius),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4)),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Row(
         children: [
@@ -616,7 +590,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
+            child: Icon(Icons.info, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -625,7 +599,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -665,7 +639,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textMuted,
             fontSize: 8,
             fontWeight: FontWeight.w700,
@@ -675,7 +649,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
         const SizedBox(height: 2),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 10,
             fontWeight: FontWeight.w600,

@@ -74,7 +74,7 @@ class WeatherIcon extends StatelessWidget {
               ),
               child: Text(
                 '${weather!.temperature?.toStringAsFixed(0) ?? '-'}°',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 9,
                   fontWeight: FontWeight.bold,

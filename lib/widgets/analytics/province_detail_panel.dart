@@ -59,8 +59,11 @@ class ProvinceDetailPanel extends StatelessWidget {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              AppColors.cardRadius,
+                            ),
                             border: Border.all(color: AppColors.border),
+                            boxShadow: AppColors.cardShadow,
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,8 +369,9 @@ class ProvinceDetailPanel extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppColors.cardRadius),
         border: Border.all(color: AppColors.border),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,7 +439,7 @@ class ProvinceDetailPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildInfo(String title, dynamic value, [BuildContext? context]) {
+  Widget _buildInfo(String title, dynamic value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -445,7 +449,7 @@ class ProvinceDetailPanel extends StatelessWidget {
             width: 110,
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w600,
               ),
@@ -455,10 +459,7 @@ class ProvinceDetailPanel extends StatelessWidget {
           Expanded(
             child: Text(
               "$value",
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 15),
             ),
           ),
         ],

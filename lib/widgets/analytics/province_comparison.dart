@@ -118,7 +118,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               color: AppColors.surfaceBackground,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppColors.cardRadius),
               border: Border.all(color: AppColors.border.withOpacity(0.5)),
             ),
             child: Row(
@@ -276,8 +276,8 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                 ),
               )
             else if (communes.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Center(
                   child: Text(
                     'Không tìm thấy dữ liệu xã/phường cho tỉnh/thành phố này.',
@@ -380,7 +380,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
           ],
         ),
@@ -389,8 +389,9 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: AppColors.surfaceBackground,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppColors.cardRadius),
             border: Border.all(color: AppColors.border.withOpacity(0.5)),
+            boxShadow: AppColors.cardShadow,
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<ProvinceModel>(
@@ -403,7 +404,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                   value: province,
                   child: Text(
                     province.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 13,
                     ),
@@ -482,15 +483,9 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surfaceBackground,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppColors.cardRadius),
         border: Border.all(color: AppColors.border.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,7 +503,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
               const SizedBox(width: 10),
               Text(
                 title.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

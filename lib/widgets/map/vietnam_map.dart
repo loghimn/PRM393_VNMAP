@@ -456,8 +456,9 @@ class _VietnamMapState extends State<VietnamMap> {
                                           valueListenable:
                                               textEditingController,
                                           builder: (context, value, child) {
-                                            if (value.text.isEmpty)
+                                            if (value.text.isEmpty) {
                                               return const SizedBox.shrink();
+                                            }
                                             return GestureDetector(
                                               onTap: () {
                                                 textEditingController.clear();
