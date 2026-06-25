@@ -402,9 +402,9 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
 
                       // Color based on rank
                       final isTop3 = originalIndex < 3;
-                      final List<Color> barGradientColors = isTop3
-                          ? [const Color(0xFF3B82F6), const Color(0xFF2563EB)]
-                          : [const Color(0xFF93C5FD), const Color(0xFF60A5FA)];
+                      final Color barColor = isTop3
+                          ? const Color(0xFF2563EB)
+                          : const Color(0xFF60A5FA);
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -458,51 +458,32 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
                                           ),
                                         ),
                                       ),
-                                      // Animated Bar
-                                      TweenAnimationBuilder<double>(
-                                        key: ValueKey(
-                                          '${data['key']}_$_selectedMetric',
+                                      // Solid Bar (No Animation)
+                                      FractionallySizedBox(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: max(widthFactor, 0.015),
+                                        child: Container(
+                                          height: 14,
+                                          decoration: BoxDecoration(
+                                            color: barColor,
+                                            borderRadius:
+                                                BorderRadius.circular(999),
+                                            boxShadow: isTop3
+                                                ? [
+                                                    BoxShadow(
+                                                      color: AppColors
+                                                          .primary
+                                                          .withOpacity(0.2),
+                                                      blurRadius: 4,
+                                                      offset: const Offset(
+                                                        0,
+                                                        1,
+                                                      ),
+                                                    ),
+                                                  ]
+                                                : [],
+                                          ),
                                         ),
-                                        tween: Tween<double>(
-                                          begin: 0,
-                                          end: widthFactor,
-                                        ),
-                                        duration: const Duration(
-                                          milliseconds: 800,
-                                        ),
-                                        curve: Curves.easeOutCubic,
-                                        builder: (context, animValue, child) {
-                                          return FractionallySizedBox(
-                                            alignment: Alignment.centerLeft,
-                                            widthFactor: max(animValue, 0.015),
-                                            child: Container(
-                                              height: 14,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  colors: barGradientColors,
-                                                  begin: Alignment.centerLeft,
-                                                  end: Alignment.centerRight,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                                boxShadow: isTop3
-                                                    ? [
-                                                        BoxShadow(
-                                                          color: AppColors
-                                                              .primary
-                                                              .withOpacity(0.2),
-                                                          blurRadius: 4,
-                                                          offset: const Offset(
-                                                            0,
-                                                            1,
-                                                          ),
-                                                        ),
-                                                      ]
-                                                    : [],
-                                              ),
-                                            ),
-                                          );
-                                        },
                                       ),
                                     ],
                                   );
