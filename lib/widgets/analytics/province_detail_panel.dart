@@ -393,7 +393,7 @@ class ProvinceDetailPanel extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (school.diaChi != null && school.diaChi!.isNotEmpty) ...[
+          if (school.address != null && school.address!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +406,7 @@ class ProvinceDetailPanel extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    school.diaChi!,
+                    school.address!,
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 13,

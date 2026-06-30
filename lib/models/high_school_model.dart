@@ -6,7 +6,7 @@ class HighSchool {
   final String? tenXaPhuong;
   final String? maTruong;
   final String? tenTruong;
-  final String? diaChi;
+  final String? address;
   final String? khuVuc;
 
   HighSchool({
@@ -17,7 +17,7 @@ class HighSchool {
     this.tenXaPhuong,
     this.maTruong,
     this.tenTruong,
-    this.diaChi,
+    this.address,
     this.khuVuc,
   });
 
@@ -30,7 +30,7 @@ class HighSchool {
       tenXaPhuong: json['ten_xa_phuong']?.toString(),
       maTruong: json['ma_truong']?.toString(),
       tenTruong: json['ten_truong']?.toString(),
-      diaChi: json['dia_chi']?.toString(),
+      address: json['address']?.toString(),
       khuVuc: json['khu_vuc']?.toString(),
     );
   }

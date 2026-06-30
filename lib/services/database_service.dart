@@ -1,6 +1,8 @@
 import 'package:postgres/postgres.dart';
 import '../models/province_model.dart';
 import '../models/high_school_model.dart';
+import '../models/household_model.dart';
+import '../models/incident_model.dart';
 
 class DatabaseService {
   static const String _host =
@@ -10,7 +12,7 @@ class DatabaseService {
   static const String _password = 'npg_iB5FdLA6DESp';
 
   Future<Connection> _connect() async {
-    return await Connection.open(
+    final conn = await Connection.open(
       Endpoint(
         host: _host,
         database: _dbName,
@@ -19,6 +21,62 @@ class DatabaseService {
       ),
       settings: const ConnectionSettings(sslMode: SslMode.require),
     );
+    await _ensureTables(conn);
+    return conn;
+  }
+
+  bool _tablesCreated = false;
+
+  Future<void> _ensureTables(Connection conn) async {
+    if (_tablesCreated) return;
+    try {
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS households (
+          id SERIAL PRIMARY KEY,
+          household_code VARCHAR(20) UNIQUE NOT NULL,
+          head_of_household TEXT NOT NULL,
+          house_number TEXT,
+          street TEXT,
+          neighborhood TEXT,
+          ward TEXT,
+          district TEXT,
+          city TEXT,
+          phone TEXT,
+          email TEXT,
+          population INT,
+          notes TEXT,
+          longitude DOUBLE PRECISION,
+          latitude DOUBLE PRECISION,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      ''');
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS incidents (
+          id SERIAL PRIMARY KEY,
+          incident_code VARCHAR(20) UNIQUE NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          address TEXT,
+          neighborhood TEXT,
+          ward TEXT,
+          district TEXT,
+          city TEXT,
+          longitude DOUBLE PRECISION,
+          latitude DOUBLE PRECISION,
+          household_id INT REFERENCES households(id),
+          head_of_household TEXT,
+          phone TEXT,
+          status VARCHAR(20) DEFAULT 'received',
+          handler TEXT,
+          notes TEXT,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW(),
+          completed_date TIMESTAMP
+        )
+      ''');
+      _tablesCreated = true;
+    } catch (_) {}
   }
 
   String? _cleanNan(dynamic value) {
@@ -161,10 +219,551 @@ class DatabaseService {
           'ten_xa_phuong': map['ten_xa_phuong'],
           'ma_truong': map['ma_truong'],
           'ten_truong': map['ten_truong'],
-          'dia_chi': map['dia_chi'],
+          'address': map['address'],
           'khu_vuc': map['khu_vuc'],
         });
       }).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ===================================================================
+  // HOUSEHOLD CRUD
+  Future<String> generateIncidentCode() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT incident_code FROM incidents ORDER BY id DESC LIMIT 1",
+      );
+      if (res.isEmpty) return 'SV-0001';
+      final lastCode = res.first.toColumnMap()['incident_code']?.toString() ?? 'SV-0000';
+      final match = RegExp(r'SV-(\\d+)').firstMatch(lastCode);
+      if (match != null) {
+        final num = int.parse(match.group(1)!) + 1;
+        return 'SV-' + num.toString().padLeft(4, '0');
+      }
+      return 'SV-0001';
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ===================================================================
+
+  Future<List<Household>> fetchHouseholdList({
+    String? searchQuery,
+    String? neighborhood,
+    String? ward,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final conn = await _connect();
+    try {
+      String sql = 'SELECT * FROM households WHERE 1=1';
+      final params = <dynamic>[];
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        params.add('%${searchQuery.trim()}%');
+        sql +=
+            ' AND (head_of_household ILIKE \$${params.length} OR household_code ILIKE \$${params.length} OR phone ILIKE \$${params.length})';
+      }
+      if (neighborhood != null && neighborhood.isNotEmpty) {
+        params.add(neighborhood.trim());
+        sql += ' AND neighborhood = \$${params.length}';
+      }
+      if (ward != null && ward.isNotEmpty) {
+        params.add(ward.trim());
+        sql += ' AND ward = \$${params.length}';
+      }
+
+      sql += ' ORDER BY created_at DESC';
+      params.add(limit);
+      sql += ' LIMIT \$${params.length}';
+      params.add(offset);
+      sql += ' OFFSET \$${params.length}';
+
+      final res = await conn.execute(sql, parameters: params);
+      return res.map((row) => Household.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Household?> fetchHouseholdById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM households WHERE id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return Household.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Household> createHousehold(Household household) async {
+    final conn = await _connect();
+    try {
+      final map = household.toDbMap();
+      map.remove('id');
+      map['created_at'] = DateTime.now().toIso8601String();
+      map['updated_at'] = DateTime.now().toIso8601String();
+
+      final columns = map.keys.join(', ');
+      final placeholders = map.keys
+          .toList()
+          .asMap()
+          .entries
+          .map((e) {
+            return '\$${e.key + 1}';
+          })
+          .join(', ');
+      final values = map.values.toList();
+
+      final res = await conn.execute(
+        'INSERT INTO households ($columns) VALUES ($placeholders) RETURNING *',
+        parameters: values,
+      );
+      return Household.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Household> updateHousehold(Household household) async {
+    final conn = await _connect();
+    try {
+      final map = household.toDbMap();
+      final id = map.remove('id');
+      map['updated_at'] = DateTime.now().toIso8601String();
+
+      final setClause = map.keys
+          .toList()
+          .asMap()
+          .entries
+          .map((e) => '${e.value} = \$${e.key + 1}')
+          .join(', ');
+      final values = map.values.toList();
+      values.add(id);
+
+      final res = await conn.execute(
+        'UPDATE households SET $setClause WHERE id = \$${values.length} RETURNING *',
+        parameters: values,
+      );
+      return Household.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> deleteHousehold(int id) async {
+    final conn = await _connect();
+    try {
+      await conn.execute(
+        'DELETE FROM households WHERE id = \$1',
+        parameters: [id],
+      );
+    } finally {
+      await conn.close();
+    }
+  }
+
+
+  // ADDRESS DROPDOWN DATA
+
+  Future<List<String>> fetchDistinctNeighborhoods() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT DISTINCT neighborhood FROM households WHERE neighborhood IS NOT NULL AND neighborhood != '' ORDER BY neighborhood",
+      );
+      return res.map((r) => r.toColumnMap()['neighborhood'].toString()).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<String>> fetchDistinctWards() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT DISTINCT name FROM communes WHERE name IS NOT NULL AND name != '' AND name <> 'nan' ORDER BY name",
+      );
+      return res.map((r) => r.toColumnMap()['name'].toString()).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<String>> fetchCommunesForProvinceName(String provinceName) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT DISTINCT name FROM communes WHERE parent_name = \$1 AND name IS NOT NULL AND name != '' AND name <> 'nan' ORDER BY name",
+        parameters: [provinceName],
+      );
+      return res.map((r) => r.toColumnMap()['name'].toString()).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<String>> fetchDistinctDistricts() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT DISTINCT district FROM households WHERE district IS NOT NULL AND district != '' ORDER BY district",
+      );
+      return res.map((r) => r.toColumnMap()['district'].toString()).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<Map<String, String>>> fetchDistinctCities() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT code, name FROM provinces WHERE name IS NOT NULL AND name != '' AND name <> 'nan' ORDER BY name",
+      );
+      return res.map((r) => {
+        'code': r.toColumnMap()['code'].toString(),
+        'name': r.toColumnMap()['name'].toString(),
+      }).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<String>> fetchCommunesForParentCode(String parentCode) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT DISTINCT name FROM communes WHERE parent_code = \$1 AND name IS NOT NULL AND name != '' AND name <> 'nan' ORDER BY name",
+        parameters: [parentCode],
+      );
+      return res.map((r) => r.toColumnMap()['name'].toString()).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<String> generateHouseholdCode() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT household_code FROM households ORDER BY id DESC LIMIT 1",
+      );
+      if (res.isEmpty) return 'HGD-0001';
+      final lastCode = res.first.toColumnMap()['household_code']?.toString() ?? 'HGD-0000';
+      final match = RegExp(r'HGD-(\\d+)').firstMatch(lastCode);
+      if (match != null) {
+        final num = int.parse(match.group(1)!) + 1;
+        return 'HGD-' + num.toString().padLeft(4, '0');
+      }
+      return 'HGD-0001';
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<int> countHouseholds({
+    String? searchQuery,
+    String? neighborhood,
+    String? ward,
+  }) async {
+    final conn = await _connect();
+    try {
+      String sql = 'SELECT COUNT(*) FROM households WHERE 1=1';
+      final params = <dynamic>[];
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        params.add('%${searchQuery.trim()}%');
+        sql +=
+            ' AND (head_of_household ILIKE \$${params.length} OR household_code ILIKE \$${params.length} OR phone ILIKE \$${params.length})';
+      }
+      if (neighborhood != null && neighborhood.isNotEmpty) {
+        params.add(neighborhood.trim());
+        sql += ' AND neighborhood = \$${params.length}';
+      }
+      if (ward != null && ward.isNotEmpty) {
+        params.add(ward.trim());
+        sql += ' AND ward = \$${params.length}';
+      }
+
+      final res = await conn.execute(sql, parameters: params);
+      final count = res.first.toColumnMap()['count'];
+      return count is int ? count : int.tryParse('$count') ?? 0;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ===================================================================
+  // INCIDENT CRUD
+  // ===================================================================
+
+  Future<List<Incident>> fetchIncidentList({
+    String? searchQuery,
+    String? status,
+    String? neighborhood,
+    String? ward,
+    int? householdId,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final conn = await _connect();
+    try {
+      String sql =
+          'SELECT sv.*, hgd.head_of_household AS household_name, hgd.phone AS household_phone FROM incidents sv LEFT JOIN households hgd ON sv.household_id = hgd.id WHERE 1=1';
+      final params = <dynamic>[];
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        params.add('%${searchQuery.trim()}%');
+        sql +=
+            ' AND (sv.title ILIKE \$${params.length} OR sv.incident_code ILIKE \$${params.length} OR sv.head_of_household ILIKE \$${params.length})';
+      }
+      if (status != null && status.isNotEmpty) {
+        params.add(status.trim());
+        sql += ' AND sv.status = \$${params.length}';
+      }
+      if (neighborhood != null && neighborhood.isNotEmpty) {
+        params.add(neighborhood.trim());
+        sql += ' AND sv.neighborhood = \$${params.length}';
+      }
+      if (ward != null && ward.isNotEmpty) {
+        params.add(ward.trim());
+        sql += ' AND sv.ward = \$${params.length}';
+      }
+      if (householdId != null) {
+        params.add(householdId);
+        sql += ' AND sv.household_id = \$${params.length}';
+      }
+
+      sql += ' ORDER BY sv.created_at DESC';
+      params.add(limit);
+      sql += ' LIMIT \$${params.length}';
+      params.add(offset);
+      sql += ' OFFSET \$${params.length}';
+
+      final res = await conn.execute(sql, parameters: params);
+      return res.map((row) => Incident.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Incident?> fetchIncidentById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT sv.*, hgd.head_of_household AS household_name, hgd.phone AS household_phone FROM incidents sv LEFT JOIN households hgd ON sv.household_id = hgd.id WHERE sv.id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return Incident.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Incident> createIncident(Incident incident) async {
+    final conn = await _connect();
+    try {
+      final map = incident.toDbMap();
+      map.remove('id');
+      map['created_at'] = DateTime.now().toIso8601String();
+      map['updated_at'] = DateTime.now().toIso8601String();
+
+      final columns = map.keys.join(', ');
+      final placeholders = map.keys
+          .toList()
+          .asMap()
+          .entries
+          .map((e) {
+            return '\$${e.key + 1}';
+          })
+          .join(', ');
+      final values = map.values.toList();
+
+      final res = await conn.execute(
+        'INSERT INTO su_vu ($columns) VALUES ($placeholders) RETURNING *',
+        parameters: values,
+      );
+      return Incident.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Incident> updateIncident(Incident incident) async {
+    final conn = await _connect();
+    try {
+      final map = incident.toDbMap();
+      final id = map.remove('id');
+      map['updated_at'] = DateTime.now().toIso8601String();
+
+      final setClause = map.keys
+          .toList()
+          .asMap()
+          .entries
+          .map((e) => '${e.value} = \$${e.key + 1}')
+          .join(', ');
+      final values = map.values.toList();
+      values.add(id);
+
+      final res = await conn.execute(
+        'UPDATE su_vu SET $setClause WHERE id = \$${values.length} RETURNING *',
+        parameters: values,
+      );
+      return Incident.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> deleteIncident(int id) async {
+    final conn = await _connect();
+    try {
+      await conn.execute('DELETE FROM incidents WHERE id = \$1', parameters: [id]);
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<int> countIncidents({
+    String? searchQuery,
+    String? status,
+    String? neighborhood,
+    String? ward,
+    int? householdId,
+  }) async {
+    final conn = await _connect();
+    try {
+      String sql = 'SELECT COUNT(*) FROM incidents WHERE 1=1';
+      final params = <dynamic>[];
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        params.add('%${searchQuery.trim()}%');
+        sql +=
+            ' AND (tieu_de ILIKE \$${params.length} OR ma_su_vu ILIKE \$${params.length})';
+      }
+      if (status != null && status.isNotEmpty) {
+        params.add(status.trim());
+        sql += ' AND trang_thai = \$${params.length}';
+      }
+      if (neighborhood != null && neighborhood.isNotEmpty) {
+        params.add(neighborhood.trim());
+        sql += ' AND neighborhood = \$${params.length}';
+      }
+      if (ward != null && ward.isNotEmpty) {
+        params.add(ward.trim());
+        sql += ' AND ward = \$${params.length}';
+      }
+      if (householdId != null) {
+        params.add(householdId);
+        sql += ' AND ho_gia_dinh_id = \$${params.length}';
+      }
+
+      final res = await conn.execute(sql, parameters: params);
+      final count = res.first.toColumnMap()['count'];
+      return count is int ? count : int.tryParse('$count') ?? 0;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ===================================================================
+  // STATISTICS
+  // ===================================================================
+
+  Future<Map<String, int>> statisticsIncidentsByMonth(int year) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT EXTRACT(MONTH FROM created_at)::int AS month_val, COUNT(*)::int AS count_val '
+        'FROM incidents WHERE EXTRACT(YEAR FROM created_at) = \$1 '
+        'GROUP BY month_val ORDER BY month_val',
+        parameters: [year],
+      );
+      final Map<String, int> result = {};
+      for (int i = 1; i <= 12; i++) {
+        result['Month $i'] = 0;
+      }
+      for (final row in res) {
+        final map = row.toColumnMap();
+        final month = map['month_val'] is int
+            ? map['month_val']
+            : int.tryParse('${map['month_val']}') ?? 1;
+        final countVal = map['count_val'] is int
+            ? map['count_val']
+            : int.tryParse('${map['count_val']}') ?? 0;
+        result['Month $month'] = countVal;
+      }
+      return result;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Map<String, int>> statisticsIncidentsByNeighborhood() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT COALESCE(neighborhood, 'Unknown') AS neighborhood, COUNT(*)::int AS count_val "
+        'FROM incidents GROUP BY neighborhood ORDER BY count_val DESC',
+      );
+      final Map<String, int> result = {};
+      for (final row in res) {
+        final map = row.toColumnMap();
+        final neighborhood = map['neighborhood']?.toString() ?? 'Unknown';
+        final countVal = map['count_val'] is int
+            ? map['count_val']
+            : int.tryParse('${map['count_val']}') ?? 0;
+        result[neighborhood] = countVal;
+      }
+      return result;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<Map<String, int>> statisticsIncidentsByStatus() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT COALESCE(status, 'received') AS status, COUNT(*)::int AS count_val "
+        'FROM incidents GROUP BY status ORDER BY count_val DESC',
+      );
+      final Map<String, int> result = {};
+      for (final row in res) {
+        final map = row.toColumnMap();
+        final statusDb = map['status']?.toString() ?? 'received';
+        final countVal = map['count_val'] is int
+            ? map['count_val']
+            : int.tryParse('${map['count_val']}') ?? 0;
+        final statusName = IncidentStatus.fromString(statusDb).displayName;
+        result[statusName] = countVal;
+      }
+      return result;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<String>> fetchNeighborhoodList() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        "SELECT DISTINCT neighborhood FROM households WHERE neighborhood IS NOT NULL AND neighborhood <> '' ORDER BY neighborhood",
+      );
+      return res
+          .map((row) => row.toColumnMap()['neighborhood']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
     } finally {
       await conn.close();
     }

@@ -10,9 +10,9 @@ String _describeWeatherCode(int code) {
   if (code >= 45 && code <= 48) return 'Sương mù';
   if (code >= 51 && code <= 67) return 'Mưa phùn / Mưa';
   if (code >= 71 && code <= 77) return 'Tuyết / Băng';
-  if (code >= 80 && code <= 82) return 'Mưa rào';
+  if (code >= 80 && code <= 82) return 'Showers';
   if (code >= 95) return 'Mưa giông';
-  return 'Không xác định';
+  return 'Unknown';
 }
 
 class WeatherInfoPanel extends StatelessWidget {
@@ -84,11 +84,11 @@ class WeatherInfoPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Gió: ${weather!.windspeed?.toStringAsFixed(1) ?? '-'} m/s',
+                    'Wind: ${weather!.windspeed?.toStringAsFixed(1) ?? '-'} m/s',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                   Text(
-                    'Hướng: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°',
+                    'Direction: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
@@ -102,7 +102,7 @@ class WeatherInfoPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: _smallInfo(
-                  'Độ ẩm',
+                  'Humidity',
                   weather!.humidity != null
                       ? '${weather!.humidity!.toStringAsFixed(0)} %'
                       : '-',
@@ -110,7 +110,7 @@ class WeatherInfoPanel extends StatelessWidget {
               ),
               Expanded(
                 child: _smallInfo(
-                  'Áp suất',
+                  'Pressure',
                   weather!.pressure != null
                       ? '${weather!.pressure!.toStringAsFixed(0)} hPa'
                       : '-',
@@ -118,7 +118,7 @@ class WeatherInfoPanel extends StatelessWidget {
               ),
               Expanded(
                 child: _smallInfo(
-                  'Lượng mưa',
+                  'Rainfall',
                   weather!.precipitation != null
                       ? '${weather!.precipitation!.toStringAsFixed(1)} mm'
                       : '-',
