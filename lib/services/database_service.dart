@@ -237,7 +237,8 @@ class DatabaseService {
         "SELECT incident_code FROM incidents ORDER BY id DESC LIMIT 1",
       );
       if (res.isEmpty) return 'SV-0001';
-      final lastCode = res.first.toColumnMap()['incident_code']?.toString() ?? 'SV-0000';
+      final lastCode =
+          res.first.toColumnMap()['incident_code']?.toString() ?? 'SV-0000';
       final match = RegExp(r'SV-(\\d+)').firstMatch(lastCode);
       if (match != null) {
         final num = int.parse(match.group(1)!) + 1;
@@ -305,32 +306,48 @@ class DatabaseService {
   }
 
   Future<Household> createHousehold(Household household) async {
-    final conn = await _connect();
-    try {
-      final map = household.toDbMap();
-      map.remove('id');
-      map['created_at'] = DateTime.now().toIso8601String();
-      map['updated_at'] = DateTime.now().toIso8601String();
+    const maxRetries = 5;
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      final conn = await _connect();
+      try {
+        // Generate a fresh code on the *same* connection to reduce race condition
+        final code = await generateHouseholdCode(conn: conn);
+        final map = household.toDbMap();
+        map.remove('id');
+        map['household_code'] = code;
+        map['created_at'] = DateTime.now().toIso8601String();
+        map['updated_at'] = DateTime.now().toIso8601String();
 
-      final columns = map.keys.join(', ');
-      final placeholders = map.keys
-          .toList()
-          .asMap()
-          .entries
-          .map((e) {
-            return '\$${e.key + 1}';
-          })
-          .join(', ');
-      final values = map.values.toList();
+        final columns = map.keys.join(', ');
+        final placeholders = map.keys
+            .toList()
+            .asMap()
+            .entries
+            .map((e) {
+              return '\$${e.key + 1}';
+            })
+            .join(', ');
+        final values = map.values.toList();
 
-      final res = await conn.execute(
-        'INSERT INTO households ($columns) VALUES ($placeholders) RETURNING *',
-        parameters: values,
-      );
-      return Household.fromJson(res.first.toColumnMap());
-    } finally {
-      await conn.close();
+        final res = await conn.execute(
+          'INSERT INTO households ($columns) VALUES ($placeholders) RETURNING *',
+          parameters: values,
+        );
+        return Household.fromJson(res.first.toColumnMap());
+      } catch (e) {
+        // If unique_violation on household_code, retry with a new code
+        final isDuplicateCode =
+            e.toString().contains('unique_violation') &&
+            e.toString().contains('household_code');
+        if (isDuplicateCode && attempt < maxRetries - 1) {
+          continue; // Retry with a new code
+        }
+        rethrow;
+      } finally {
+        await conn.close();
+      }
     }
+    throw Exception('Failed to create household after $maxRetries attempts');
   }
 
   Future<Household> updateHousehold(Household household) async {
@@ -371,7 +388,6 @@ class DatabaseService {
     }
   }
 
-
   // ADDRESS DROPDOWN DATA
 
   Future<List<String>> fetchDistinctNeighborhoods() async {
@@ -380,7 +396,9 @@ class DatabaseService {
       final res = await conn.execute(
         "SELECT DISTINCT neighborhood FROM households WHERE neighborhood IS NOT NULL AND neighborhood != '' ORDER BY neighborhood",
       );
-      return res.map((r) => r.toColumnMap()['neighborhood'].toString()).toList();
+      return res
+          .map((r) => r.toColumnMap()['neighborhood'].toString())
+          .toList();
     } finally {
       await conn.close();
     }
@@ -429,10 +447,14 @@ class DatabaseService {
       final res = await conn.execute(
         "SELECT code, name FROM provinces WHERE name IS NOT NULL AND name != '' AND name <> 'nan' ORDER BY name",
       );
-      return res.map((r) => {
-        'code': r.toColumnMap()['code'].toString(),
-        'name': r.toColumnMap()['name'].toString(),
-      }).toList();
+      return res
+          .map(
+            (r) => {
+              'code': r.toColumnMap()['code'].toString(),
+              'name': r.toColumnMap()['name'].toString(),
+            },
+          )
+          .toList();
     } finally {
       await conn.close();
     }
@@ -451,20 +473,50 @@ class DatabaseService {
     }
   }
 
-  Future<String> generateHouseholdCode() async {
+  Future<String> generateHouseholdCode({Connection? conn}) async {
+    final c = conn ?? await _connect();
+    bool closeConn = conn == null;
+    try {
+      final res = await c.execute(
+        "SELECT MAX(CAST(SUBSTRING(household_code, 5) AS INTEGER)) AS max_num "
+        "FROM households WHERE household_code LIKE 'HGD-%'",
+      );
+      if (res.isEmpty || res.first.toColumnMap()['max_num'] == null) {
+        return 'HGD-0001';
+      }
+      final maxNum = int.parse(res.first.toColumnMap()['max_num'].toString());
+      return 'HGD-${(maxNum + 1).toString().padLeft(4, '0')}';
+    } finally {
+      if (closeConn) await c.close();
+    }
+  }
+
+  Future<List<Household>> fetchHouseholdsByCommuneName(
+    String communeName,
+  ) async {
+    final conn = await _connect();
+    try {
+      // ward column stores commune name directly (from household form dropdown)
+      final res = await conn.execute(
+        'SELECT h.* FROM households h '
+        'WHERE h.ward = \$1 '
+        'ORDER BY h.household_code ASC',
+        parameters: [communeName],
+      );
+      return res.map((row) => Household.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<Household>> fetchHouseholdsByWard(String ward) async {
     final conn = await _connect();
     try {
       final res = await conn.execute(
-        "SELECT household_code FROM households ORDER BY id DESC LIMIT 1",
+        'SELECT * FROM households WHERE ward = \$1 ORDER BY household_code ASC',
+        parameters: [ward],
       );
-      if (res.isEmpty) return 'HGD-0001';
-      final lastCode = res.first.toColumnMap()['household_code']?.toString() ?? 'HGD-0000';
-      final match = RegExp(r'HGD-(\\d+)').firstMatch(lastCode);
-      if (match != null) {
-        final num = int.parse(match.group(1)!) + 1;
-        return 'HGD-' + num.toString().padLeft(4, '0');
-      }
-      return 'HGD-0001';
+      return res.map((row) => Household.fromJson(row.toColumnMap())).toList();
     } finally {
       await conn.close();
     }
@@ -590,7 +642,7 @@ class DatabaseService {
       final values = map.values.toList();
 
       final res = await conn.execute(
-        'INSERT INTO su_vu ($columns) VALUES ($placeholders) RETURNING *',
+        'INSERT INTO incidents ($columns) VALUES ($placeholders) RETURNING *',
         parameters: values,
       );
       return Incident.fromJson(res.first.toColumnMap());
@@ -616,7 +668,7 @@ class DatabaseService {
       values.add(id);
 
       final res = await conn.execute(
-        'UPDATE su_vu SET $setClause WHERE id = \$${values.length} RETURNING *',
+        'UPDATE incidents SET $setClause WHERE id = \$${values.length} RETURNING *',
         parameters: values,
       );
       return Incident.fromJson(res.first.toColumnMap());
@@ -628,7 +680,10 @@ class DatabaseService {
   Future<void> deleteIncident(int id) async {
     final conn = await _connect();
     try {
-      await conn.execute('DELETE FROM incidents WHERE id = \$1', parameters: [id]);
+      await conn.execute(
+        'DELETE FROM incidents WHERE id = \$1',
+        parameters: [id],
+      );
     } finally {
       await conn.close();
     }

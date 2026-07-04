@@ -4,6 +4,7 @@ import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/weather/weather_icon.dart';
 
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
+import 'package:vietnam_geo_dashboard/widgets/map/household_info_panel.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map_painter.dart';
 import '../../services/database_service.dart';
 import '../../utils/map_hit_test.dart';
@@ -288,6 +289,9 @@ class _VietnamMapState extends State<VietnamMap> {
                         );
                       },
                     ),
+
+                    // Household info panel for selected ward/commune
+                    const HouseholdInfoPanel(),
 
                     // Beautiful responsive search bar overlay
                     Positioned(
