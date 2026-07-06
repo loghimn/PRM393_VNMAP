@@ -21,9 +21,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
     final provinces = provider.provinces;
 
     if (provinces.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.blue),
-      );
+      return const Center(child: CircularProgressIndicator(color: Colors.blue));
     }
 
     // Calculations
@@ -71,8 +69,13 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
     });
 
     // Sort regions by population descending
-    regionStats.sort((a, b) => (b['population'] as double).compareTo(a['population'] as double));
-    final double maxRegionPop = regionStats.isNotEmpty ? regionStats.first['population'] as double : 1.0;
+    regionStats.sort(
+      (a, b) =>
+          (b['population'] as double).compareTo(a['population'] as double),
+    );
+    final double maxRegionPop = regionStats.isNotEmpty
+        ? regionStats.first['population'] as double
+        : 1.0;
 
     // Sorting for rankings
     final List<ProvinceModel> sortedByPop = List.from(provinces)
@@ -172,7 +175,8 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: regionStats.length,
-              separatorBuilder: (context, index) => const Divider(color: Colors.white12, height: 20),
+              separatorBuilder: (context, index) =>
+                  const Divider(color: Colors.white12, height: 20),
               itemBuilder: (context, index) {
                 final stat = regionStats[index];
                 final String name = stat['name'];
@@ -200,14 +204,21 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.blue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '$count địa phương',
-                            style: const TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -230,7 +241,10 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                               height: 8,
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Colors.blue.withOpacity(0.8), Colors.cyanAccent],
+                                  colors: [
+                                    Colors.blue.withOpacity(0.8),
+                                    Colors.cyanAccent,
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(4),
                               ),
@@ -245,10 +259,16 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _buildSubStat('Dân số', '${_formatNumber(rPop)} người'),
-                        _buildSubStat('Diện tích', '${_formatNumber(rArea, isDecimal: true)} km²'),
-                        _buildSubStat('Mật độ', '${_formatNumber(rDensity, isDecimal: true)} /km²'),
+                        _buildSubStat(
+                          'Diện tích',
+                          '${_formatNumber(rArea, isDecimal: true)} km²',
+                        ),
+                        _buildSubStat(
+                          'Mật độ',
+                          '${_formatNumber(rDensity, isDecimal: true)} /km²',
+                        ),
                       ],
-                    )
+                    ),
                   ],
                 );
               },
@@ -305,7 +325,11 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.trending_up, color: Colors.greenAccent, size: 18),
+                          Icon(
+                            Icons.trending_up,
+                            color: Colors.greenAccent,
+                            size: 18,
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'Cao Nhất',
@@ -339,17 +363,26 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                                 children: [
                                   CircleAvatar(
                                     radius: 9,
-                                    backgroundColor: Colors.greenAccent.withOpacity(0.2),
+                                    backgroundColor: Colors.greenAccent
+                                        .withOpacity(0.2),
                                     child: Text(
                                       '${index + 1}',
-                                      style: const TextStyle(color: Colors.greenAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: Colors.greenAccent,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       p.name,
-                                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -359,7 +392,10 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                                 padding: const EdgeInsets.only(left: 24.0),
                                 child: Text(
                                   '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
-                                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
                             ],
@@ -385,7 +421,11 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.trending_down, color: Colors.redAccent, size: 18),
+                          Icon(
+                            Icons.trending_down,
+                            color: Colors.redAccent,
+                            size: 18,
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'Thấp Nhất',
@@ -419,17 +459,26 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                                 children: [
                                   CircleAvatar(
                                     radius: 9,
-                                    backgroundColor: Colors.redAccent.withOpacity(0.2),
+                                    backgroundColor: Colors.redAccent
+                                        .withOpacity(0.2),
                                     child: Text(
                                       '${index + 1}',
-                                      style: const TextStyle(color: Colors.redAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       p.name,
-                                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -439,7 +488,10 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                                 padding: const EdgeInsets.only(left: 24.0),
                                 child: Text(
                                   '${_formatNumber(val, isDecimal: isDecimal)} $activeUnit',
-                                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
                             ],
@@ -522,7 +574,7 @@ class _OverviewStatisticsTabState extends State<OverviewStatisticsTab> {
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: Colors.white, size: 12),
-              )
+              ),
             ],
           ),
           Column(

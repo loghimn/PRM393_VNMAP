@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/province_model.dart';
 import '../models/high_school_model.dart';
+import '../models/household_model.dart';
 import '../services/database_service.dart';
 
 class ProvinceProvider extends ChangeNotifier {
@@ -33,7 +34,9 @@ class ProvinceProvider extends ChangeNotifier {
 
   ProvinceModel? selectedCommune;
   List<HighSchool> selectedCommuneHighSchools = [];
+  List<Household> selectedCommuneHouseholds = [];
   bool isLoadingHighSchools = false;
+  bool isLoadingHouseholds = false;
 
   Future<void> loadHighSchoolsForCommune(ProvinceModel commune) async {
     if (commune.name.isEmpty) return;
@@ -121,9 +124,28 @@ class ProvinceProvider extends ChangeNotifier {
     print("SELECT COMMUNE: ${commune.name}");
     selectedCommune = commune;
     selectedProvince = null;
+    selectedCommuneHouseholds = [];
     notifyListeners();
-    // Auto-load high schools for this commune
+    // Auto-load high schools and households for this commune
     loadHighSchoolsForCommune(commune);
+    loadHouseholdsForCommune(commune);
+  }
+
+  Future<void> loadHouseholdsForCommune(ProvinceModel commune) async {
+    if (commune.name.isEmpty) return;
+    isLoadingHouseholds = true;
+    selectedCommuneHouseholds = [];
+    notifyListeners();
+    try {
+      selectedCommuneHouseholds = await _service.fetchHouseholdsByCommuneName(
+        commune.name,
+      );
+    } catch (e) {
+      print("Error loading households for commune ${commune.name}: $e");
+    } finally {
+      isLoadingHouseholds = false;
+      notifyListeners();
+    }
   }
 
   void clearFocus() {
