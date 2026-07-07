@@ -4,6 +4,9 @@ import 'package:vietnam_geo_dashboard/providers/theme_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/map/vietnam_map.dart';
 import 'package:vietnam_geo_dashboard/utils/app_theme.dart';
+import 'package:vietnam_geo_dashboard/screens/khu_pho/khu_pho_list_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/dai_dien/dai_dien_list_screen.dart';
+
 import '../../providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/population_density_chart.dart';
@@ -518,6 +521,74 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                     child: ProvinceListPanel(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Khu phố Button
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const KhuPhoListScreen()),
+                    );
+                  },
+                  child: Container(
+                    width: 70,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('🏘️', style: TextStyle(fontSize: 24)),
+                        SizedBox(height: 4),
+                        Text(
+                          'Khu Phố',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Đại diện Button
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DaiDienListScreen()),
+                    );
+                  },
+                  child: Container(
+                    width: 70,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('👤', style: TextStyle(fontSize: 24)),
+                        SizedBox(height: 4),
+                        Text(
+                          'Đại Diện',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

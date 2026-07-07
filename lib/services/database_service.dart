@@ -3,6 +3,8 @@ import '../models/province_model.dart';
 import '../models/high_school_model.dart';
 import '../models/household_model.dart';
 import '../models/incident_model.dart';
+import '../models/khu_pho_model.dart';
+import '../models/dai_dien_model.dart';
 
 class DatabaseService {
   static const String _host =
@@ -901,6 +903,182 @@ class DatabaseService {
     str = str.replaceAll(RegExp(r'\s+'), '_');
     str = str.replaceAll(RegExp(r'[^a-z0-9_]'), '');
     return str;
+  }
+
+  // ========================
+  // Khu phố (Neighborhood) CRUD
+  // ========================
+
+  Future<List<KhuPhoModel>> fetchKhuPhos() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute('SELECT * FROM khu_pho ORDER BY ten_khu_pho ASC');
+      return res.map((row) => KhuPhoModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<KhuPhoModel?> fetchKhuPhoById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM khu_pho WHERE id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return KhuPhoModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<KhuPhoModel> createKhuPho(KhuPhoModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'INSERT INTO khu_pho (ten_khu_pho, mo_ta, dia_chi) VALUES (\$1, \$2, \$3) RETURNING *',
+        parameters: [model.tenKhuPho, model.moTa, model.diaChi],
+      );
+      return KhuPhoModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<KhuPhoModel> updateKhuPho(KhuPhoModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'UPDATE khu_pho SET ten_khu_pho = \$1, mo_ta = \$2, dia_chi = \$3, updated_at = NOW() WHERE id = \$4 RETURNING *',
+        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.id],
+      );
+      return KhuPhoModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> deleteKhuPho(int id) async {
+    final conn = await _connect();
+    try {
+      // Xóa các đại diện thuộc khu phố trước
+      await conn.execute(
+        'DELETE FROM dai_dien_khu_pho WHERE khu_pho_id = \$1',
+        parameters: [id],
+      );
+      await conn.execute(
+        'DELETE FROM khu_pho WHERE id = \$1',
+        parameters: [id],
+      );
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ========================
+  // Đại diện khu phố CRUD
+  // ========================
+
+  Future<List<DaiDienModel>> fetchDaiDiens() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id ORDER BY d.ho_ten ASC',
+      );
+      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<DaiDienModel>> fetchDaiDiensByKhuPho(int khuPhoId) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.khu_pho_id = \$1 ORDER BY d.ho_ten ASC',
+        parameters: [khuPhoId],
+      );
+      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DaiDienModel?> fetchDaiDienById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return DaiDienModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DaiDienModel> createDaiDien(DaiDienModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'INSERT INTO dai_dien_khu_pho (ho_ten, so_dien_thoai, email, dia_chi, khu_pho_id) VALUES (\$1, \$2, \$3, \$4, \$5) RETURNING *',
+        parameters: [model.hoTen, model.soDienThoai, model.email, model.diaChi, model.khuPhoId],
+      );
+      final created = DaiDienModel.fromJson(res.first.toColumnMap());
+      // Fetch lại với tên khu phố
+      if (created.id != null) {
+        return (await fetchDaiDienById(created.id!))!;
+      }
+      return created;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DaiDienModel> updateDaiDien(DaiDienModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'UPDATE dai_dien_khu_pho SET ho_ten = \$1, so_dien_thoai = \$2, email = \$3, dia_chi = \$4, khu_pho_id = \$5, updated_at = NOW() WHERE id = \$6 RETURNING *',
+        parameters: [model.hoTen, model.soDienThoai, model.email, model.diaChi, model.khuPhoId, model.id],
+      );
+      final updated = DaiDienModel.fromJson(res.first.toColumnMap());
+      if (updated.id != null) {
+        return (await fetchDaiDienById(updated.id!))!;
+      }
+      return updated;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> deleteDaiDien(int id) async {
+    final conn = await _connect();
+    try {
+      await conn.execute(
+        'DELETE FROM dai_dien_khu_pho WHERE id = \$1',
+        parameters: [id],
+      );
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<DaiDienModel>> searchDaiDiens(String query) async {
+    if (query.trim().isEmpty) return [];
+    final conn = await _connect();
+    try {
+      final escapedQuery = '%${query.trim()}%';
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.ho_ten ILIKE \$1 OR d.so_dien_thoai ILIKE \$1 OR d.email ILIKE \$1 ORDER BY d.ho_ten ASC',
+        parameters: [escapedQuery],
+      );
+      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
   }
 
   Future<List<SearchResult>> searchLocations(String query) async {
