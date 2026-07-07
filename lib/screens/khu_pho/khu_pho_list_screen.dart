@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/khu_pho_provider.dart';
 import '../../models/khu_pho_model.dart';
+import '../../utils/app_theme.dart';
 import 'khu_pho_form_screen.dart';
 import 'khu_pho_detail_screen.dart';
 
@@ -44,10 +45,10 @@ class _KhuPhoListScreenState extends State<KhuPhoListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff0f172a),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Danh sách Khu phố'),
-        backgroundColor: const Color(0xff1e293b),
+        backgroundColor: AppColors.surfaceBackground,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -113,25 +114,35 @@ class _KhuPhoListScreenState extends State<KhuPhoListScreen> {
               itemBuilder: (context, index) {
                 final item = provider.danhSach[index];
                 return Card(
-                  color: const Color(0xff1e293b),
+                  color: AppColors.surfaceBackground,
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Colors.blue,
-                      child: Icon(Icons.location_city, color: Colors.white),
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.primary,
+                      child: const Icon(Icons.location_city, color: Colors.white),
                     ),
                     title: Text(
                       item.tenKhuPho,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text(
-                      item.diaChi ?? 'Chưa có địa chỉ',
-                      style: const TextStyle(color: Colors.white54),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.diaChi ?? 'Chưa có địa chỉ',
+                          style: TextStyle(color: AppColors.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (item.parentTen != null)
+                          Text(
+                            '📍 ${item.parentTen}',
+                            style: TextStyle(color: AppColors.secondary, fontSize: 12),
+                          ),
+                      ],
                     ),
                     trailing: PopupMenuButton<String>(
-                      color: const Color(0xff334155),
+                      color: AppColors.surface,
                       onSelected: (value) async {
                         if (value == 'edit') {
                           Navigator.push(

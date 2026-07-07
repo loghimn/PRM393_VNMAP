@@ -3,16 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/theme_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
-<<<<<<< HEAD
 import 'package:vietnam_geo_dashboard/providers/household_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/incident_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/statistics_provider.dart';
 import 'package:vietnam_geo_dashboard/models/household_model.dart';
 import 'package:vietnam_geo_dashboard/models/incident_model.dart';
-=======
 import 'package:vietnam_geo_dashboard/providers/khu_pho_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/dai_dien_provider.dart';
->>>>>>> 1af02c0 (feat: Ward, Quarter)
 import 'package:vietnam_geo_dashboard/screens/dashboard/dashboard_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_detail_screen.dart';
@@ -29,14 +26,11 @@ void main() {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => ProvinceProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
-<<<<<<< HEAD
         ChangeNotifierProvider(create: (_) => HouseholdProvider()),
         ChangeNotifierProvider(create: (_) => IncidentProvider()),
         ChangeNotifierProvider(create: (_) => StatisticsProvider()),
-=======
         ChangeNotifierProvider(create: (_) => KhuPhoProvider()),
         ChangeNotifierProvider(create: (_) => DaiDienProvider()),
->>>>>>> 1af02c0 (feat: Ward, Quarter)
       ],
       child: const MyApp(),
     ),

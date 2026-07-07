@@ -912,7 +912,9 @@ class DatabaseService {
   Future<List<KhuPhoModel>> fetchKhuPhos() async {
     final conn = await _connect();
     try {
-      final res = await conn.execute('SELECT * FROM khu_pho ORDER BY ten_khu_pho ASC');
+      final res = await conn.execute(
+        'SELECT id, ten_khu_pho, mo_ta, dia_chi, parent_ten, created_at, updated_at FROM khu_pho ORDER BY ten_khu_pho ASC',
+      );
       return res.map((row) => KhuPhoModel.fromJson(row.toColumnMap())).toList();
     } finally {
       await conn.close();
@@ -923,7 +925,7 @@ class DatabaseService {
     final conn = await _connect();
     try {
       final res = await conn.execute(
-        'SELECT * FROM khu_pho WHERE id = \$1',
+        'SELECT id, ten_khu_pho, mo_ta, dia_chi, parent_ten, created_at, updated_at FROM khu_pho WHERE id = \$1',
         parameters: [id],
       );
       if (res.isEmpty) return null;
@@ -937,8 +939,8 @@ class DatabaseService {
     final conn = await _connect();
     try {
       final res = await conn.execute(
-        'INSERT INTO khu_pho (ten_khu_pho, mo_ta, dia_chi) VALUES (\$1, \$2, \$3) RETURNING *',
-        parameters: [model.tenKhuPho, model.moTa, model.diaChi],
+        'INSERT INTO khu_pho (ten_khu_pho, mo_ta, dia_chi, parent_ten) VALUES (\$1, \$2, \$3, \$4) RETURNING *',
+        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.parentTen],
       );
       return KhuPhoModel.fromJson(res.first.toColumnMap());
     } finally {
@@ -950,8 +952,8 @@ class DatabaseService {
     final conn = await _connect();
     try {
       final res = await conn.execute(
-        'UPDATE khu_pho SET ten_khu_pho = \$1, mo_ta = \$2, dia_chi = \$3, updated_at = NOW() WHERE id = \$4 RETURNING *',
-        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.id],
+        'UPDATE khu_pho SET ten_khu_pho = \$1, mo_ta = \$2, dia_chi = \$3, parent_ten = \$4, updated_at = NOW() WHERE id = \$5 RETURNING *',
+        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.parentTen, model.id],
       );
       return KhuPhoModel.fromJson(res.first.toColumnMap());
     } finally {

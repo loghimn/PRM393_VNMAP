@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/khu_pho_model.dart';
 import '../../providers/dai_dien_provider.dart';
 import '../../models/dai_dien_model.dart';
+import '../../utils/app_theme.dart';
 import '../dai_dien/dai_dien_form_screen.dart';
 import '../dai_dien/dai_dien_detail_screen.dart';
 import 'khu_pho_form_screen.dart';
@@ -95,6 +96,7 @@ class _KhuPhoDetailScreenState extends State<KhuPhoDetailScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildInfoRow('Tên khu phố', _khuPho.tenKhuPho),
+                    _buildInfoRow('Phường/Xã', _khuPho.parentTen ?? 'Chưa có'),
                     _buildInfoRow('Địa chỉ', _khuPho.diaChi ?? 'Chưa có'),
                     _buildInfoRow('Mô tả', _khuPho.moTa ?? 'Chưa có'),
                     if (_khuPho.createdAt != null)
@@ -200,10 +202,10 @@ class _KhuPhoDetailScreenState extends State<KhuPhoDetailScreen> {
 
   Widget _buildDaiDienItem(DaiDienModel d) {
     return Card(
-      color: const Color(0xff334155),
-      margin: const EdgeInsets.only(bottom: 8),
+      color: Color(0xff334155),
+      margin: EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: const CircleAvatar(
+        leading: CircleAvatar(
           backgroundColor: Colors.green,
           child: Icon(Icons.person, color: Colors.white),
         ),
