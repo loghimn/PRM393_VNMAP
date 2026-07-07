@@ -72,8 +72,9 @@ class ProvinceModel {
   }
 
   String get macroRegionVietnamese {
-    if (macroRegion == null) return '-';
-    switch (macroRegion!.trim().toLowerCase()) {
+    final region = macroRegion;
+    if (region == null) return '-';
+    switch (region.trim().toLowerCase()) {
       case 'red_river_delta':
         return 'Đồng bằng sông Hồng';
       case 'northern_midlands':
@@ -92,7 +93,7 @@ class ProvinceModel {
       case 'mekong_delta':
         return 'Đồng bằng sông Cửu Long';
       default:
-        return macroRegion!
+        return region
             .replaceAll('_', ' ')
             .split(' ')
             .map((part) {

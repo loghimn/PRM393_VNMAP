@@ -44,10 +44,10 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   }
 
   Future<void> _updateStatus(Incident incident) async {
-    final statusMoi = await showDialog<IncidentStatus>(
+    final newStatus = await showDialog<IncidentStatus>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Update Status'),
+        title: const Text('Cập nhật trạng thái'),
         children: IncidentStatus.values
             .where((t) => t != incident.status)
             .map(
@@ -73,15 +73,15 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       ),
     );
 
-    if (statusMoi != null) {
+    if (newStatus != null) {
       final success = await context.read<IncidentProvider>().updateStatus(
         widget.incidentId,
-        statusMoi,
+        newStatus,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Status updated to "${statusMoi.displayName}"'),
+            content: Text('Đã cập nhật trạng thái: "${newStatus.displayName}"'),
           ),
         );
       }
@@ -93,11 +93,11 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Assign Handler'),
+        title: const Text('Giao việc'),
         content: TextField(
           controller: _handlerController,
           decoration: const InputDecoration(
-            labelText: 'Handler Name',
+            labelText: 'Tên người xử lý',
             border: OutlineInputBorder(),
           ),
           autofocus: true,
@@ -105,12 +105,12 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () =>
                 Navigator.pop(ctx, _handlerController.text.trim()),
-            child: const Text('Assign'),
+            child: const Text('Giao'),
           ),
         ],
       ),
@@ -124,7 +124,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       if (success && mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Assigned to "$result"')));
+        ).showSnackBar(SnackBar(content: Text('Đã giao cho "$result"')));
       }
     }
   }
@@ -133,11 +133,11 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Incident Details'),
+        title: const Text('Chi tiết sự vụ'),
         actions: [
           Consumer<IncidentProvider>(
             builder: (context, provider, child) {
-              if (provider.selected == null) return const SizedBox();
+              if (provider.selected == null) return const SizedBox.shrink();
               return PopupMenuButton<String>(
                 onSelected: (value) {
                   if (value == 'edit') {
@@ -152,10 +152,10 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  const PopupMenuItem(value: 'edit', child: Text('Sửa')),
                   const PopupMenuItem(
                     value: 'delete',
-                    child: Text('Delete', style: TextStyle(color: Colors.red)),
+                    child: Text('Xóa', style: TextStyle(color: Colors.red)),
                   ),
                 ],
               );
@@ -180,7 +180,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => provider.loadById(widget.incidentId),
-                    child: const Text('Retry'),
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
@@ -189,7 +189,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
 
           final incident = provider.selected;
           if (incident == null) {
-            return const Center(child: Text('Chua co thong tin'));
+            return const Center(child: Text('Chưa có thông tin'));
           }
 
           return SingleChildScrollView(
@@ -201,29 +201,29 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 const SizedBox(height: 16),
                 _buildActionButtons(incident),
                 const SizedBox(height: 16),
-                _buildSection('Description', [
+                _buildSection('Mô tả', [
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      incident.description ?? 'No description',
+                      incident.description ?? 'Không có mô tả',
                       style: const TextStyle(fontSize: 15),
                     ),
                   ),
                 ]),
                 const SizedBox(height: 16),
-                _buildSection('Address', [
-                  _buildInfoRow('Address', incident.address ?? '---'),
-                  _buildInfoRow('Ward', incident.neighborhood ?? '---'),
-                  _buildInfoRow('Commune', incident.ward ?? '---'),
-                  _buildInfoRow('District', incident.district ?? '---'),
-                  _buildInfoRow('Province/City', incident.city ?? '---'),
+                _buildSection('Địa chỉ', [
+                  _buildInfoRow('Địa chỉ', incident.address ?? '---'),
+                  _buildInfoRow('Phường/Xã', incident.neighborhood ?? '---'),
+                  _buildInfoRow('Xã/Thị trấn', incident.ward ?? '---'),
+                  _buildInfoRow('Quận/Huyện', incident.district ?? '---'),
+                  _buildInfoRow('Tỉnh/Thành phố', incident.city ?? '---'),
                 ]),
                 const SizedBox(height: 16),
-                _buildSection('Processing Info', [
-                  _buildInfoRow('Status', incident.status.displayName),
-                  _buildInfoRow('Handler', incident.handler ?? 'Not assigned'),
+                _buildSection('Thông tin xử lý', [
+                  _buildInfoRow('Trạng thái', incident.status.displayName),
+                  _buildInfoRow('Người xử lý', incident.handler ?? 'Chưa phân công'),
                   _buildInfoRow(
-                    'Completion Date',
+                    'Ngày hoàn thành',
                     incident.completedDate != null
                         ? '${incident.completedDate!.day}/${incident.completedDate!.month}/${incident.completedDate!.year}'
                         : '---',
@@ -231,15 +231,15 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 ]),
                 if (incident.householdId != null) ...[
                   const SizedBox(height: 16),
-                  _buildSection('Related Household', [
-                    _buildInfoRow('Household ID', 'HĐ${incident.householdId}'),
-                    _buildInfoRow('Owner Name', incident.headOfHousehold ?? '---'),
-                    _buildInfoRow('Phone', incident.phone ?? '---'),
+                  _buildSection('Hộ gia đình liên quan', [
+                    _buildInfoRow('Mã hộ', 'HĐ${incident.householdId}'),
+                    _buildInfoRow('Chủ hộ', incident.headOfHousehold ?? '---'),
+                    _buildInfoRow('Điện thoại', incident.phone ?? '---'),
                   ]),
                 ],
                 if (incident.notes != null && incident.notes!.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _buildSection('Notes', [
+                  _buildSection('Ghi chú', [
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Text(incident.notes!),
@@ -247,15 +247,15 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   ]),
                 ],
                 const SizedBox(height: 16),
-                _buildSection('Timeline', [
+                _buildSection('Thời gian', [
                   _buildInfoRow(
-                    'Created',
+                    'Ngày tạo',
                     incident.createdAt != null
                         ? '${incident.createdAt!.day}/${incident.createdAt!.month}/${incident.createdAt!.year}'
                         : '---',
                   ),
                   _buildInfoRow(
-                    'Updated',
+                    'Cập nhật',
                     incident.updatedAt != null
                         ? '${incident.updatedAt!.day}/${incident.updatedAt!.month}/${incident.updatedAt!.year}'
                         : '---',
@@ -317,7 +317,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 ? () => _updateStatus(incident)
                 : null,
             icon: const Icon(Icons.update, size: 18),
-            label: const Text('Update Status'),
+            label: const Text('Cập nhật trạng thái'),
           ),
         ),
         const SizedBox(width: 8),
@@ -325,7 +325,7 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
           child: OutlinedButton.icon(
             onPressed: () => _assignHandler(incident),
             icon: const Icon(Icons.person_add, size: 18),
-            label: const Text('Assign Handler'),
+            label: const Text('Giao việc'),
           ),
         ),
       ],
@@ -376,19 +376,19 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
+        title: const Text('Xác nhận xóa'),
         content: Text(
-          'Are you sure you want to delete incident "${provider.selected?.title}"?',
+          'Bạn có chắc muốn xóa sự vụ "${provider.selected?.title}"?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Xóa'),
           ),
         ],
       ),

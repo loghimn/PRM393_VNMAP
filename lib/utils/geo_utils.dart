@@ -56,8 +56,8 @@ class GeoUtils {
       }
     }
 
-    // fallback chống crash
-    return largest ?? [[]];
+    // fallback chống crash - empty list
+    return largest ?? [];
   }
 
   static Offset getAnchorPoint(List ring) {

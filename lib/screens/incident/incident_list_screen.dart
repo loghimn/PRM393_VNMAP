@@ -46,19 +46,19 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
+        title: const Text('Xác nhận xóa'),
         content: Text(
-          'Are you sure you want to delete incident "${incident.title}"?',
+          'Bạn có chắc muốn xóa sự vụ "${incident.title}"?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Xóa'),
           ),
         ],
       ),
@@ -90,12 +90,12 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  hintText: 'Search incidents...',
+                  hintText: 'Tìm kiếm sự vụ...',
                   border: InputBorder.none,
                 ),
                 onSubmitted: _onSearch,
               )
-            : const Text('Incident List'),
+            : const Text('Danh sách sự vụ'),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -129,7 +129,7 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                   ElevatedButton(
                     onPressed: () =>
                         provider.loadItems(householdId: widget.householdId),
-                    child: const Text('Retry'),
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
@@ -147,7 +147,7 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                     color: Colors.grey,
                   ),
                   SizedBox(height: 16),
-                  Text('Chua co thong tin'),
+                  Text('Chưa có thông tin'),
                 ],
               ),
             );
@@ -219,11 +219,11 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                         }
                       },
                       itemBuilder: (context) => [
-                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                        const PopupMenuItem(value: 'edit', child: Text('Sửa')),
                         const PopupMenuItem(
                           value: 'delete',
                           child: Text(
-                            'Delete',
+                            'Xóa',
                             style: TextStyle(color: Colors.red),
                           ),
                         ),

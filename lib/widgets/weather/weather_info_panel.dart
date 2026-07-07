@@ -10,9 +10,10 @@ String _describeWeatherCode(int code) {
   if (code >= 45 && code <= 48) return 'Sương mù';
   if (code >= 51 && code <= 67) return 'Mưa phùn / Mưa';
   if (code >= 71 && code <= 77) return 'Tuyết / Băng';
-  if (code >= 80 && code <= 82) return 'Showers';
+  if (code >= 80 && code <= 82) return 'Mưa rào';
+  if (code >= 85 && code <= 86) return 'Mưa tuyết';
   if (code >= 95) return 'Mưa giông';
-  return 'Unknown';
+  return 'Không xác định';
 }
 
 class WeatherInfoPanel extends StatelessWidget {
@@ -84,11 +85,11 @@ class WeatherInfoPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Wind: ${weather!.windspeed?.toStringAsFixed(1) ?? '-'} m/s',
+                    'Gió: ${weather!.windspeed?.toStringAsFixed(1) ?? '-'} m/s',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                   Text(
-                    'Direction: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°',
+                    'Hướng: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
@@ -102,7 +103,7 @@ class WeatherInfoPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: _smallInfo(
-                  'Humidity',
+                  'Độ ẩm',
                   weather!.humidity != null
                       ? '${weather!.humidity!.toStringAsFixed(0)} %'
                       : '-',
@@ -110,7 +111,7 @@ class WeatherInfoPanel extends StatelessWidget {
               ),
               Expanded(
                 child: _smallInfo(
-                  'Pressure',
+                  'Áp suất',
                   weather!.pressure != null
                       ? '${weather!.pressure!.toStringAsFixed(0)} hPa'
                       : '-',
@@ -118,7 +119,7 @@ class WeatherInfoPanel extends StatelessWidget {
               ),
               Expanded(
                 child: _smallInfo(
-                  'Rainfall',
+                  'Lượng mưa',
                   weather!.precipitation != null
                       ? '${weather!.precipitation!.toStringAsFixed(1)} mm'
                       : '-',

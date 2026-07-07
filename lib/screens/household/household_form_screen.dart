@@ -158,7 +158,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
           );
           Navigator.pop(context);
         } else {
-          final errMsg = provider.error ?? 'Unknown error';
+          final errMsg = provider.error ?? 'Lỗi không xác định';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Lỗi: $errMsg'),
@@ -208,7 +208,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Household' : 'Create Household'),
+        title: Text(_isEditing ? 'Sửa hộ gia đình' : 'Thêm hộ gia đình'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -217,18 +217,18 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _s('Basic Info'),
+              _s('Thông tin cơ bản'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _headOfHouseholdController,
                 decoration: const InputDecoration(
-                  labelText: 'Head of Household *',
+                  labelText: 'Chủ hộ *',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.isEmpty) ? 'Bắt buộc' : null,
               ),
               const SizedBox(height: 16),
-              _s('Location'),
+              _s('Địa chỉ'),
               const SizedBox(height: 8),
               Autocomplete<String>(
                 initialValue: TextEditingValue(text: _cityController.text),
@@ -249,19 +249,19 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                   controller: c,
                   focusNode: f,
                   decoration: const InputDecoration(
-                    labelText: 'City/Province',
+                    labelText: 'Tỉnh/Thành phố',
                     border: OutlineInputBorder(),
                     suffixIcon: Icon(Icons.arrow_drop_down),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
-              _drop('Ward/Commune', _wardController, _wards),
+              _drop('Phường/Xã', _wardController, _wards),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _neighborhoodController,
                 decoration: const InputDecoration(
-                  labelText: 'Neighborhood',
+                  labelText: 'Khu phố',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -269,7 +269,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
               TextFormField(
                 controller: _houseNumberController,
                 decoration: const InputDecoration(
-                  labelText: 'House Number',
+                  labelText: 'Số nhà',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -277,17 +277,17 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
               TextFormField(
                 controller: _streetController,
                 decoration: const InputDecoration(
-                  labelText: 'Street',
+                  labelText: 'Đường/phố',
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 24),
-              _s('Contact'),
+              _s('Liên hệ'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: 'Số điện thoại',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.phone,
@@ -302,23 +302,23 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 24),
-              _s('Household Info'),
+              _s('Thông tin hộ'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _populationController,
                 decoration: const InputDecoration(
-                  labelText: 'Number of Members',
+                  labelText: 'Số thành viên',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 24),
-              _s('Notes'),
+              _s('Ghi chú'),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _notesController,
                 decoration: const InputDecoration(
-                  labelText: 'Notes',
+                  labelText: 'Ghi chú',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
@@ -336,7 +336,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          _isEditing ? 'Update' : 'Save',
+                          _isEditing ? 'Cập nhật' : 'Lưu',
                           style: const TextStyle(fontSize: 16),
                         ),
                 ),

@@ -189,7 +189,7 @@ class _VietnamMapState extends State<VietnamMap> {
                     try {
                       await provider.focusProvince(province);
                     } catch (e) {
-                      print('Error focusing province: $e');
+                      debugPrint('Error focusing province: $e');
                     }
                   }
                 },
@@ -222,7 +222,6 @@ class _VietnamMapState extends State<VietnamMap> {
 
                         if (hovered == null) return const SizedBox();
 
-                        // compute anchor and map transform to position icon
                         final canvasSize = Size(
                           constraints.maxWidth,
                           constraints.maxHeight,

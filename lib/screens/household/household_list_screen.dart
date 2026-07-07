@@ -40,19 +40,19 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
+        title: const Text('Xác nhận xóa'),
         content: Text(
-          'Are you sure you want to delete household "${item.headOfHousehold}"?',
+          'Bạn có chắc muốn xóa hộ gia đình "${item.headOfHousehold}"?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            child: const Text('Xóa'),
           ),
         ],
       ),
@@ -71,12 +71,12 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  hintText: 'Search households...',
+                  hintText: 'Tìm kiếm hộ gia đình...',
                   border: InputBorder.none,
                 ),
                 onSubmitted: _onSearch,
               )
-            : const Text('Household List'),
+            : const Text('Danh sách hộ gia đình'),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -109,7 +109,7 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => provider.loadItems(),
-                    child: const Text('Retry'),
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
@@ -123,7 +123,7 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                 children: [
                   Icon(Icons.home_work_outlined, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text('Chua co thong tin'),
+                  Text('Chưa có thông tin'),
                 ],
               ),
             );
@@ -204,10 +204,10 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(value: 'edit', child: Text('Edit')),
+            const PopupMenuItem(value: 'edit', child: Text('Sửa')),
             const PopupMenuItem(
               value: 'delete',
-              child: Text('Delete', style: TextStyle(color: Colors.red)),
+              child: Text('Xóa', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),

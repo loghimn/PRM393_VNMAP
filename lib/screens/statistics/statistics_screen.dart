@@ -48,16 +48,16 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Incident Statistics'),
+        title: const Text('Thống kê sự vụ'),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           tabs: const [
-            Tab(text: 'By Month', icon: Icon(Icons.calendar_month, size: 18)),
-            Tab(text: 'By Ward', icon: Icon(Icons.location_on, size: 18)),
-            Tab(text: 'By Status', icon: Icon(Icons.pie_chart, size: 18)),
+            Tab(text: 'Theo tháng', icon: Icon(Icons.calendar_month, size: 18)),
+            Tab(text: 'Theo khu phố', icon: Icon(Icons.location_on, size: 18)),
+            Tab(text: 'Theo trạng thái', icon: Icon(Icons.pie_chart, size: 18)),
           ],
         ),
       ),
@@ -78,7 +78,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => provider.loadAll(),
-                    child: const Text('Retry'),
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
@@ -102,7 +102,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final data = provider.incidentsByMonth;
     final total = data.values.fold<int>(0, (sum, v) => sum + v);
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return const Center(child: Text('Chưa có dữ liệu'));
     }
 
     return SingleChildScrollView(
@@ -113,7 +113,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           // Year selector
           Row(
             children: [
-              const Text('Select Year: ', style: TextStyle(fontSize: 16)),
+              const Text('Chọn năm: ', style: TextStyle(fontSize: 16)),
               DropdownButton<int>(
                 value: provider.selectedYear,
                 items: List.generate(
@@ -134,7 +134,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Total Incidents: $total',
+            'Tổng sự vụ: $total',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
@@ -151,7 +151,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                       final month = group.x;
                       final value = rod.toY.toInt();
                       return BarTooltipItem(
-                        'Month $month\n$value incidents',
+                        'Tháng $month\n$value sự vụ',
                         const TextStyle(color: Colors.white),
                       );
                     },
@@ -201,7 +201,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 borderData: FlBorderData(show: false),
                 barGroups: data.entries.map((entry) {
                   final month =
-                      int.tryParse(entry.key.replaceAll('Month ', '')) ?? 1;
+                      int.tryParse(entry.key.replaceAll('Tháng ', '')) ?? 1;
                   return BarChartGroupData(
                     x: month,
                     barRods: [
@@ -229,7 +229,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Monthly Details',
+                    'Chi tiết theo tháng',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const Divider(),
@@ -263,7 +263,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget _buildTheoKhuPhoTab(StatisticsProvider provider) {
     final data = provider.incidentsByNeighborhood;
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return const Center(child: Text('Chưa có dữ liệu'));
     }
 
     final maxValue = data.values.reduce((a, b) => a > b ? a : b).toDouble();
@@ -274,7 +274,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Incidents by Ward',
+            'Sự vụ theo khu phố',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -324,7 +324,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Total',
+                    'Tổng',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(

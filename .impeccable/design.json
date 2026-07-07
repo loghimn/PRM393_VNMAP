@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-06T22:15:00+07:00",
+  "title": "Design System: PRM393_VNMAP",
+  "extensions": {
+    "colorMeta": {
+      "ocean-blue": {
+        "role": "primary",
+        "displayName": "Ocean Blue",
+        "canonical": "#2563EB",
+        "tonalRamp": ["#1E40AF", "#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#BFDBFE", "#DBEAFE", "#EFF6FF"]
+      },
+      "cyan": {
+        "role": "secondary",
+        "displayName": "Cyan",
+        "canonical": "#06B6D4",
+        "tonalRamp": ["#164E63", "#06B6D4", "#22D3EE", "#67E8F9", "#A5F3FC", "#CFFAFE", "#ECFEFF", "#F0F9FF"]
+      },
+      "violet": {
+        "role": "tertiary",
+        "displayName": "Violet",
+        "canonical": "#8B5CF6",
+        "tonalRamp": ["#5B21B6", "#8B5CF6", "#A78BFA", "#C4B5FD", "#DDD6FE", "#EDE9FE", "#F5F3FF", "#FAF5FF"]
+      },
+      "mint": {
+        "role": "success",
+        "displayName": "Mint",
+        "canonical": "#10B981",
+        "tonalRamp": ["#064E3B", "#10B981", "#34D399", "#6EE7B7", "#A7F3D0", "#D1FAE5", "#ECFDF5", "#F0FDF4"]
+      },
+      "amber": {
+        "role": "warning",
+        "displayName": "Amber",
+        "canonical": "#F59E0B",
+        "tonalRamp": ["#78350F", "#F59E0B", "#FBBF24", "#FCD34D", "#FDE68A", "#FEF3C7", "#FFFBEB", "#FEFCE8"]
+      },
+      "coral": {
+        "role": "error",
+        "displayName": "Coral",
+        "canonical": "#EF4444",
+        "tonalRamp": ["#7F1D1D", "#EF4444", "#F87171", "#FCA5A5", "#FECACA", "#FEE2E2", "#FEF2F2", "#FFF1F2"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles only. Maximum contrast." },
+      "headline": { "displayName": "Headline", "purpose": "Section headers. Major dashboard zones." },
+      "title": { "displayName": "Title", "purpose": "Card titles, panel headers, significant lists." },
+      "body": { "displayName": "Body", "purpose": "Core reading text. Default for prose." },
+      "caption": { "displayName": "Caption", "purpose": "Secondary labels, metadata, timestamps." },
+      "label": { "displayName": "Label", "purpose": "Muted text, badges, chip labels, map overlays." }
+    },
+    "shadows": [
+      {
+        "name": "card-ambient-light",
+        "value": "0 4px 16px rgba(0,0,0,0.08)",
+        "purpose": "Ambient elevation for cards and floating panels in light mode."
+      },
+      {
+        "name": "card-ambient-dark",
+        "value": "0 8px 24px rgba(0,0,0,0.18)",
+        "purpose": "Ambient elevation for cards and floating panels in dark mode."
+      }
+    ],
+    "motion": [
+      {
+        "name": "standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default state transition easing. Short duration."
+      }
+    ],
+    "breakpoints": [
+      { "name": "desktop", "value": "1440px" },
+      { "name": "laptop", "value": "1024px" },
+      { "name": "tablet", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "elevated-button",
+      "description": "Primary action button. Flat by default, darker on hover/focus.",
+      "html": "<button class=\"ds-btn-primary\">Save</button>",
+      "css": ".ds-btn-primary { background: #2563EB; color: #FFFFFF; border: none; border-radius: 12px; padding: 18px 48px; font-weight: 600; font-size: 14px; line-height: 1.2; letter-spacing: 0.1px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; font-family: inherit; } .ds-btn-primary:hover { background: #1D4ED8; } .ds-btn-primary:focus-visible { outline: 2px solid #2563EB; outline-offset: 12px; border-radius: 12px; } .ds-btn-primary:active { background: #1D4ED8; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "elevated-button",
+      "description": "Destructive action variant. Uses Error Coral.",
+      "html": "<button class=\"ds-btn-destructive\">Xóa</button>",
+      "css": ".ds-btn-destructive { background: #EF4444; color: #FFFFFF; border: none; border-radius: 12px; padding: 18px 48px; font-weight: 600; font-size: 14px; line-height: 1.2; letter-spacing: 0.1px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; font-family: inherit; } .ds-btn-destructive:hover { background: #DC2626; } .ds-btn-destructive:focus-visible { outline: 2px solid #EF4444; outline-offset: 12px; border-radius: 12px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Filled text field with search styling and focus ring.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search provinces...\"/>",
+      "css": ".ds-input { background: #F1F5F9; color: #1E293B; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; font-size: 13px; font-family: inherit; box-sizing: border-box; width: 100%; } .ds-input:focus { outline: none; border: 1.5px solid #2563EB; } .ds-input::placeholder { color: #94A3B8; } .ds-input:disabled { color: #94A3B8; opacity: 1; }"
+    },
+    {
+      "name": "Chip Default",
+      "kind": "chip",
+      "refersTo": "chip-default",
+      "description": "Filter chip default state with border.",
+      "html": "<span class=\"ds-chip\">All provinces</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; justify-content: center; background: #FFFFFF; color: #1E293B; border: 1px solid #E2E8F0; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 500; line-height: 1.3; letter-spacing: 0.2px; box-sizing: border-box; font-family: inherit; }"
+    },
+    {
+      "name": "Chip Selected",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "Selected filter chip state.",
+      "html": "<span class=\"ds-chip-selected\">Selected</span>",
+      "css": ".ds-chip-selected { display: inline-flex; align-items: center; justify-content: center; background: #2563EB; color: #FFFFFF; border: 1px solid #2563EB; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 500; line-height: 1.3; letter-spacing: 0.2px; box-sizing: border-box; font-family: inherit; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Standard container for dashboard panels.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-body\"><p>Card content</p></div></div>",
+      "css": ".ds-card { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 24px; box-sizing: border-box; font-family: inherit; } .ds-card-body { color: #1E293B; font-size: 16px; line-height: 1.4; }"
+    },
+    {
+      "name": "Snackbar",
+      "kind": "card",
+      "refersTo": "snackbar",
+      "description": "Floating status message.",
+      "html": "<div class=\"ds-snackbar\"><div class=\"ds-snackbar-body\">Saved successfully</div></div>",
+      "css": ".ds-snackbar { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #1E293B; color: #FFFFFF; border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); z-index: 50; font-family: inherit; } .ds-snackbar-body { font-size: 14px; font-weight: 500; line-height: 1.3; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "card",
+      "refersTo": "dialog",
+      "description": "Modal dialog for confirmations and forms.",
+      "html": "<div class=\"ds-dialog\" role=\"dialog\"><div class=\"ds-dialog-body\">...</div></div>",
+      "css": ".ds-dialog { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 32px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); max-width: 520px; width: calc(100% - 48px); box-sizing: border-box; font-family: inherit; } .ds-dialog-body { color: #1E293B; font-size: 15px; line-height: 1.4; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Field Tablet",
+    "overview": "A calm, high-contrast data environment that feels like a precision instrument for field operations. Light surfaces carry soft blue-grey papers; dark surfaces sink into deep slate. The system is built for long working sessions, dense tables, and rapid map navigation. The palette is restrained: one primary blue, one cyan secondary, one violet accent, and smart neutrals. Gradients are used sparingly to mark rank and status, not decoration.",
+    "keyCharacteristics": [
+      "High information density without clutter",
+      "Clear surface layering through subtle borders and soft backgrounds",
+      "Primary actions use Ocean Blue; secondary telemetry uses Cyan; attention-directing highlights use Violet",
+      "Reduced motion by default; transitions are pure state changes",
+      "Typography is tight, technical, and unambiguous"
+    ],
+    "rules": [
+      { "name": "Rare Accent Rule", "body": "Primary Ocean Blue appears on ≤10% of any given screen. Cyan and Violet are even rarer. Their rarity is the point — when the user sees blue, something is actionable.", "section": "colors" },
+      { "name": "Dark Surface Rule", "body": "Dark mode is not simply inverted light mode. Dark surfaces carry reduced saturation so highlights remain punchy. Never paste a light-mode value into dark mode; always derive from the neutral stack with adjusted luminance.", "section": "colors" },
+      { "name": "Flat-By-Default Rule", "body": "No card has a shadow unless it is modal, elevated, or in focus. Default panels are separated via border on surface-muted backgrounds. Shadows appear only as response to state — hover, focus, or modal elevation.", "section": "elevation" },
+      { "name": "Vietnamese Clarity Rule", "body": "All text sizes maintain a minimum contrast ratio of 4.5:1 against their background under both light and dark themes.", "section": "typography" }
+    ],
+    "dos": [
+      "Do reserve Ocean Blue (#2563EB) for actions, selections, and focus. When in doubt, ask whether the element moves the task forward.",
+      "Do keep cards on the neutral surface stack. A card that needs emphasis should grow in size or weight, not in decoration.",
+      "Do use the six-level text hierarchy exactly. Do not invent ad-hoc font sizes between levels.",
+      "Do keep rank gradients semantic. Primary gradient for number 1, green for positive, orange for warning, never for decoration.",
+      "Do verify 4.5:1 contrast for all text under WCAG AA, including caption sizes on both light and dark themes.",
+      "Do use system font stacks so Vietnamese diacritical marks render crisply on all desktop platforms."
+    ],
+    "donts": [
+      "Don't use decorative gradients, patterned backgrounds, glassmorphism, or noise textures. The surface is flat; depth comes from structure, not materiality.",
+      "Don't place heavy marketing-style illustrations, hero images, or narrative scroll sections. This is an operational instrument — data density is the brand.",
+      "Don't introduce additional accent colors beyond the defined trio. If a new color seems necessary, reconsider whether an existing token can carry the meaning.",
+      "Don't use shadows by default. A shadow on every card is visual noise; reserve them for modal, active, or focus states only.",
+      "Don't break the Surface / Surface Muted / Border stack. If a container feels flat, increase its border contrast or shift its surface token; never add a gradient to a passive element.",
+      "Don't rely on color alone for status. Pair every color-coded indicator with text or icon affordance for color-blind users."
+    ]
+  }
+}

@@ -100,7 +100,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
     );
     final provider = context.read<IncidentProvider>();
     final ok = _isEditing ? await provider.update(inc) : await provider.create(inc);
-    if (mounted) { setState(() => _isSaving = false); if (ok) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEditing ? 'Updated' : 'Created'))); Navigator.pop(context); } }
+    if (mounted) { setState(() => _isSaving = false); if (ok) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_isEditing ? 'Đã cập nhật' : 'Đã tạo'))); Navigator.pop(context); } }
   }
 
   Widget _drop(String label, TextEditingController ctrl, List<String> items, {void Function(String)? onChanged}) {
@@ -116,41 +116,39 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Incident' : 'Create Incident')),
+      appBar: AppBar(title: Text(_isEditing ? 'Sửa sự vụ' : 'Tạo sự vụ')),
       body: SingleChildScrollView(padding: const EdgeInsets.all(16), child: Form(key: _formKey, child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _s('Incident Info'), const SizedBox(height: 8),
-          TextFormField(controller: _titleController, decoration: const InputDecoration(labelText: 'Title *', border: OutlineInputBorder()), validator: (v) => (v == null || v.isEmpty) ? 'Required' : null),
+          _s('Thông tin sự vụ'), const SizedBox(height: 8),
+          TextFormField(controller: _titleController, decoration: const InputDecoration(labelText: 'Tiêu đề *', border: OutlineInputBorder()), validator: (v) => (v == null || v.isEmpty) ? 'Bắt buộc' : null),
           const SizedBox(height: 12),
-          TextFormField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),
+          TextFormField(controller: _descriptionController, decoration: const InputDecoration(labelText: 'Mô tả', border: OutlineInputBorder()), maxLines: 3),
           const SizedBox(height: 16),
-          _s('Location'), const SizedBox(height: 8),
-          _drop('City/Province', _cityController, _cities.map((c) => c['name']!).toList(), onChanged: _onCityChanged),
+          _s('Địa điểm'), const SizedBox(height: 8),
+          _drop('Tỉnh/Thành phố', _cityController, _cities.map((c) => c['name']!).toList(), onChanged: _onCityChanged),
           const SizedBox(height: 12),
-          _drop('Ward/Commune', _wardController, _wards),
+          _drop('Phường/Xã', _wardController, _wards),
           const SizedBox(height: 12),
-          TextFormField(controller: _neighborhoodController, decoration: const InputDecoration(labelText: 'Neighborhood', border: OutlineInputBorder())),
+          TextFormField(controller: _districtController, decoration: const InputDecoration(labelText: 'Quận/Huyện', border: OutlineInputBorder())),
           const SizedBox(height: 12),
-          TextFormField(controller: _districtController, decoration: const InputDecoration(labelText: 'District', border: OutlineInputBorder())),
-          const SizedBox(height: 12),
-          TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Address', border: OutlineInputBorder())),
+          TextFormField(controller: _addressController, decoration: const InputDecoration(labelText: 'Địa chỉ', border: OutlineInputBorder())),
           const SizedBox(height: 24),
-          _s('Household Info'), const SizedBox(height: 8),
-          TextFormField(controller: _headOfHouseholdController, decoration: const InputDecoration(labelText: 'Head of Household', border: OutlineInputBorder())),
+          _s('Thông tin hộ'), const SizedBox(height: 8),
+          TextFormField(controller: _headOfHouseholdController, decoration: const InputDecoration(labelText: 'Chủ hộ', border: OutlineInputBorder())),
           const SizedBox(height: 12),
-          TextFormField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Phone', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
+          TextFormField(controller: _phoneController, decoration: const InputDecoration(labelText: 'Điện thoại', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
           const SizedBox(height: 24),
-          _s('Assignment'), const SizedBox(height: 8),
-          TextFormField(controller: _handlerController, decoration: const InputDecoration(labelText: 'Handler', border: OutlineInputBorder())),
+          _s('Phân công'), const SizedBox(height: 8),
+          TextFormField(controller: _handlerController, decoration: const InputDecoration(labelText: 'Người xử lý', border: OutlineInputBorder())),
           const SizedBox(height: 24),
-          _s('Notes'), const SizedBox(height: 8),
-          TextFormField(controller: _notesController, decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()), maxLines: 3),
+          _s('Ghi chú'), const SizedBox(height: 8),
+          TextFormField(controller: _notesController, decoration: const InputDecoration(labelText: 'Ghi chú', border: OutlineInputBorder()), maxLines: 3),
           const SizedBox(height: 32),
           SizedBox(width: double.infinity, height: 48,
             child: ElevatedButton(onPressed: _isSaving ? null : _save,
               child: _isSaving ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(_isEditing ? 'Update' : 'Save', style: const TextStyle(fontSize: 16)))),
+                  : Text(_isEditing ? 'Cập nhật' : 'Lưu', style: const TextStyle(fontSize: 16)))),
           const SizedBox(height: 16),
         ],
       ))),

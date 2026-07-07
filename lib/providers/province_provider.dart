@@ -22,7 +22,7 @@ class ProvinceProvider extends ChangeNotifier {
     try {
       calculatedDensities = await _service.fetchCalculatedDensities();
     } catch (e) {
-      print("Error calculating commune densities: $e");
+      debugPrint("Error calculating commune densities: $e");
     } finally {
       isCalculatingDensity = false;
       notifyListeners();
@@ -48,7 +48,7 @@ class ProvinceProvider extends ChangeNotifier {
         commune.name,
       );
     } catch (e) {
-      print("Error loading high schools for commune ${commune.name}: $e");
+      debugPrint("Error loading high schools for commune ${commune.name}: $e");
     } finally {
       isLoadingHighSchools = false;
       notifyListeners();
@@ -76,15 +76,15 @@ class ProvinceProvider extends ChangeNotifier {
 
     // Load communes first (from cache or network) before updating UI
     if (!_provinceCommunesCache.containsKey(cacheKey)) {
-      print('Loading communes for province: ${province.name}...');
+      debugPrint('Loading communes for province: ${province.name}...');
       try {
         final loaded = await _service.fetchCommunesForProvince(province.name);
         _provinceCommunesCache[cacheKey] = loaded;
-        print(
+        debugPrint(
           'Loaded ${loaded.length} communes for province: ${province.name}',
         );
       } catch (e) {
-        print('Error loading communes for ${province.name}: $e');
+        debugPrint('Error loading communes for ${province.name}: $e');
         _provinceCommunesCache[cacheKey] = [];
       }
     }
@@ -94,16 +94,16 @@ class ProvinceProvider extends ChangeNotifier {
     focusedProvince = province;
     focusedCommunes = _provinceCommunesCache[cacheKey]!;
 
-    print('Focus province: ${province.name}');
-    print('Focused communes count: ${focusedCommunes.length}');
+    debugPrint('Focus province: ${province.name}');
+    debugPrint('Focused communes count: ${focusedCommunes.length}');
     if (focusedCommunes.isNotEmpty) {
-      print('First commune: ${focusedCommunes.first.name}');
+      debugPrint('First commune: ${focusedCommunes.first.name}');
 
       // Debug: Check first 5 communes
-      print('First 5 communes:');
+      debugPrint('First 5 communes:');
       for (int i = 0; i < focusedCommunes.take(5).length; i++) {
         final c = focusedCommunes[i];
-        print(
+        debugPrint(
           // ignore: unnecessary_null_comparison
           '  ${i + 1}. ${c.name} - type: ${c.properties['type']}, has geometry: ${c.geometry != null}',
         );
@@ -114,14 +114,14 @@ class ProvinceProvider extends ChangeNotifier {
   }
 
   void selectProvince(ProvinceModel province) {
-    print("SELECT PROVINCE: ${province.name}");
+    debugPrint("SELECT PROVINCE: ${province.name}");
     selectedProvince = province;
     selectedCommune = null;
     notifyListeners();
   }
 
   void selectCommune(ProvinceModel commune) {
-    print("SELECT COMMUNE: ${commune.name}");
+    debugPrint("SELECT COMMUNE: ${commune.name}");
     selectedCommune = commune;
     selectedProvince = null;
     selectedCommuneHouseholds = [];
@@ -141,7 +141,7 @@ class ProvinceProvider extends ChangeNotifier {
         commune.name,
       );
     } catch (e) {
-      print("Error loading households for commune ${commune.name}: $e");
+      debugPrint("Error loading households for commune ${commune.name}: $e");
     } finally {
       isLoadingHouseholds = false;
       notifyListeners();
@@ -184,7 +184,7 @@ class ProvinceProvider extends ChangeNotifier {
           );
           await focusProvince(parentProvince);
         } catch (e) {
-          print('Parent province not found in cache for commune search: $e');
+          debugPrint('Parent province not found in cache for commune search: $e');
         }
       }
       selectCommune(commune);
