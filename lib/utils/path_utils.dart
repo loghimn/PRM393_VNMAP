@@ -14,26 +14,57 @@ class PathUtils {
       bool isFirstPoint = true;
 
       for (int i = 0; i < ring.length; i++) {
-        final point = ring[i];
+        try {
+          final point = ring[i];
 
-        if (point is! List || point.length < 2) continue;
+          if (point is! List || point.length < 2) continue;
 
-        double lon = point[0].toDouble();
-        double lat = point[1].toDouble();
+          double lon = point[0].toDouble();
+          double lat = point[1].toDouble();
 
-        final p = GeoUtils.convert(lon, lat);
+          // Skip if coordinates are NaN or infinite
+          if (lon.isNaN || lon.isInfinite || lat.isNaN || lat.isInfinite) {
+            continue;
+          }
 
-        if (isFirstPoint) {
-          path.moveTo(p.dx, p.dy);
-          isFirstPoint = false;
-        } else {
-          path.lineTo(p.dx, p.dy);
+          final p = GeoUtils.convert(lon, lat);
+
+          // Skip if converted position is invalid
+          if (p.dx.isNaN || p.dx.isInfinite || p.dy.isNaN || p.dy.isInfinite) {
+            continue;
+          }
+
+          if (isFirstPoint) {
+            path.moveTo(p.dx, p.dy);
+            isFirstPoint = false;
+          } else {
+            path.lineTo(p.dx, p.dy);
+          }
+        } catch (e) {
+          // Skip problematic points
+          continue;
         }
       }
 
-      path.close();
+      if (!isFirstPoint) {
+        path.close();
+      }
     }
 
     return path;
+  }
+
+  /// Safe polygon path creation with fallback for problematic provinces like An Giang
+  static Path createPolygonPathSafe(
+    dynamic coordinates, {
+    String? provinceName,
+  }) {
+    try {
+      return createPolygonPath(coordinates);
+    } catch (e) {
+      debugPrint('Error creating path for $provinceName: $e');
+      // Return empty path if something goes wrong
+      return Path();
+    }
   }
 }
