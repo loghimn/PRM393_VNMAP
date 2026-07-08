@@ -102,4 +102,15 @@ class ProvinceModel {
             .join(' ');
     }
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProvinceModel &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          ma == other.ma;
+
+  @override
+  int get hashCode => name.hashCode ^ ma.hashCode;
 }

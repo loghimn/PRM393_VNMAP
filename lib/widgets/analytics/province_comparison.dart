@@ -18,9 +18,12 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
   ProvinceModel? selectedProvince1;
   ProvinceModel? selectedProvince2;
 
-  ProvinceModel? selectedProvinceForCommunes;
-  List<ProvinceModel> communes = [];
-  bool isLoadingCommunes = false;
+  ProvinceModel? selectedProvinceForCommune1;
+  ProvinceModel? selectedProvinceForCommune2;
+  List<ProvinceModel> communes1 = [];
+  List<ProvinceModel> communes2 = [];
+  bool isLoadingCommunes1 = false;
+  bool isLoadingCommunes2 = false;
   ProvinceModel? selectedCommune1;
   ProvinceModel? selectedCommune2;
 
@@ -29,18 +32,57 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
     super.initState();
     if (widget.provinces.isNotEmpty) {
       selectedProvince1 = widget.provinces[0];
+      selectedProvinceForCommune1 = widget.provinces[0];
       if (widget.provinces.length > 1) {
         selectedProvince2 = widget.provinces[1];
+        selectedProvinceForCommune2 = widget.provinces[1];
+      } else {
+        selectedProvinceForCommune2 = widget.provinces[0];
       }
     }
   }
 
-  Future<void> _loadCommunesForProvince(ProvinceModel province) async {
+  Future<void> _loadCommunesForProvince1(ProvinceModel province) async {
     setState(() {
-      selectedProvinceForCommunes = province;
-      isLoadingCommunes = true;
-      communes = [];
+      selectedProvinceForCommune1 = province;
+      isLoadingCommunes1 = true;
+      communes1 = [];
       selectedCommune1 = null;
+    });
+
+    try {
+      final databaseService = DatabaseService();
+      final fetched = await databaseService.fetchCommunesForProvince(
+        province.name,
+      );
+      setState(() {
+        communes1 = fetched;
+        if (fetched.isNotEmpty) {
+          if (selectedProvinceForCommune1 == selectedProvinceForCommune2 &&
+              selectedCommune2 != null &&
+              fetched.length > 1 &&
+              fetched[0].ma == selectedCommune2!.ma) {
+            selectedCommune1 = fetched[1];
+          } else {
+            selectedCommune1 = fetched[0];
+          }
+        }
+        isLoadingCommunes1 = false;
+      });
+    } catch (e) {
+      // ignore: avoid_print
+      print("Error fetching communes for ${province.name}: $e");
+      setState(() {
+        isLoadingCommunes1 = false;
+      });
+    }
+  }
+
+  Future<void> _loadCommunesForProvince2(ProvinceModel province) async {
+    setState(() {
+      selectedProvinceForCommune2 = province;
+      isLoadingCommunes2 = true;
+      communes2 = [];
       selectedCommune2 = null;
     });
 
@@ -50,20 +92,24 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
         province.name,
       );
       setState(() {
-        communes = fetched;
+        communes2 = fetched;
         if (fetched.isNotEmpty) {
-          selectedCommune1 = fetched[0];
-          if (fetched.length > 1) {
+          if (selectedProvinceForCommune1 == selectedProvinceForCommune2 &&
+              selectedCommune1 != null &&
+              fetched.length > 1 &&
+              fetched[0].ma == selectedCommune1!.ma) {
             selectedCommune2 = fetched[1];
+          } else {
+            selectedCommune2 = fetched[0];
           }
         }
-        isLoadingCommunes = false;
+        isLoadingCommunes2 = false;
       });
     } catch (e) {
       // ignore: avoid_print
       print("Error fetching communes for ${province.name}: $e");
       setState(() {
-        isLoadingCommunes = false;
+        isLoadingCommunes2 = false;
       });
     }
   }
@@ -72,10 +118,19 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
     setState(() {
       _comparisonMode = mode;
     });
-    if (mode == 1 &&
-        selectedProvinceForCommunes == null &&
-        widget.provinces.isNotEmpty) {
-      _loadCommunesForProvince(widget.provinces[0]);
+    if (mode == 1) {
+      if ((selectedProvinceForCommune1 == null || communes1.isEmpty) && widget.provinces.isNotEmpty) {
+        _loadCommunesForProvince1(selectedProvinceForCommune1 ?? widget.provinces[0]);
+      }
+      if ((selectedProvinceForCommune2 == null || communes2.isEmpty) && widget.provinces.isNotEmpty) {
+        if (selectedProvinceForCommune2 != null) {
+          _loadCommunesForProvince2(selectedProvinceForCommune2!);
+        } else if (widget.provinces.length > 1) {
+          _loadCommunesForProvince2(widget.provinces[1]);
+        } else {
+          _loadCommunesForProvince2(widget.provinces[0]);
+        }
+      }
     }
   }
 
@@ -256,103 +311,145 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
             ],
           ] else ...[
             // ── Commune Mode ──
-            _buildDropdown(
-              label: 'Chọn Tỉnh/Thành phố',
-              value: selectedProvinceForCommunes,
-              items: widget.provinces,
-              color: AppColors.primary,
-              onChanged: (value) {
-                if (value != null) {
-                  _loadCommunesForProvince(value);
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            if (isLoadingCommunes)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              )
-            else if (communes.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: Center(
-                  child: Text(
-                    'Không tìm thấy dữ liệu xã/phường cho tỉnh/thành phố này.',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Column 1
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDropdown(
+                        label: 'Chọn Tỉnh/Thành phố 1',
+                        value: selectedProvinceForCommune1,
+                        items: widget.provinces,
+                        color: AppColors.compareA,
+                        onChanged: (value) {
+                          if (value != null) {
+                            _loadCommunesForProvince1(value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      if (isLoadingCommunes1)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.compareA),
+                          ),
+                        )
+                      else if (communes1.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: Text(
+                              'Không có dữ liệu xã/phường.',
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                            ),
+                          ),
+                        )
+                      else
+                        _buildDropdown(
+                          label: 'Xã/Phường 1',
+                          value: selectedCommune1,
+                          items: selectedProvinceForCommune1 == selectedProvinceForCommune2
+                              ? communes1.where((c) => c.ma != selectedCommune2?.ma).toList()
+                              : communes1,
+                          color: AppColors.compareA,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCommune1 = value;
+                            });
+                          },
+                        ),
+                    ],
                   ),
                 ),
-              )
-            else ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDropdown(
-                      label: 'Xã/Phường 1',
-                      value: selectedCommune1,
-                      items: communes
-                          .where((c) => c.name != selectedCommune2?.name)
-                          .toList(),
-                      color: AppColors.compareA,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedCommune1 = value;
-                        });
-                      },
-                    ),
+                const SizedBox(width: 16),
+                // Column 2
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDropdown(
+                        label: 'Chọn Tỉnh/Thành phố 2',
+                        value: selectedProvinceForCommune2,
+                        items: widget.provinces,
+                        color: AppColors.compareB,
+                        onChanged: (value) {
+                          if (value != null) {
+                            _loadCommunesForProvince2(value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      if (isLoadingCommunes2)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: CircularProgressIndicator(color: AppColors.compareB),
+                          ),
+                        )
+                      else if (communes2.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: Text(
+                              'Không có dữ liệu xã/phường.',
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                            ),
+                          ),
+                        )
+                      else
+                        _buildDropdown(
+                          label: 'Xã/Phường 2',
+                          value: selectedCommune2,
+                          items: selectedProvinceForCommune1 == selectedProvinceForCommune2
+                              ? communes2.where((c) => c.ma != selectedCommune1?.ma).toList()
+                              : communes2,
+                          color: AppColors.compareB,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedCommune2 = value;
+                            });
+                          },
+                        ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildDropdown(
-                      label: 'Xã/Phường 2',
-                      value: selectedCommune2,
-                      items: communes
-                          .where((c) => c.name != selectedCommune1?.name)
-                          .toList(),
-                      color: AppColors.compareB,
-                      onChanged: (value) {
-                        setState(() {
-                          selectedCommune2 = value;
-                        });
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              if (selectedCommune1 != null && selectedCommune2 != null) ...[
-                _buildMetricChart(
-                  title: 'Dân Số',
-                  icon: Icons.people_alt,
-                  val1: (selectedCommune1!.population ?? 0).toDouble(),
-                  val2: (selectedCommune2!.population ?? 0).toDouble(),
-                  unit: 'người',
-                  p1Name: selectedCommune1!.name,
-                  p2Name: selectedCommune2!.name,
-                ),
-                _buildMetricChart(
-                  title: 'Diện Tích',
-                  icon: Icons.straighten,
-                  val1: selectedCommune1!.areaKm2 ?? 0.0,
-                  val2: selectedCommune2!.areaKm2 ?? 0.0,
-                  unit: 'km²',
-                  p1Name: selectedCommune1!.name,
-                  p2Name: selectedCommune2!.name,
-                  isDecimal: true,
-                ),
-                _buildMetricChart(
-                  title: 'Mật Độ Dân Số',
-                  icon: Icons.density_medium,
-                  val1: selectedCommune1!.density ?? 0.0,
-                  val2: selectedCommune2!.density ?? 0.0,
-                  unit: 'người/km²',
-                  p1Name: selectedCommune1!.name,
-                  p2Name: selectedCommune2!.name,
-                  isDecimal: true,
                 ),
               ],
+            ),
+            const SizedBox(height: 30),
+            if (selectedCommune1 != null && selectedCommune2 != null) ...[
+              _buildMetricChart(
+                title: 'Dân Số',
+                icon: Icons.people_alt,
+                val1: (selectedCommune1!.population ?? 0).toDouble(),
+                val2: (selectedCommune2!.population ?? 0).toDouble(),
+                unit: 'người',
+                p1Name: '${selectedCommune1!.name} (${selectedCommune1!.parentTen ?? ''})',
+                p2Name: '${selectedCommune2!.name} (${selectedCommune2!.parentTen ?? ''})',
+              ),
+              _buildMetricChart(
+                title: 'Diện Tích',
+                icon: Icons.straighten,
+                val1: selectedCommune1!.areaKm2 ?? 0.0,
+                val2: selectedCommune2!.areaKm2 ?? 0.0,
+                unit: 'km²',
+                p1Name: '${selectedCommune1!.name} (${selectedCommune1!.parentTen ?? ''})',
+                p2Name: '${selectedCommune2!.name} (${selectedCommune2!.parentTen ?? ''})',
+                isDecimal: true,
+              ),
+              _buildMetricChart(
+                title: 'Mật Độ Dân Số',
+                icon: Icons.density_medium,
+                val1: selectedCommune1!.density ?? 0.0,
+                val2: selectedCommune2!.density ?? 0.0,
+                unit: 'người/km²',
+                p1Name: '${selectedCommune1!.name} (${selectedCommune1!.parentTen ?? ''})',
+                p2Name: '${selectedCommune2!.name} (${selectedCommune2!.parentTen ?? ''})',
+                isDecimal: true,
+              ),
             ],
           ],
         ],
@@ -594,14 +691,11 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                     ),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
+                      child: Container(
                         width: constraints.maxWidth * pct1,
                         height: 14,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
-                          ),
+                          color: const Color(0xFF2563EB),
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: isP1Winner
                               ? [
@@ -683,14 +777,11 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
                     ),
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
+                      child: Container(
                         width: constraints.maxWidth * pct2,
                         height: 14,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF34D399), Color(0xFF10B981)],
-                          ),
+                          color: const Color(0xFF10B981),
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: isP2Winner
                               ? [
