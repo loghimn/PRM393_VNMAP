@@ -13,16 +13,19 @@ import 'package:vietnam_geo_dashboard/widgets/analytics/province_list_panel.dart
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/statistics/statistics_screen.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
+
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late TabController _viewModeController;
-  int _selectedView = 0; // 0 = Dashboard, 1 = Map, 2 = Household, 3 = Incident, 4 = Statistics
+  int _selectedView =
+      0; // 0 = Dashboard, 1 = Map, 2 = Household, 3 = Incident, 4 = Statistics
   String _chartMetric = 'density';
   int? _hoveredSidebarItem;
   bool _isKPIExpanded = true;
@@ -45,21 +48,21 @@ class _DashboardScreenState extends State<DashboardScreen>
       });
     });
   }
+
   @override
   void dispose() {
     _tabController.dispose();
     _viewModeController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
     if (isMobile) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: SafeArea(
-          child: _buildMainContent(isMobile: true),
-        ),
+        body: SafeArea(child: _buildMainContent(isMobile: true)),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _selectedView,
           onDestinationSelected: (index) {
@@ -70,11 +73,26 @@ class _DashboardScreenState extends State<DashboardScreen>
           backgroundColor: AppColors.surface,
           indicatorColor: AppColors.primary.withAlpha(30),
           destinations: const [
-            NavigationDestination(icon: Icon(Icons.dashboard_rounded), label: 'Dashboard'),
-            NavigationDestination(icon: Icon(Icons.map_rounded), label: 'Map'),
-            NavigationDestination(icon: Icon(Icons.home_work_rounded), label: 'Households'),
-            NavigationDestination(icon: Icon(Icons.warning_amber_rounded), label: 'Incidents'),
-            NavigationDestination(icon: Icon(Icons.bar_chart_rounded), label: 'Statistics'),
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_rounded),
+              label: 'Tổng quan',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.map_rounded),
+              label: 'Bản đồ',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.home_work_rounded),
+              label: 'Hộ gia đình',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.warning_amber_rounded),
+              label: 'Sự cố',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.bar_chart_rounded),
+              label: 'Thống kê',
+            ),
           ],
         ),
       );
@@ -127,7 +145,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       _buildSidebarItem(
                         index: 0,
                         icon: Icons.dashboard_rounded,
-                        label: 'Dashboard',
+                        label: 'Tổng quan',
                         isSelected: _selectedView == 0,
                         onTap: () => setState(() => _selectedView = 0),
                       ),
@@ -136,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       _buildSidebarItem(
                         index: 1,
                         icon: Icons.map_rounded,
-                        label: 'Map',
+                        label: 'Bản đồ',
                         isSelected: _selectedView == 1,
                         onTap: () => setState(() => _selectedView = 1),
                       ),
@@ -145,7 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       _buildSidebarItem(
                         index: 2,
                         icon: Icons.home_work_rounded,
-                        label: 'Households',
+                        label: 'Hộ gia đình',
                         isSelected: _selectedView == 2,
                         onTap: () => setState(() => _selectedView = 2),
                       ),
@@ -154,7 +172,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       _buildSidebarItem(
                         index: 3,
                         icon: Icons.warning_amber_rounded,
-                        label: 'Incidents',
+                        label: 'Sự cố',
                         isSelected: _selectedView == 3,
                         onTap: () => setState(() => _selectedView = 3),
                       ),
@@ -163,7 +181,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       _buildSidebarItem(
                         index: 4,
                         icon: Icons.bar_chart_rounded,
-                        label: 'Statistics',
+                        label: 'Thống kê',
                         isSelected: _selectedView == 4,
                         onTap: () => setState(() => _selectedView = 4),
                       ),
@@ -265,13 +283,12 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           // MAIN CONTENT
-          Expanded(
-            child: _buildMainContent(isMobile: false),
-          ),
+          Expanded(child: _buildMainContent(isMobile: false)),
         ],
       ),
     );
   }
+
   Widget _buildSidebarItem({
     required int index,
     required IconData icon,
@@ -337,6 +354,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
+
   Widget _buildMainContent({required bool isMobile}) {
     switch (_selectedView) {
       case 0:
@@ -353,6 +371,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         return _buildDashboardView();
     }
   }
+
   Widget _buildDashboardView() {
     return Container(
       color: AppColors.background,
@@ -375,14 +394,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Vietnam Data Dashboard",
+                          "Bảng Điều Khiển Dữ Liệu Việt Nam",
                           style: AppTypography.h3.copyWith(
                             color: AppColors.textPrimary,
                             fontSize: 16,
                           ),
                         ),
                         Text(
-                          'Analyzing population, area and density of 34 provinces',
+                          'Phân tích dân số, diện tích và mật độ 34 tỉnh/thành phố',
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textMuted,
                             fontSize: 10,
@@ -437,8 +456,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             const SizedBox(width: 3),
                             Text(
                               _isKPIExpanded
-                                  ? 'Quick Stats'
-                                  : 'Province List',
+                                  ? 'Thống kê nhanh'
+                                  : 'Danh sách Tỉnh/TP',
                               style: TextStyle(
                                 color: _isKPIExpanded
                                     ? Colors.white
@@ -580,8 +599,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   _chartMetric == 'density'
                                       ? 'Mật Độ Dân Số'
                                       : _chartMetric == 'area'
-                                      ? 'Area'
-                                      : 'Population',
+                                      ? 'Diện tích'
+                                      : 'Dân số',
                                 ),
                               ],
                             ),
@@ -592,7 +611,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               children: [
                                 Icon(Icons.compare_arrows, size: 12),
                                 SizedBox(width: 4),
-                                Text('Compare'),
+                                Text('So sánh'),
                               ],
                             ),
                           ),
@@ -602,7 +621,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               children: [
                                 Icon(Icons.insights, size: 12),
                                 SizedBox(width: 4),
-                                Text('Overview'),
+                                Text('Tổng quan'),
                               ],
                             ),
                           ),
@@ -643,6 +662,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
+
   Widget _buildKPIRow(ProvinceProvider provider) {
     final provinces = provider.provinces;
     if (provinces.isEmpty) return const SizedBox.shrink();
@@ -674,7 +694,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         _buildKPI(
           icon: Icons.location_city_rounded,
           value: '${provinces.length}',
-          label: 'Province',
+          label: 'Tỉnh/TP',
           gradientColors: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
           trend: '+0%',
         ),
@@ -684,15 +704,15 @@ class _DashboardScreenState extends State<DashboardScreen>
           value: _formatCompact(totalPopulation),
           label: 'Tổng dân số',
           gradientColors: const [Color(0xFF06B6D4), Color(0xFF0891B2)],
-          sublabel: 'Nationwide',
+          sublabel: 'Toàn quốc',
         ),
         const SizedBox(width: 8),
         _buildKPI(
           icon: Icons.density_small_rounded,
           value: _formatCompact(avgDensity.toInt()),
-          label: 'Avg Density',
+          label: 'Mật độ TB',
           gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
-          sublabel: 'people/km\u00b2',
+          sublabel: 'người/km\u00b2',
         ),
         const SizedBox(width: 8),
         _buildKPI(
@@ -700,7 +720,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           value: highestName.isNotEmpty
               ? _formatCompact(highestValue.toInt())
               : '-',
-          label: 'Highest: $highestName',
+          label: 'Cao nhất: $highestName',
           gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
           badge: '🏆',
         ),
@@ -710,13 +730,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           value: lowestName.isNotEmpty
               ? _formatCompact(lowestValue.toInt())
               : '-',
-          label: 'Lowest: $lowestName',
+          label: 'Thấp nhất: $lowestName',
           gradientColors: const [Color(0xFFEF4444), Color(0xFFDC2626)],
           badge: '📍',
         ),
       ],
     );
   }
+
   Widget _buildKPI({
     required IconData icon,
     required String value,
@@ -825,6 +846,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
+
   String _formatCompact(num value) {
     if (value >= 1000000000) {
       return '${(value / 1000000000).toStringAsFixed(1)}B';
@@ -835,6 +857,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
     return value.toStringAsFixed(0);
   }
+
   Widget _buildMapView({required bool isMobile}) {
     if (isMobile) {
       return Consumer<ProvinceProvider>(
@@ -871,7 +894,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                     child: const Text(
-                      "← Back",
+                      "← Quay lại",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -909,8 +932,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             children: [
                               Text(
                                 provider.selectedCommune != null
-                                    ? "Commune Details"
-                                    : "Province Details",
+                                    ? "Chi tiết phường/xã"
+                                    : "Chi tiết tỉnh/thành phố",
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               IconButton(
@@ -966,7 +989,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         onPressed: () {
                           provider.clearFocus();
                         },
-                        child: const Text("← Back"),
+                        child: const Text("← Quay lại"),
                       );
                     },
                   ),
@@ -988,8 +1011,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                   builder: (context, provider, child) {
                     return Text(
                       provider.selectedCommune != null
-                          ? "Commune Details"
-                          : "Province Details",
+                          ? "Chi tiết phường/xã"
+                          : "Chi tiết tỉnh/thành phố",
                       style: Theme.of(context).textTheme.headlineMedium,
                     );
                   },

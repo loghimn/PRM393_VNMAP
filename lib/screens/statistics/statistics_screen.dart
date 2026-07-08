@@ -31,13 +31,13 @@ class _StatisticsScreenState extends State<StatisticsScreen>
 
   Color _statusColor(String displayName) {
     switch (displayName) {
-      case 'Received':
+      case 'Đã nhận':
         return Colors.blue;
-      case 'Processing':
+      case 'Đang xử lý':
         return Colors.orange;
-      case 'Completed':
+      case 'Hoàn thành':
         return Colors.green;
-      case 'Cancelled':
+      case 'Đã hủy':
         return Colors.red;
       default:
         return Colors.grey;
@@ -48,16 +48,19 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Incident Statistics'),
+        title: const Text('Thống kê sự cố'),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,
           tabs: const [
-            Tab(text: 'By Month', icon: Icon(Icons.calendar_month, size: 18)),
-            Tab(text: 'By Ward', icon: Icon(Icons.location_on, size: 18)),
-            Tab(text: 'By Status', icon: Icon(Icons.pie_chart, size: 18)),
+            Tab(text: 'Theo tháng', icon: Icon(Icons.calendar_month, size: 18)),
+            Tab(
+              text: 'Theo phường/xã',
+              icon: Icon(Icons.location_on, size: 18),
+            ),
+            Tab(text: 'Theo trạng thái', icon: Icon(Icons.pie_chart, size: 18)),
           ],
         ),
       ),
@@ -78,7 +81,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => provider.loadAll(),
-                    child: const Text('Retry'),
+                    child: const Text('Thử lại'),
                   ),
                 ],
               ),
@@ -102,7 +105,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final data = provider.incidentsByMonth;
     final total = data.values.fold<int>(0, (sum, v) => sum + v);
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return const Center(child: Text('Không có dữ liệu'));
     }
 
     return SingleChildScrollView(
@@ -113,7 +116,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           // Year selector
           Row(
             children: [
-              const Text('Select Year: ', style: TextStyle(fontSize: 16)),
+              const Text('Chọn năm: ', style: TextStyle(fontSize: 16)),
               DropdownButton<int>(
                 value: provider.selectedYear,
                 items: List.generate(
@@ -134,7 +137,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Total Incidents: $total',
+            'Tổng sự cố: $total',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
@@ -151,7 +154,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                       final month = group.x;
                       final value = rod.toY.toInt();
                       return BarTooltipItem(
-                        'Month $month\n$value incidents',
+                        'Tháng $month\n$value sự cố',
                         const TextStyle(color: Colors.white),
                       );
                     },
@@ -229,7 +232,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Monthly Details',
+                    'Chi tiết theo tháng',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const Divider(),
@@ -263,7 +266,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget _buildTheoKhuPhoTab(StatisticsProvider provider) {
     final data = provider.incidentsByNeighborhood;
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return const Center(child: Text('Không có dữ liệu'));
     }
 
     final maxValue = data.values.reduce((a, b) => a > b ? a : b).toDouble();
@@ -274,7 +277,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Incidents by Ward',
+            'Sự cố theo phường/xã',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -324,7 +327,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Total',
+                    'Tổng cộng',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -347,7 +350,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget _buildTheoTrangThaiTab(StatisticsProvider provider) {
     final data = provider.incidentsByStatus;
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
+      return const Center(child: Text('Không có dữ liệu'));
     }
 
     final total = data.values.fold<int>(0, (sum, v) => sum + v);
@@ -358,7 +361,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Incidents by Status',
+            'Sự cố theo trạng thái',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
@@ -395,7 +398,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Details',
+                    'Chi tiết',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const Divider(),
@@ -443,7 +446,7 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Total',
+                        'Tổng cộng',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,

@@ -27,7 +27,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Household Details'),
+        title: const Text('Chi Tiết Hộ Gia Đình'),
         actions: [
           Consumer<HouseholdProvider>(
             builder: (context, provider, child) {
@@ -39,13 +39,14 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => HouseholdFormScreen(household: household),
+                        builder: (_) =>
+                            HouseholdFormScreen(household: household),
                       ),
                     );
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  const PopupMenuItem(value: 'edit', child: Text('Sửa')),
                 ],
               );
             },
@@ -69,7 +70,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => provider.loadById(widget.householdId),
-                    child: const Text('Retry'),
+                    child: const Text('Thử Lại'),
                   ),
                 ],
               ),
@@ -78,7 +79,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
 
           final household = provider.selected;
           if (household == null) {
-            return const Center(child: Text('Chua co thong tin'));
+            return const Center(child: Text('Chưa có thông tin'));
           }
 
           return SingleChildScrollView(
@@ -150,19 +151,19 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 // Address Information Card
-                _buildInfoSection(context, 'Address Info', [
-                  _buildInfoRow('House Number', household.houseNumber ?? '—'),
-                  _buildInfoRow('Street', household.street ?? '—'),
-                  _buildInfoRow('Ward', household.neighborhood ?? '—'),
-                  _buildInfoRow('District', household.ward ?? '—'),
-                  _buildInfoRow('Province', household.district ?? '—'),
-                  _buildInfoRow('City', household.city ?? '—'),
+                _buildInfoSection(context, 'Thông Tin Địa Chỉ', [
+                  _buildInfoRow('Số Nhà', household.houseNumber ?? '—'),
+                  _buildInfoRow('Đường', household.street ?? '—'),
+                  _buildInfoRow('Ấp/Khu Phố', household.neighborhood ?? '—'),
+                  _buildInfoRow('Phường/Xã', household.ward ?? '—'),
+                  _buildInfoRow('Quận/Huyện', household.district ?? '—'),
+                  _buildInfoRow('Tỉnh/Thành Phố', household.city ?? '—'),
                 ]),
                 const SizedBox(height: 12),
                 // Contact Information Card
-                _buildInfoSection(context, 'Contact Info', [
+                _buildInfoSection(context, 'Thông Tin Liên Hệ', [
                   _buildInfoRow(
-                    'Phone',
+                    'Số ĐT',
                     (household.phone != null && household.phone!.isNotEmpty)
                         ? household.phone!
                         : '—',
@@ -173,13 +174,19 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                         ? household.email!
                         : '—',
                   ),
-                  _buildInfoRow('Members', household.population?.toString() ?? '—'),
+                  _buildInfoRow(
+                    'Số Thành Viên',
+                    household.population?.toString() ?? '—',
+                  ),
                 ]),
                 const SizedBox(height: 12),
                 // Location Card
-                _buildInfoSection(context, 'Location', [
-                  _buildInfoRow('Longitude', household.longitude?.toString() ?? '—'),
-                  _buildInfoRow('Latitude', household.latitude?.toString() ?? '—'),
+                _buildInfoSection(context, 'Vị Trí', [
+                  _buildInfoRow(
+                    'Kinh Độ',
+                    household.longitude?.toString() ?? '—',
+                  ),
+                  _buildInfoRow('Vĩ Độ', household.latitude?.toString() ?? '—'),
                   if (household.longitude != null && household.latitude != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -188,16 +195,19 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             Clipboard.setData(
-                              ClipboardData(text: '${household.latitude},${household.longitude}'),
+                              ClipboardData(
+                                text:
+                                    '${household.latitude},${household.longitude}',
+                              ),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Coordinates copied'),
+                                content: Text('Đã sao chép tọa độ'),
                               ),
                             );
                           },
                           icon: const Icon(Icons.copy),
-                          label: const Text('Copy Coordinates'),
+                          label: const Text('Sao Chép Tọa Độ'),
                         ),
                       ),
                     ),
@@ -205,7 +215,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 const SizedBox(height: 12),
                 // Notes Card
                 if (household.notes != null && household.notes!.isNotEmpty)
-                  _buildInfoSection(context, 'Notes', [
+                  _buildInfoSection(context, 'Ghi Chú', [
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Text(household.notes!),
@@ -220,13 +230,14 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              IncidentListScreen(householdId: widget.householdId),
+                          builder: (_) => IncidentListScreen(
+                            householdId: widget.householdId,
+                          ),
                         ),
                       );
                     },
                     icon: const Icon(Icons.list_alt),
-                    label: const Text('View Related Incidents'),
+                    label: const Text('Xem Sự Cố Liên Quan'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
