@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vietnam_geo_dashboard/providers/auth_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/theme_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/statistics_provider.dart';
@@ -137,6 +138,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                       const SizedBox(height: 6),
                       _buildSidebarItem(index: 4, icon: Icons.location_city_rounded, label: 'Khu Phố', isSelected: _selectedView == 4, onTap: () => setState(() => _selectedView = 4)),
                       const Spacer(),
+                      Consumer<AuthProvider>(
+                        builder: (context, auth, child) {
+                          if (!auth.isLoggedIn) return const SizedBox.shrink();
+                          return Column(
+                            children: [
+                              const SizedBox(height: 6),
+                              _buildSidebarItem(
+                                index: 5,
+                                icon: Icons.person_rounded,
+                                label: 'Profile',
+                                isSelected: false,
+                                onTap: () => Navigator.pushNamed(context, '/profile'),
+                              ),
+                              const SizedBox(height: 6),
+                            ],
+                          );
+                        },
+                      ),
                       GestureDetector(
                         onTap: () => setState(() => _isSidebarExpanded = false),
                         child: Container(
