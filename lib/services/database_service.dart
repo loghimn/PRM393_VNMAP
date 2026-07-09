@@ -1237,6 +1237,20 @@ class DatabaseService {
     }
   }
 
+  Future<UserModel?> getUserByUsername(String username) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM users WHERE username = \$1',
+        parameters: [username],
+      );
+      if (res.isEmpty) return null;
+      return UserModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
   Future<UserModel> createUser(UserModel user, String password) async {
     final conn = await _connect();
     try {
@@ -1337,6 +1351,24 @@ class DatabaseService {
       }
 
       return results;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<UserModel>> getAllUsers({String? searchQuery}) async {
+    final conn = await _connect();
+    try {
+      String sql = 'SELECT * FROM users ORDER BY created_at DESC';
+      final params = <dynamic>[];
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        params.add('%${searchQuery.trim()}%');
+        sql = 'SELECT * FROM users WHERE username ILIKE \$1 OR email ILIKE \$1 ORDER BY created_at DESC';
+      }
+
+      final res = await conn.execute(sql, parameters: params);
+      return res.map((row) => UserModel.fromJson(row.toColumnMap())).toList();
     } finally {
       await conn.close();
     }

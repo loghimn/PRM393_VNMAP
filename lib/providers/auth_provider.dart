@@ -89,6 +89,66 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> register(
+    String username,
+    String password, {
+    String? email,
+    String? fullName,
+    String? phone,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // Validate username
+      if (username.isEmpty || username.length < 3) {
+        _error = 'Tên đăng nhập phải có ít nhất 3 ký tự';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Validate password
+      if (password.isEmpty || password.length < 6) {
+        _error = 'Mật khẩu phải có ít nhất 6 ký tự';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Check if username already exists
+      final existingUser = await _dbService.getUserByUsername(username);
+      if (existingUser != null) {
+        _error = 'Tên đăng nhập đã tồn tại';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Create user with default role 'user'
+      final user = UserModel(
+        username: username,
+        passwordHash: null, // Will be set by database service
+        email: email,
+        fullName: fullName,
+        phone: phone,
+        role: 'user',
+        isActive: true,
+      );
+
+      await _dbService.createUser(user, password);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Lỗi đăng ký: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/khu_pho_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/khu_pho_model.dart';
 import '../../utils/app_theme.dart';
 import 'khu_pho_form_screen.dart';
@@ -44,6 +45,9 @@ class _KhuPhoListScreenState extends State<KhuPhoListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -51,15 +55,16 @@ class _KhuPhoListScreenState extends State<KhuPhoListScreen> {
         backgroundColor: AppColors.surfaceBackground,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const KhuPhoFormScreen()),
-              );
-            },
-          ),
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const KhuPhoFormScreen()),
+                );
+              },
+            ),
         ],
       ),
       body: Consumer<KhuPhoProvider>(
@@ -91,17 +96,19 @@ class _KhuPhoListScreenState extends State<KhuPhoListScreen> {
                     'Chưa có khu phố nào',
                     style: TextStyle(color: Colors.white54, fontSize: 16),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const KhuPhoFormScreen()),
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Thêm khu phố đầu tiên'),
-                  ),
+                  if (isAdmin) ...[
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const KhuPhoFormScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Thêm khu phố đầu tiên'),
+                    ),
+                  ],
                 ],
               ),
             );
@@ -141,33 +148,35 @@ class _KhuPhoListScreenState extends State<KhuPhoListScreen> {
                           ),
                       ],
                     ),
-                    trailing: PopupMenuButton<String>(
-                      color: AppColors.surface,
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => KhuPhoFormScreen(khuPho: item),
-                            ),
-                          );
-                        } else if (value == 'detail') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => KhuPhoDetailScreen(khuPho: item),
-                            ),
-                          );
-                        } else if (value == 'delete') {
-                          await _deleteKhuPho(item);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(value: 'detail', child: ListTile(leading: Icon(Icons.info, color: Colors.white), title: Text('Chi tiết', style: TextStyle(color: Colors.white)))),
-                        const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.orange), title: Text('Sửa', style: TextStyle(color: Colors.white)))),
-                        const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Xóa', style: TextStyle(color: Colors.white)))),
-                      ],
-                    ),
+                    trailing: isAdmin
+                        ? PopupMenuButton<String>(
+                            color: AppColors.surface,
+                            onSelected: (value) async {
+                              if (value == 'edit') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => KhuPhoFormScreen(khuPho: item),
+                                  ),
+                                );
+                              } else if (value == 'detail') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => KhuPhoDetailScreen(khuPho: item),
+                                  ),
+                                );
+                              } else if (value == 'delete') {
+                                await _deleteKhuPho(item);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(value: 'detail', child: ListTile(leading: Icon(Icons.info, color: Colors.white), title: Text('Chi tiết', style: TextStyle(color: Colors.white)))),
+                              const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.orange), title: Text('Sửa', style: TextStyle(color: Colors.white)))),
+                              const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Xóa', style: TextStyle(color: Colors.white)))),
+                            ],
+                          )
+                        : null,
                     onTap: () {
                       Navigator.push(
                         context,

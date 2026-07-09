@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/dai_dien_provider.dart';
 import '../../providers/khu_pho_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/dai_dien_model.dart';
-import '../../models/khu_pho_model.dart';
 import 'dai_dien_form_screen.dart';
 import 'dai_dien_detail_screen.dart';
+
+// ignore_for_file: unused_import
 
 class DaiDienListScreen extends StatefulWidget {
   const DaiDienListScreen({super.key});
@@ -56,6 +58,9 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
+
     return Scaffold(
       backgroundColor: const Color(0xff0f172a),
       appBar: AppBar(
@@ -102,20 +107,22 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
 
           // Nội dung
           Expanded(
-            child: _isSearching ? _buildSearchResults() : _buildGroupedByKhuPho(),
+            child: _isSearching ? _buildSearchResults() : _buildGroupedByKhuPho(isAdmin),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const DaiDienFormScreen()),
-          );
-        },
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
+              backgroundColor: Colors.blue,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DaiDienFormScreen()),
+                );
+              },
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
     );
   }
 
@@ -139,14 +146,15 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
           itemCount: results.length,
           itemBuilder: (context, index) {
             final item = results[index];
-            return _buildDaiDienCard(item);
+            final auth = context.watch<AuthProvider>();
+            return _buildDaiDienCard(item, auth.isAdmin);
           },
         );
       },
     );
   }
 
-  Widget _buildGroupedByKhuPho() {
+  Widget _buildGroupedByKhuPho(bool isAdmin) {
     return Consumer2<DaiDienProvider, KhuPhoProvider>(
       builder: (context, daiDienProvider, khuPhoProvider, child) {
         if (daiDienProvider.isLoading || khuPhoProvider.isLoading) {
@@ -174,11 +182,13 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
                   'Chưa có dữ liệu',
                   style: TextStyle(color: Colors.white54, fontSize: 16),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Thêm khu phố và đại diện để quản lý',
-                  style: TextStyle(color: Colors.white38, fontSize: 13),
-                ),
+                if (isAdmin) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Thêm khu phố và đại diện để quản lý',
+                    style: TextStyle(color: Colors.white38, fontSize: 13),
+                  ),
+                ],
               ],
             ),
           );
@@ -229,23 +239,25 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
                       '${members.length} đại diện',
                       style: const TextStyle(color: Colors.white54, fontSize: 12),
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: Colors.green, size: 20),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DaiDienFormScreen(khuPhoId: khuPho.id),
+                    trailing: isAdmin
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, color: Colors.green, size: 20),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => DaiDienFormScreen(khuPhoId: khuPho.id),
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
-                        const Icon(Icons.expand_more, color: Colors.white54),
-                      ],
-                    ),
+                              const Icon(Icons.expand_more, color: Colors.white54),
+                            ],
+                          )
+                        : const Icon(Icons.expand_more, color: Colors.white54),
                     childrenPadding: const EdgeInsets.only(bottom: 8),
                     collapsedTextColor: Colors.white,
                     textColor: Colors.white,
@@ -261,7 +273,7 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
                               ),
                             ),
                           ]
-                        : members.map((d) => _buildDaiDienTile(d)).toList(),
+                        : members.map((d) => _buildDaiDienTile(d, isAdmin)).toList(),
                   ),
                 );
               }),
@@ -275,7 +287,7 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
                     style: TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic),
                   ),
                 ),
-                ...unassigned.map((d) => _buildDaiDienCard(d)),
+                ...unassigned.map((d) => _buildDaiDienCard(d, isAdmin)),
               ],
             ],
           ),
@@ -284,7 +296,7 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
     );
   }
 
-  Widget _buildDaiDienTile(DaiDienModel d) {
+  Widget _buildDaiDienTile(DaiDienModel d, bool isAdmin) {
     return ListTile(
       dense: true,
       leading: CircleAvatar(
@@ -300,29 +312,31 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
         d.soDienThoai ?? '',
         style: const TextStyle(color: Colors.white54, fontSize: 12),
       ),
-      trailing: PopupMenuButton<String>(
-        color: const Color(0xff334155),
-        onSelected: (value) async {
-          if (value == 'edit') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => DaiDienFormScreen(daiDien: d)),
-            );
-          } else if (value == 'detail') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => DaiDienDetailScreen(daiDien: d)),
-            );
-          } else if (value == 'delete') {
-            await _deleteDaiDien(d);
-          }
-        },
-        itemBuilder: (context) => [
-          const PopupMenuItem(value: 'detail', child: ListTile(leading: Icon(Icons.info, color: Colors.white), title: Text('Chi tiết', style: TextStyle(color: Colors.white)))),
-          const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.orange), title: Text('Sửa', style: TextStyle(color: Colors.white)))),
-          const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Xóa', style: TextStyle(color: Colors.white)))),
-        ],
-      ),
+      trailing: isAdmin
+          ? PopupMenuButton<String>(
+              color: const Color(0xff334155),
+              onSelected: (value) async {
+                if (value == 'edit') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => DaiDienFormScreen(daiDien: d)),
+                  );
+                } else if (value == 'detail') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => DaiDienDetailScreen(daiDien: d)),
+                  );
+                } else if (value == 'delete') {
+                  await _deleteDaiDien(d);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'detail', child: ListTile(leading: Icon(Icons.info, color: Colors.white), title: Text('Chi tiết', style: TextStyle(color: Colors.white)))),
+                const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.orange), title: Text('Sửa', style: TextStyle(color: Colors.white)))),
+                const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Xóa', style: TextStyle(color: Colors.white)))),
+              ],
+            )
+          : null,
       onTap: () {
         Navigator.push(
           context,
@@ -332,7 +346,7 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
     );
   }
 
-  Widget _buildDaiDienCard(DaiDienModel item) {
+  Widget _buildDaiDienCard(DaiDienModel item, bool isAdmin) {
     return Card(
       color: const Color(0xff1e293b),
       margin: const EdgeInsets.only(bottom: 8),
@@ -360,29 +374,31 @@ class _DaiDienListScreenState extends State<DaiDienListScreen> {
               ),
           ],
         ),
-        trailing: PopupMenuButton<String>(
-          color: const Color(0xff334155),
-          onSelected: (value) async {
-            if (value == 'edit') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => DaiDienFormScreen(daiDien: item)),
-              );
-            } else if (value == 'detail') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => DaiDienDetailScreen(daiDien: item)),
-              );
-            } else if (value == 'delete') {
-              await _deleteDaiDien(item);
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'detail', child: ListTile(leading: Icon(Icons.info, color: Colors.white), title: Text('Chi tiết', style: TextStyle(color: Colors.white)))),
-            const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.orange), title: Text('Sửa', style: TextStyle(color: Colors.white)))),
-            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Xóa', style: TextStyle(color: Colors.white)))),
-          ],
-        ),
+        trailing: isAdmin
+            ? PopupMenuButton<String>(
+                color: const Color(0xff334155),
+                onSelected: (value) async {
+                  if (value == 'edit') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => DaiDienFormScreen(daiDien: item)),
+                    );
+                  } else if (value == 'detail') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => DaiDienDetailScreen(daiDien: item)),
+                    );
+                  } else if (value == 'delete') {
+                    await _deleteDaiDien(item);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'detail', child: ListTile(leading: Icon(Icons.info, color: Colors.white), title: Text('Chi tiết', style: TextStyle(color: Colors.white)))),
+                  const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.orange), title: Text('Sửa', style: TextStyle(color: Colors.white)))),
+                  const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Xóa', style: TextStyle(color: Colors.white)))),
+                ],
+              )
+            : null,
         onTap: () {
           Navigator.push(
             context,

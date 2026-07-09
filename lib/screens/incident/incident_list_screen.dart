@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/incident_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/incident_model.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
@@ -83,6 +84,9 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
+
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
@@ -205,30 +209,32 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                         ),
                       ],
                     ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'edit') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => IncidentFormScreen(incident: incident),
-                            ),
-                          );
-                        } else if (value == 'delete') {
-                          _deleteIncident(incident);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(value: 'edit', child: Text('Sửa')),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text(
-                            'Xóa',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
-                    ),
+                    trailing: isAdmin
+                        ? PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              if (value == 'edit') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => IncidentFormScreen(incident: incident),
+                                  ),
+                                );
+                              } else if (value == 'delete') {
+                                _deleteIncident(incident);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(value: 'edit', child: Text('Sửa')),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Text(
+                                  'Xóa',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          )
+                        : null,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -244,17 +250,19 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => IncidentFormScreen(householdId: widget.householdId),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => IncidentFormScreen(householdId: widget.householdId),
+                  ),
+                );
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }

@@ -22,6 +22,8 @@ import 'package:vietnam_geo_dashboard/screens/incident/incident_detail_screen.da
 import 'package:vietnam_geo_dashboard/screens/incident/incident_form_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/statistics/statistics_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/gis_map_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/auth/register_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/auth/user_management_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,9 +53,9 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          debugShowCheckedModeBanner: false,
+           debugShowCheckedModeBanner: false,
           theme: themeProvider.themeData,
-          initialRoute: '/splash',
+          initialRoute: '/login',
           onGenerateRoute: _generateRoute,
         );
       },
@@ -70,6 +72,16 @@ class MyApp extends StatelessWidget {
       case '/login':
         return MaterialPageRoute(
           builder: (_) => const LoginScreen(),
+          settings: settings,
+        );
+      case '/register':
+        return MaterialPageRoute(
+          builder: (_) => const RegisterScreen(),
+          settings: settings,
+        );
+      case '/user-management':
+        return MaterialPageRoute(
+          builder: (_) => const UserManagementScreen(),
           settings: settings,
         );
       case '/':

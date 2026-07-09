@@ -136,8 +136,26 @@ class _DashboardScreenState extends State<DashboardScreen>
                       const SizedBox(height: 6),
                       Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), color: AppColors.border.withValues(alpha: 0.3)),
                       const SizedBox(height: 6),
-                      _buildSidebarItem(index: 4, icon: Icons.location_city_rounded, label: 'Khu Phố', isSelected: _selectedView == 4, onTap: () => setState(() => _selectedView = 4)),
-                      const Spacer(),
+                       _buildSidebarItem(index: 4, icon: Icons.location_city_rounded, label: 'Khu Phố', isSelected: _selectedView == 4, onTap: () => setState(() => _selectedView = 4)),
+                       const Spacer(),
+                       Consumer<AuthProvider>(
+                         builder: (context, auth, child) {
+                           if (!auth.isAdmin) return const SizedBox.shrink();
+                           return Column(
+                             children: [
+                               const SizedBox(height: 6),
+                               _buildSidebarItem(
+                                 index: 6,
+                                 icon: Icons.admin_panel_settings_rounded,
+                                 label: 'QL Người dùng',
+                                 isSelected: false,
+                                 onTap: () => Navigator.pushNamed(context, '/user-management'),
+                               ),
+                               const SizedBox(height: 6),
+                             ],
+                           );
+                         },
+                       ),
                       Consumer<AuthProvider>(
                         builder: (context, auth, child) {
                           if (!auth.isLoggedIn) return const SizedBox.shrink();
