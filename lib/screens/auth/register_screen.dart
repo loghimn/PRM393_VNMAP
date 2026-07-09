@@ -35,11 +35,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isLoading = true);
-
     final authProvider = context.read<AuthProvider>();
-    
     final success = await authProvider.register(
       _usernameController.text.trim(),
       _passwordController.text,
@@ -47,10 +44,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       fullName: _fullNameController.text.trim().isEmpty ? null : _fullNameController.text.trim(),
       phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
     );
-
     if (!mounted) return;
     setState(() => _isLoading = false);
-
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -235,7 +230,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: InputDecoration(
               labelText: 'Mật khẩu',
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-              hintText: 'Nhập mật khẩu (bắt buộc)',
+              hintText: 'Nhập mật khẩu (bắt buộc, ít nhất 6 ký tự)',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
               prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withValues(alpha: 0.6)),
               suffixIcon: IconButton(
@@ -254,10 +249,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1),
               ),
             ),
             validator: (value) {
@@ -301,10 +292,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
               ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1),
-              ),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -315,7 +302,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               }
               return null;
             },
-            onFieldSubmitted: (_) => _handleRegister(),
+            textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 20),
           
@@ -338,10 +325,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1),
               ),
             ),
             keyboardType: TextInputType.emailAddress,
@@ -369,10 +352,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
               ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1),
-              ),
             ),
             textInputAction: TextInputAction.next,
           ),
@@ -397,10 +376,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.red, width: 1),
               ),
             ),
             keyboardType: TextInputType.phone,
