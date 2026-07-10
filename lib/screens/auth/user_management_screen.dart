@@ -50,6 +50,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _toggleUserStatus(UserModel user) async {
+    // Không cho phép khóa admin
+    if (user.role == 'admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể khóa tài khoản admin!')),
+      );
+      return;
+    }
     try {
       await _dbService.updateUser(
         UserModel(
@@ -62,8 +69,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           isActive: !user.isActive,
         ),
       );
+      if (!mounted) return;
       _loadUsers();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi: ${e.toString()}')),
       );
@@ -71,6 +80,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _changeUserRole(UserModel user, String newRole) async {
+    // Không cho phép đổi vai trò admin thành user
+    if (user.role == 'admin' && newRole != 'admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể thay đổi vai trò tài khoản admin!')),
+      );
+      return;
+    }
     try {
       await _dbService.updateUser(
         UserModel(
@@ -83,8 +99,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           isActive: user.isActive,
         ),
       );
+      if (!mounted) return;
       _loadUsers();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi: ${e.toString()}')),
       );
@@ -92,6 +110,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   void _showRoleDialog(UserModel user) {
+    // Không cho phép mở dialog thay đổi vai trò admin
+    if (user.role == 'admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể thay đổi vai trò tài khoản admin!')),
+      );
+      return;
+    }
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -148,7 +173,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Quản lý người dùng'),
-      backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF1E293B),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -238,16 +263,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                       }
                                     },
                                     itemBuilder: (context) => [
-                                      PopupMenuItem(
-                                        value: 'toggle_status',
-                                        child: Text(
-                                          user.isActive ? 'Khóa tài khoản' : 'Mở tài khoản',
+                                      // Chỉ hiện "Khóa tài khoản" khi không phải admin
+                                      if (user.role != 'admin')
+                                        PopupMenuItem(
+                                          value: 'toggle_status',
+                                          child: Text(
+                                            user.isActive ? 'Khóa tài khoản' : 'Mở tài khoản',
+                                          ),
                                         ),
-                                      ),
-                                      const PopupMenuItem(
-                                        value: 'change_role',
-                                        child: Text('Đổi vai trò'),
-                                      ),
+                                      // Chỉ hiện "Đổi vai trò" khi không phải admin
+                                      if (user.role != 'admin')
+                                        const PopupMenuItem(
+                                          value: 'change_role',
+                                          child: Text('Đổi vai trò'),
+                                        ),
                                     ],
                                   ),
                                 ),
