@@ -1,8 +1,13 @@
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:postgres/postgres.dart';
 import '../models/province_model.dart';
 import '../models/high_school_model.dart';
 import '../models/household_model.dart';
 import '../models/incident_model.dart';
+import '../models/khu_pho_model.dart';
+import '../models/dai_dien_model.dart';
+import '../models/user_model.dart';
 
 class DatabaseService {
   static const String _host =
@@ -73,6 +78,50 @@ class DatabaseService {
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW(),
           completed_date TIMESTAMP
+        )
+      ''');
+      // GIS tables (Phase 2/3)
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS dia_diem_cong_cong (
+          id SERIAL PRIMARY KEY,
+          ten VARCHAR(255) NOT NULL,
+          loai VARCHAR(100),
+          dia_chi TEXT,
+          kinh_do DECIMAL(10, 7),
+          vi_do DECIMAL(10, 7),
+          mo_ta TEXT,
+          ghi_chu TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS dia_diem_lich_su (
+          id SERIAL PRIMARY KEY,
+          ten VARCHAR(255) NOT NULL,
+          loai_di_tich VARCHAR(100),
+          dia_chi TEXT,
+          kinh_do DECIMAL(10, 7),
+          vi_do DECIMAL(10, 7),
+          mo_ta TEXT,
+          thoi_ky VARCHAR(100),
+          ghi_chu TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS tuyen_duong (
+          id SERIAL PRIMARY KEY,
+          ten VARCHAR(255) NOT NULL,
+          loai VARCHAR(100),
+          dia_diem_bat_dau TEXT,
+          dia_diem_ket_thuc TEXT,
+          chieu_dai DECIMAL(8, 2),
+          mo_ta TEXT,
+          ghi_chu TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       ''');
       _tablesCreated = true;
@@ -903,6 +952,357 @@ class DatabaseService {
     return str;
   }
 
+  // ========================
+  // Khu phố (Neighborhood) CRUD
+  // ========================
+
+  Future<List<KhuPhoModel>> fetchKhuPhos() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT id, ten_khu_pho, mo_ta, dia_chi, parent_ten, created_at, updated_at FROM khu_pho ORDER BY ten_khu_pho ASC',
+      );
+      return res.map((row) => KhuPhoModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<KhuPhoModel?> fetchKhuPhoById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT id, ten_khu_pho, mo_ta, dia_chi, parent_ten, created_at, updated_at FROM khu_pho WHERE id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return KhuPhoModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<KhuPhoModel> createKhuPho(KhuPhoModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'INSERT INTO khu_pho (ten_khu_pho, mo_ta, dia_chi, parent_ten) VALUES (\$1, \$2, \$3, \$4) RETURNING *',
+        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.parentTen],
+      );
+      return KhuPhoModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<KhuPhoModel> updateKhuPho(KhuPhoModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'UPDATE khu_pho SET ten_khu_pho = \$1, mo_ta = \$2, dia_chi = \$3, parent_ten = \$4, updated_at = NOW() WHERE id = \$5 RETURNING *',
+        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.parentTen, model.id],
+      );
+      return KhuPhoModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> deleteKhuPho(int id) async {
+    final conn = await _connect();
+    try {
+      // Xóa các đại diện thuộc khu phố trước
+      await conn.execute(
+        'DELETE FROM dai_dien_khu_pho WHERE khu_pho_id = \$1',
+        parameters: [id],
+      );
+      await conn.execute(
+        'DELETE FROM khu_pho WHERE id = \$1',
+        parameters: [id],
+      );
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ========================
+  // Đại diện khu phố CRUD
+  // ========================
+
+  Future<List<DaiDienModel>> fetchDaiDiens() async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id ORDER BY d.ho_ten ASC',
+      );
+      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<DaiDienModel>> fetchDaiDiensByKhuPho(int khuPhoId) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.khu_pho_id = \$1 ORDER BY d.ho_ten ASC',
+        parameters: [khuPhoId],
+      );
+      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DaiDienModel?> fetchDaiDienById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return DaiDienModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DaiDienModel> createDaiDien(DaiDienModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'INSERT INTO dai_dien_khu_pho (ho_ten, so_dien_thoai, email, dia_chi, khu_pho_id) VALUES (\$1, \$2, \$3, \$4, \$5) RETURNING *',
+        parameters: [model.hoTen, model.soDienThoai, model.email, model.diaChi, model.khuPhoId],
+      );
+      final created = DaiDienModel.fromJson(res.first.toColumnMap());
+      // Fetch lại với tên khu phố
+      if (created.id != null) {
+        return (await fetchDaiDienById(created.id!))!;
+      }
+      return created;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DaiDienModel> updateDaiDien(DaiDienModel model) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'UPDATE dai_dien_khu_pho SET ho_ten = \$1, so_dien_thoai = \$2, email = \$3, dia_chi = \$4, khu_pho_id = \$5, updated_at = NOW() WHERE id = \$6 RETURNING *',
+        parameters: [model.hoTen, model.soDienThoai, model.email, model.diaChi, model.khuPhoId, model.id],
+      );
+      final updated = DaiDienModel.fromJson(res.first.toColumnMap());
+      if (updated.id != null) {
+        return (await fetchDaiDienById(updated.id!))!;
+      }
+      return updated;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> deleteDaiDien(int id) async {
+    final conn = await _connect();
+    try {
+      await conn.execute(
+        'DELETE FROM dai_dien_khu_pho WHERE id = \$1',
+        parameters: [id],
+      );
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<DaiDienModel>> searchDaiDiens(String query) async {
+    if (query.trim().isEmpty) return [];
+    final conn = await _connect();
+    try {
+      final escapedQuery = '%${query.trim()}%';
+      final res = await conn.execute(
+        'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.ho_ten ILIKE \$1 OR d.so_dien_thoai ILIKE \$1 OR d.email ILIKE \$1 ORDER BY d.ho_ten ASC',
+        parameters: [escapedQuery],
+      );
+      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ===================================================================
+  // USERS CRUD
+  // ===================================================================
+
+  String _hashPassword(String password) {
+    print('_hashPassword input: password="$password"');
+    print('_hashPassword input bytes: ${password.codeUnits}');
+    final bytes = utf8.encode(password);
+    print('_hashPassword utf8 bytes: $bytes');
+    final digest = sha256.convert(bytes);
+    print('_hashPassword output: ${digest.toString()}');
+    return digest.toString();
+  }
+
+  Future<void> _ensureUsersTable(Connection conn) async {
+    try {
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          username VARCHAR(100) UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          email VARCHAR(255),
+          full_name VARCHAR(255),
+          phone VARCHAR(20),
+          role VARCHAR(50) DEFAULT 'user',
+          avatar_url TEXT,
+          is_active BOOLEAN DEFAULT TRUE,
+          last_login TIMESTAMP,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      ''');
+    } catch (_) {}
+  }
+
+  Future<UserModel?> login(String username, String password) async {
+    print('=== LOGIN ATTEMPT ===');
+    print('Username input: "$username"');
+    print('Password length: ${password.length}');
+    
+    final conn = await _connect();
+    try {
+      await _ensureUsersTable(conn);
+      
+      final trimmedUsername = username.trim();
+      print('Querying DB for username: "$trimmedUsername"');
+      
+      final res = await conn.execute(
+        'SELECT * FROM users WHERE username = \$1 AND is_active = TRUE',
+        parameters: [trimmedUsername],
+      );
+      
+      print('DB returned ${res.length} row(s)');
+      
+      if (res.isEmpty) {
+        print('ERROR: No user found in database');
+        return null;
+      }
+
+      final userMap = res.first.toColumnMap();
+      print('User data from DB: id=${userMap['id']}, username=${userMap['username']}, role=${userMap['role']}');
+      
+      final user = UserModel.fromJson(userMap);
+      final trimmedPassword = password.trim();
+      final hash = _hashPassword(trimmedPassword);
+      
+      print('Password hash comparison:');
+      print('  Stored: ${user.passwordHash}');
+      print('  Input:  $hash');
+      print('  Match: ${user.passwordHash == hash}');
+
+      if (user.passwordHash != hash) {
+        print('ERROR: Password mismatch');
+        return null;
+      }
+
+      print('SUCCESS: Login passed');
+      
+      // Update last login
+      await conn.execute(
+        'UPDATE users SET last_login = NOW() WHERE id = \$1',
+        parameters: [user.id],
+      );
+
+      return user;
+    } catch (e) {
+      print('LOGIN EXCEPTION: $e');
+      return null;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<UserModel?> getUserById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM users WHERE id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return UserModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<UserModel?> getUserByUsername(String username) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM users WHERE username = \$1',
+        parameters: [username],
+      );
+      if (res.isEmpty) return null;
+      return UserModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<UserModel> createUser(UserModel user, String password) async {
+    final conn = await _connect();
+    try {
+      await _ensureUsersTable(conn);
+      final hash = _hashPassword(password);
+      final res = await conn.execute(
+        'INSERT INTO users (username, password_hash, email, full_name, phone, role) VALUES (\$1, \$2, \$3, \$4, \$5, \$6) RETURNING *',
+        parameters: [user.username, hash, user.email, user.fullName, user.phone, user.role],
+      );
+      return UserModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<UserModel> updateUser(UserModel user) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'UPDATE users SET email = \$1, full_name = \$2, phone = \$3, role = \$4, avatar_url = \$5, updated_at = NOW() WHERE id = \$6 RETURNING *',
+        parameters: [user.email, user.fullName, user.phone, user.role, user.avatarUrl, user.id],
+      );
+      return UserModel.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<bool> changePassword(int userId, String oldPassword, String newPassword) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM users WHERE id = \$1',
+        parameters: [userId],
+      );
+      if (res.isEmpty) return false;
+
+      final user = UserModel.fromJson(res.first.toColumnMap());
+      final oldHash = _hashPassword(oldPassword);
+      if (user.passwordHash != oldHash) return false;
+
+      final newHash = _hashPassword(newPassword);
+      await conn.execute(
+        'UPDATE users SET password_hash = \$1, updated_at = NOW() WHERE id = \$2',
+        parameters: [newHash, userId],
+      );
+      return true;
+    } finally {
+      await conn.close();
+    }
+  }
+
   Future<List<SearchResult>> searchLocations(String query) async {
     if (query.trim().isEmpty) return [];
     final conn = await _connect();
@@ -951,6 +1351,24 @@ class DatabaseService {
       }
 
       return results;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<UserModel>> getAllUsers({String? searchQuery}) async {
+    final conn = await _connect();
+    try {
+      String sql = 'SELECT * FROM users ORDER BY created_at DESC';
+      final params = <dynamic>[];
+
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        params.add('%${searchQuery.trim()}%');
+        sql = 'SELECT * FROM users WHERE username ILIKE \$1 OR email ILIKE \$1 ORDER BY created_at DESC';
+      }
+
+      final res = await conn.execute(sql, parameters: params);
+      return res.map((row) => UserModel.fromJson(row.toColumnMap())).toList();
     } finally {
       await conn.close();
     }

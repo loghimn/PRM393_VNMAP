@@ -62,7 +62,7 @@ class PathUtils {
     try {
       return createPolygonPath(coordinates);
     } catch (e) {
-      print('Error creating path for $provinceName: $e');
+      debugPrint('Error creating path for $provinceName: $e');
       // Return empty path if something goes wrong
       return Path();
     }

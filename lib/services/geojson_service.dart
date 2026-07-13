@@ -94,7 +94,7 @@ class GeoJsonService {
 
       return communes;
     } catch (e) {
-      print("Error loading communes for province '$provinceName' (key: $fileKey): $e");
+      debugPrint("Error loading communes for province '$provinceName' (key: $fileKey): $e");
       return [];
     }
   }

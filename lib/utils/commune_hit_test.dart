@@ -10,8 +10,8 @@ ProvinceModel? getCommuneFromPositionRaw(
   // Debug logging for An Giang
   bool isAnGiang = focusedProvince.name == 'Tỉnh An Giang';
   if (isAnGiang) {
-    print('[An Giang Debug] Checking position: $position');
-    print('[An Giang Debug] Total communes to check: ${communes.length}');
+    debugPrint('[An Giang Debug] Checking position: $position');
+    debugPrint('[An Giang Debug] Total communes to check: ${communes.length}');
   }
 
   int checkedCount = 0;
@@ -32,7 +32,7 @@ ProvinceModel? getCommuneFromPositionRaw(
 
       if (coords == null || coords.isEmpty) {
         if (isAnGiang) {
-          print('[An Giang Debug] Skipping ${commune.name}: empty coords');
+          debugPrint('[An Giang Debug] Skipping ${commune.name}: empty coords');
         }
         continue;
       }
@@ -45,7 +45,7 @@ ProvinceModel? getCommuneFromPositionRaw(
 
         final bounds = path.getBounds();
         if (firstPathLogged < 2 && isAnGiang) {
-          print(
+          debugPrint(
             '[An Giang Debug] ${commune.name} bounds: left=${bounds.left}, top=${bounds.top}, right=${bounds.right}, bottom=${bounds.bottom}',
           );
           firstPathLogged++;
@@ -54,14 +54,14 @@ ProvinceModel? getCommuneFromPositionRaw(
         if (bounds.isEmpty) {
           pathErrorCount++;
           if (isAnGiang) {
-            print('[An Giang Debug] Empty path for ${commune.name}');
+            debugPrint('[An Giang Debug] Empty path for ${commune.name}');
           }
           continue;
         }
 
         if (path.contains(position)) {
           if (isAnGiang) {
-            print('[An Giang Debug] Found match: ${commune.name}');
+            debugPrint('[An Giang Debug] Found match: ${commune.name}');
           }
           return commune;
         }
@@ -76,7 +76,7 @@ ProvinceModel? getCommuneFromPositionRaw(
 
           final bounds = path.getBounds();
           if (firstPathLogged < 2 && isAnGiang && i == 0) {
-            print(
+            debugPrint(
               '[An Giang Debug] ${commune.name}[$i] bounds: left=${bounds.left}, top=${bounds.top}, right=${bounds.right}, bottom=${bounds.bottom}',
             );
             firstPathLogged++;
@@ -89,7 +89,7 @@ ProvinceModel? getCommuneFromPositionRaw(
 
           if (path.contains(position)) {
             if (isAnGiang) {
-              print(
+              debugPrint(
                 '[An Giang Debug] Found match in MultiPolygon #$i: ${commune.name}',
               );
             }
@@ -100,16 +100,16 @@ ProvinceModel? getCommuneFromPositionRaw(
     } catch (e) {
       // Log and skip problematic communes
       if (isAnGiang) {
-        print('[An Giang Debug] Error checking commune ${commune.name}: $e');
+        debugPrint('[An Giang Debug] Error checking commune ${commune.name}: $e');
       } else {
-        print('Error checking commune ${commune.name}: $e');
+        debugPrint('Error checking commune ${commune.name}: $e');
       }
       continue;
     }
   }
 
   if (isAnGiang) {
-    print(
+    debugPrint(
       '[An Giang Debug] Checked $checkedCount communes, $pathErrorCount had empty paths - NO MATCH FOUND',
     );
   }

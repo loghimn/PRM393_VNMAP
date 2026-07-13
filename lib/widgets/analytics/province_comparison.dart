@@ -71,6 +71,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
       });
     } catch (e) {
       // ignore: avoid_print
+      debugPrint("Error fetching communes for ${province.name}: $e");
       print("Error fetching communes for ${province.name}: $e");
       setState(() {
         isLoadingCommunes1 = false;
@@ -107,6 +108,7 @@ class _ProvinceComparisonState extends State<ProvinceComparison> {
       });
     } catch (e) {
       // ignore: avoid_print
+      debugPrint("Error fetching communes for ${province.name}: $e");
       print("Error fetching communes for ${province.name}: $e");
       setState(() {
         isLoadingCommunes2 = false;

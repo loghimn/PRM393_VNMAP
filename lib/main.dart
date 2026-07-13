@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vietnam_geo_dashboard/providers/auth_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/theme_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
@@ -8,6 +9,11 @@ import 'package:vietnam_geo_dashboard/providers/incident_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/statistics_provider.dart';
 import 'package:vietnam_geo_dashboard/models/household_model.dart';
 import 'package:vietnam_geo_dashboard/models/incident_model.dart';
+import 'package:vietnam_geo_dashboard/providers/khu_pho_provider.dart';
+import 'package:vietnam_geo_dashboard/providers/dai_dien_provider.dart';
+import 'package:vietnam_geo_dashboard/screens/dashboard/dashboard_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/auth/login_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/dashboard/dashboard_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_detail_screen.dart';
@@ -16,17 +22,24 @@ import 'package:vietnam_geo_dashboard/screens/incident/incident_list_screen.dart
 import 'package:vietnam_geo_dashboard/screens/incident/incident_detail_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_form_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/statistics/statistics_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/gis_map_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/auth/register_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/auth/user_management_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => ProvinceProvider()),
         ChangeNotifierProvider(create: (_) => WeatherProvider()),
         ChangeNotifierProvider(create: (_) => HouseholdProvider()),
         ChangeNotifierProvider(create: (_) => IncidentProvider()),
         ChangeNotifierProvider(create: (_) => StatisticsProvider()),
+        ChangeNotifierProvider(create: (_) => KhuPhoProvider()),
+        ChangeNotifierProvider(create: (_) => DaiDienProvider()),
       ],
       child: const MyApp(),
     ),
@@ -41,6 +54,9 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
+           debugShowCheckedModeBanner: false,
+          theme: themeProvider.themeData,
+          initialRoute: '/login',
           debugShowCheckedModeBanner: false,
           theme: themeProvider.themeData,
           initialRoute: '/',
@@ -52,9 +68,34 @@ class MyApp extends StatelessWidget {
 
   Route<dynamic>? _generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case '/splash':
+        return MaterialPageRoute(
+          builder: (_) => const _SplashScreen(),
+          settings: settings,
+        );
+      case '/login':
+        return MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+          settings: settings,
+        );
+      case '/register':
+        return MaterialPageRoute(
+          builder: (_) => const RegisterScreen(),
+          settings: settings,
+        );
+      case '/user-management':
+        return MaterialPageRoute(
+          builder: (_) => const UserManagementScreen(),
+          settings: settings,
+        );
       case '/':
         return MaterialPageRoute(
           builder: (_) => const DashboardScreen(),
+          settings: settings,
+        );
+      case '/profile':
+        return MaterialPageRoute(
+          builder: (_) => const ProfileScreen(),
           settings: settings,
         );
       case '/household-list':
@@ -111,11 +152,61 @@ class MyApp extends StatelessWidget {
           builder: (_) => const StatisticsScreen(),
           settings: settings,
         );
+      case '/gis-map':
+        return MaterialPageRoute(
+          builder: (_) => const GisMapScreen(),
+          settings: settings,
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => const DashboardScreen(),
           settings: settings,
         );
     }
+  }
+}
+
+/// Splash screen that checks authentication and redirects accordingly
+class _SplashScreen extends StatefulWidget {
+  const _SplashScreen();
+
+  @override
+  State<_SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<_SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.initialize();
+
+    if (!mounted) return;
+
+    if (authProvider.isLoggedIn) {
+      Navigator.of(context).pushReplacementNamed('/');
+    } else {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Colors.blue),
+            SizedBox(height: 16),
+            Text('Đang tải...'),
+          ],
+        ),
+      ),
+    );
   }
 }

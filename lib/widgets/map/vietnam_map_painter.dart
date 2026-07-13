@@ -315,7 +315,7 @@ class VietnamMapPainter extends CustomPainter {
           }
         }
       } catch (e) {
-        print('Error drawing province ${province.name}: $e');
+        debugPrint('Error drawing province ${province.name}: $e');
       }
 
       // ===== DRAW COMMUNES =====
@@ -325,12 +325,12 @@ class VietnamMapPainter extends CustomPainter {
             .where((c) => c.parentTen == province.name)
             .toList();
 
-        print(
+        debugPrint(
           'Drawing communes for ${province.name}: ${relatedCommunes.length} communes',
         );
 
         if (relatedCommunes.isEmpty) {
-          print('No communes found for ${province.name}');
+          debugPrint('No communes found for ${province.name}');
         }
 
         int drawnCount = 0;
@@ -392,20 +392,20 @@ class VietnamMapPainter extends CustomPainter {
               drawnCount++;
             }
           } catch (e) {
-            print('Error drawing commune ${commune.name}: $e');
+            debugPrint('Error drawing commune ${commune.name}: $e');
             skippedCount++;
             continue;
           }
         }
 
-        print('Communes drawn: $drawnCount, skipped: $skippedCount');
+        debugPrint('Communes drawn: $drawnCount, skipped: $skippedCount');
       } else {
-        print('Skipping commune rendering for ${province.name} (known issue)');
+        debugPrint('Skipping commune rendering for ${province.name} (known issue)');
       }
 
       canvas.restore();
     } catch (e) {
-      print('Error in drawFocusedProvinceMode for ${province.name}: $e');
+      debugPrint('Error in drawFocusedProvinceMode for ${province.name}: $e');
       canvas.restore();
     }
   }
@@ -417,7 +417,7 @@ class VietnamMapPainter extends CustomPainter {
       final hoangSaRect = getHoangSaInsetRect(size);
       _drawIslandInset(canvas, hoangSaRect, hoangSaZone, 'QĐ. Hoàng Sa');
     } catch (e) {
-      print('Error drawing Hoàng Sa inset: $e');
+      debugPrint('Error drawing Hoàng Sa inset: $e');
     }
 
     // 2. Draw Trường Sa
@@ -426,7 +426,7 @@ class VietnamMapPainter extends CustomPainter {
       final truongSaRect = getTruongSaInsetRect(size);
       _drawIslandInset(canvas, truongSaRect, truongSaZone, 'QĐ. Trường Sa');
     } catch (e) {
-      print('Error drawing Trường Sa inset: $e');
+      debugPrint('Error drawing Trường Sa inset: $e');
     }
   }
 
