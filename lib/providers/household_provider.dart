@@ -135,4 +135,23 @@ class HouseholdProvider extends ChangeNotifier {
     _selected = null;
     notifyListeners();
   }
+
+  /// Tìm kiếm hộ gia đình theo số điện thoại
+  Future<Household?> searchByPhone(String phone) async {
+    try {
+      final results = await _db.fetchHouseholdList(
+        searchQuery: phone,
+        limit: 10,
+      );
+      if (results.isNotEmpty) {
+        return results.firstWhere(
+          (h) => h.phone == phone,
+          orElse: () => results.first,
+        );
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
 }

@@ -28,6 +28,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Chi tiết hộ gia đình'),
+        title: const Text('Chi Tiết Hộ Gia Đình'),
         actions: [
           Consumer<HouseholdProvider>(
             builder: (context, provider, child) {
@@ -40,6 +41,8 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => HouseholdFormScreen(household: household),
+                        builder: (_) =>
+                            HouseholdFormScreen(household: household),
                       ),
                     );
                   }
@@ -70,6 +73,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                   ElevatedButton(
                     onPressed: () => provider.loadById(widget.householdId),
                     child: const Text('Thử lại'),
+                    child: const Text('Thử Lại'),
                   ),
                 ],
               ),
@@ -163,6 +167,19 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 _buildInfoSection(context, 'Thông tin liên hệ', [
                   _buildInfoRow(
                     'Điện thoại',
+                _buildInfoSection(context, 'Thông Tin Địa Chỉ', [
+                  _buildInfoRow('Số Nhà', household.houseNumber ?? '—'),
+                  _buildInfoRow('Đường', household.street ?? '—'),
+                  _buildInfoRow('Ấp/Khu Phố', household.neighborhood ?? '—'),
+                  _buildInfoRow('Phường/Xã', household.ward ?? '—'),
+                  _buildInfoRow('Quận/Huyện', household.district ?? '—'),
+                  _buildInfoRow('Tỉnh/Thành Phố', household.city ?? '—'),
+                ]),
+                const SizedBox(height: 12),
+                // Contact Information Card
+                _buildInfoSection(context, 'Thông Tin Liên Hệ', [
+                  _buildInfoRow(
+                    'Số ĐT',
                     (household.phone != null && household.phone!.isNotEmpty)
                         ? household.phone!
                         : '—',
@@ -180,6 +197,19 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 _buildInfoSection(context, 'Vị trí', [
                   _buildInfoRow('Kinh độ', household.longitude?.toString() ?? '—'),
                   _buildInfoRow('Vĩ độ', household.latitude?.toString() ?? '—'),
+                  _buildInfoRow(
+                    'Số Thành Viên',
+                    household.population?.toString() ?? '—',
+                  ),
+                ]),
+                const SizedBox(height: 12),
+                // Location Card
+                _buildInfoSection(context, 'Vị Trí', [
+                  _buildInfoRow(
+                    'Kinh Độ',
+                    household.longitude?.toString() ?? '—',
+                  ),
+                  _buildInfoRow('Vĩ Độ', household.latitude?.toString() ?? '—'),
                   if (household.longitude != null && household.latitude != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -189,6 +219,10 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                           onPressed: () {
                             Clipboard.setData(
                               ClipboardData(text: '${household.latitude},${household.longitude}'),
+                              ClipboardData(
+                                text:
+                                    '${household.latitude},${household.longitude}',
+                              ),
                             );
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
@@ -198,6 +232,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                           },
                           icon: const Icon(Icons.copy),
                           label: const Text('Sao chép tọa độ'),
+                          label: const Text('Sao Chép Tọa Độ'),
                         ),
                       ),
                     ),
@@ -206,6 +241,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 // Notes Card
                 if (household.notes != null && household.notes!.isNotEmpty)
                   _buildInfoSection(context, 'Ghi chú', [
+                  _buildInfoSection(context, 'Ghi Chú', [
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Text(household.notes!),
@@ -222,11 +258,15 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                         MaterialPageRoute(
                           builder: (_) =>
                               IncidentListScreen(householdId: widget.householdId),
+                          builder: (_) => IncidentListScreen(
+                            householdId: widget.householdId,
+                          ),
                         ),
                       );
                     },
                     icon: const Icon(Icons.list_alt),
                     label: const Text('Xem sự vụ liên quan'),
+                    label: const Text('Xem Sự Cố Liên Quan'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -285,4 +325,5 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
       ),
     );
   }
+}
 }

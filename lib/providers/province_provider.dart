@@ -142,6 +142,7 @@ class ProvinceProvider extends ChangeNotifier {
       );
     } catch (e) {
       debugPrint("Error loading households for commune ${commune.name}: $e");
+      print("Error loading households for commune ${commune.name}: $e");
     } finally {
       isLoadingHouseholds = false;
       notifyListeners();

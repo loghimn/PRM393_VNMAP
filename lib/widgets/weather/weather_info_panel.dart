@@ -12,8 +12,9 @@ String _describeWeatherCode(int code) {
   if (code >= 71 && code <= 77) return 'Tuyết / Băng';
   if (code >= 80 && code <= 82) return 'Mưa rào';
   if (code >= 85 && code <= 86) return 'Mưa tuyết';
+  if (code >= 80 && code <= 82) return 'Showers';
   if (code >= 95) return 'Mưa giông';
-  return 'Không xác định';
+  return 'Unknown';
 }
 
 class WeatherInfoPanel extends StatelessWidget {
@@ -90,6 +91,11 @@ class WeatherInfoPanel extends StatelessWidget {
                   ),
                   Text(
                     'Hướng: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°',
+                    'Wind: ${weather!.windspeed?.toStringAsFixed(1) ?? '-'} m/s',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  Text(
+                    'Direction: ${weather!.winddirection?.toStringAsFixed(0) ?? '-'}°',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
@@ -104,6 +110,7 @@ class WeatherInfoPanel extends StatelessWidget {
               Expanded(
                 child: _smallInfo(
                   'Độ ẩm',
+                  'Humidity',
                   weather!.humidity != null
                       ? '${weather!.humidity!.toStringAsFixed(0)} %'
                       : '-',
@@ -112,6 +119,7 @@ class WeatherInfoPanel extends StatelessWidget {
               Expanded(
                 child: _smallInfo(
                   'Áp suất',
+                  'Pressure',
                   weather!.pressure != null
                       ? '${weather!.pressure!.toStringAsFixed(0)} hPa'
                       : '-',
@@ -120,6 +128,7 @@ class WeatherInfoPanel extends StatelessWidget {
               Expanded(
                 child: _smallInfo(
                   'Lượng mưa',
+                  'Rainfall',
                   weather!.precipitation != null
                       ? '${weather!.precipitation!.toStringAsFixed(1)} mm'
                       : '-',

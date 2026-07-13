@@ -14,6 +14,7 @@ import 'package:vietnam_geo_dashboard/providers/dai_dien_provider.dart';
 import 'package:vietnam_geo_dashboard/screens/dashboard/dashboard_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/login_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/dashboard/dashboard_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_detail_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_form_screen.dart';
@@ -56,6 +57,9 @@ class MyApp extends StatelessWidget {
            debugShowCheckedModeBanner: false,
           theme: themeProvider.themeData,
           initialRoute: '/login',
+          debugShowCheckedModeBanner: false,
+          theme: themeProvider.themeData,
+          initialRoute: '/',
           onGenerateRoute: _generateRoute,
         );
       },
