@@ -22,7 +22,11 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HouseholdProvider>().loadItems();
+      final auth = context.read<AuthProvider>();
+      final isAdmin = auth.isAdmin;
+      context.read<HouseholdProvider>().loadItems(
+        createdBy: isAdmin ? null : auth.currentUser?.id,
+      );
     });
   }
 
@@ -34,10 +38,15 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
   }
 
   void _onSearch(String query) {
-    context.read<HouseholdProvider>().loadItems(searchQuery: query);
+    final auth = context.read<AuthProvider>();
+    context.read<HouseholdProvider>().loadItems(
+      searchQuery: query,
+      createdBy: auth.isAdmin ? null : auth.currentUser?.id,
+    );
   }
 
   Future<void> _deleteHousehold(Household item) async {
+    final provider = context.read<HouseholdProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -59,7 +68,7 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
       ),
     );
     if (confirmed == true && item.id != null) {
-      await context.read<HouseholdProvider>().delete(item.id!);
+      await provider.delete(item.id!);
     }
   }
 
@@ -112,7 +121,9 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                   Text(provider.error!, textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => provider.loadItems(),
+                    onPressed: () => provider.loadItems(
+                      createdBy: isAdmin ? null : auth.currentUser?.id,
+                    ),
                     child: const Text('Thử lại'),
                   ),
                 ],
@@ -134,100 +145,112 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
           }
 
           return RefreshIndicator(
-            onRefresh: () => provider.loadItems(),
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(8),
-              itemCount: provider.items.length,
-              itemBuilder: (context, index) {
-                final item = provider.items[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    vertical: 4,
-                    horizontal: 4,
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(
-                        context,
-                      ).primaryColor.withAlpha(30),
-                      child: Text(
-                        item.headOfHousehold.isNotEmpty
-                            ? item.headOfHousehold[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor,
+            onRefresh: () => provider.loadItems(
+              createdBy: isAdmin ? null : auth.currentUser?.id,
+            ),
+            child: Column(
+              children: [
+                if (provider.isLoading)
+                  const LinearProgressIndicator(minHeight: 3),
+                Expanded(
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: provider.items.length,
+                    itemBuilder: (context, index) {
+                      final item = provider.items[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 4,
                         ),
-                      ),
-                    ),
-                    title: Text(
-                      item.headOfHousehold,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.householdCode),
-                        if (item.fullAddress.isNotEmpty)
-                          Text(
-                            item.fullAddress,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).primaryColor.withAlpha(30),
+                            child: Text(
+                              item.headOfHousehold.isNotEmpty
+                                  ? item.headOfHousehold[0].toUpperCase()
+                                  : '?',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).primaryColor,
+                              ),
                             ),
                           ),
-                      ],
-                    ),
-                    trailing: isAdmin
-                        ? PopupMenuButton<String>(
-                            onSelected: (value) async {
-                              if (value == 'edit') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        HouseholdFormScreen(household: item),
+                          title: Text(
+                            item.headOfHousehold,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.householdCode),
+                              if (item.fullAddress.isNotEmpty)
+                                Text(
+                                  item.fullAddress,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
                                   ),
-                                );
-                              } else if (value == 'delete') {
-                                _deleteHousehold(item);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Text('Sửa'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Text(
-                                  'Xóa',
-                                  style: TextStyle(color: Colors.red),
+                                ),
+                            ],
+                          ),
+                          trailing: !isAdmin
+                              ? PopupMenuButton<String>(
+                                  onSelected: (value) async {
+                                    if (value == 'edit') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => HouseholdFormScreen(
+                                            household: item,
+                                          ),
+                                        ),
+                                      );
+                                    } else if (value == 'delete') {
+                                      _deleteHousehold(item);
+                                    }
+                                  },
+                                  itemBuilder: (context) => [
+                                    const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Text('Sửa'),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Text(
+                                        'Xóa',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : null,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => HouseholdDetailScreen(
+                                  householdId: item.id!,
                                 ),
                               ),
-                            ],
-                          )
-                        : null,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              HouseholdDetailScreen(householdId: item.id!),
+                            );
+                          },
                         ),
                       );
                     },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           );
         },
       ),
-      floatingActionButton: isAdmin
+      floatingActionButton: !isAdmin
           ? FloatingActionButton(
               onPressed: () {
                 Navigator.push(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/incident_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/incident_provider.dart';
 import '../../providers/household_provider.dart';
 import '../../services/database_service.dart';
@@ -211,6 +212,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
       final code = _isEditing
           ? widget.incident!.incidentCode
           : await _db.generateIncidentCode();
+      final auth = context.read<AuthProvider>();
       final inc = Incident(
         id: widget.incident?.id,
         incidentCode: code,
@@ -226,6 +228,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
         headOfHousehold: _headOfHouseholdController.text.trim(),
         phone: _phoneController.text.trim(),
         householdId: _householdId,
+        createdBy: auth.currentUser?.id,
       );
       final provider = context.read<IncidentProvider>();
       final ok = _isEditing
@@ -237,7 +240,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                _isEditing ? 'Đã cập nhật sự cố' : 'Đã tạo sự cố mới',
+                _isEditing ? 'Đã cập nhật sự vụ' : 'Đã tạo sự vụ mới',
               ),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
@@ -265,7 +268,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          _isEditing ? 'Chỉnh sửa sự cố' : 'Tạo sự cố mới',
+          _isEditing ? 'Chỉnh sửa sự vụ' : 'Tạo sự vụ mới',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         backgroundColor: AppColors.surface,
@@ -658,7 +661,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
                     ),
                   )
                 : Text(
-                    _isEditing ? 'Cập nhật sự cố' : 'Tạo sự cố mới',
+                    _isEditing ? 'Cập nhật sự vụ' : 'Tạo sự vụ mới',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

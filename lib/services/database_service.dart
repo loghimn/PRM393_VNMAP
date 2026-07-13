@@ -281,19 +281,34 @@ class DatabaseService {
   // HOUSEHOLD CRUD
   Future<String> generateIncidentCode() async {
     final conn = await _connect();
+
     try {
-      final res = await conn.execute(
-        "SELECT incident_code FROM incidents ORDER BY id DESC LIMIT 1",
-      );
-      if (res.isEmpty) return 'SV-0001';
+      final res = await conn.execute('''
+      SELECT incident_code
+      FROM incidents
+      WHERE incident_code IS NOT NULL
+      ORDER BY id DESC
+      LIMIT 1
+      ''');
+
+      if (res.isEmpty) {
+        return 'SV-0001';
+      }
+
       final lastCode =
           res.first.toColumnMap()['incident_code']?.toString() ?? 'SV-0000';
-      final match = RegExp(r'SV-(\\d+)').firstMatch(lastCode);
-      if (match != null) {
-        final num = int.parse(match.group(1)!) + 1;
-        return 'SV-' + num.toString().padLeft(4, '0');
+
+      // SV-0001 -> lấy phần số 0001
+      final match = RegExp(r'^SV-(\d+)$').firstMatch(lastCode);
+
+      if (match == null) {
+        throw FormatException('Mã sự vụ không đúng định dạng: $lastCode');
       }
-      return 'SV-0001';
+
+      final lastNumber = int.parse(match.group(1)!);
+      final nextNumber = lastNumber + 1;
+
+      return 'SV-${nextNumber.toString().padLeft(4, '0')}';
     } finally {
       await conn.close();
     }
@@ -305,6 +320,7 @@ class DatabaseService {
     String? searchQuery,
     String? neighborhood,
     String? ward,
+    int? createdBy,
     int limit = 50,
     int offset = 0,
   }) async {
@@ -325,6 +341,10 @@ class DatabaseService {
       if (ward != null && ward.isNotEmpty) {
         params.add(ward.trim());
         sql += ' AND ward = \$${params.length}';
+      }
+      if (createdBy != null) {
+        params.add(createdBy);
+        sql += ' AND created_by = \$${params.length}';
       }
 
       sql += ' ORDER BY created_at DESC';
@@ -575,6 +595,7 @@ class DatabaseService {
     String? searchQuery,
     String? neighborhood,
     String? ward,
+    int? createdBy,
   }) async {
     final conn = await _connect();
     try {
@@ -593,6 +614,10 @@ class DatabaseService {
       if (ward != null && ward.isNotEmpty) {
         params.add(ward.trim());
         sql += ' AND ward = \$${params.length}';
+      }
+      if (createdBy != null) {
+        params.add(createdBy);
+        sql += ' AND created_by = \$${params.length}';
       }
 
       final res = await conn.execute(sql, parameters: params);
@@ -613,6 +638,7 @@ class DatabaseService {
     String? neighborhood,
     String? ward,
     int? householdId,
+    int? createdBy,
     int limit = 50,
     int offset = 0,
   }) async {
@@ -642,6 +668,10 @@ class DatabaseService {
       if (householdId != null) {
         params.add(householdId);
         sql += ' AND sv.household_id = \$${params.length}';
+      }
+      if (createdBy != null) {
+        params.add(createdBy);
+        sql += ' AND sv.created_by = \$${params.length}';
       }
 
       sql += ' ORDER BY sv.created_at DESC';
@@ -702,25 +732,50 @@ class DatabaseService {
 
   Future<Incident> updateIncident(Incident incident) async {
     final conn = await _connect();
-    try {
-      final map = incident.toDbMap();
-      final id = map.remove('id');
-      map['updated_at'] = DateTime.now().toIso8601String();
 
-      final setClause = map.keys
-          .toList()
-          .asMap()
-          .entries
-          .map((e) => '${e.value} = \$${e.key + 1}')
-          .join(', ');
-      final values = map.values.toList();
+    try {
+      final id = incident.id;
+
+      if (id == null) {
+        throw ArgumentError('Không thể cập nhật sự vụ vì id bị null');
+      }
+
+      final map = Map<String, dynamic>.from(incident.toDbMap());
+
+      // Những trường không được thay đổi khi cập nhật
+      map.remove('id');
+      map.remove('incident_code');
+      map.remove('created_by');
+      map.remove('created_at');
+      map.remove('updated_at');
+
+      final entries = map.entries.toList();
+
+      final setClause = [
+        for (int i = 0; i < entries.length; i++)
+          '${entries[i].key} = \$${i + 1}',
+
+        // Cho database tự cập nhật thời gian
+        'updated_at = NOW()',
+      ].join(', ');
+
+      final values = entries.map((entry) => entry.value).toList();
+
+      // id là parameter cuối cùng
       values.add(id);
 
-      final res = await conn.execute(
-        'UPDATE incidents SET $setClause WHERE id = \$${values.length} RETURNING *',
-        parameters: values,
-      );
-      return Incident.fromJson(res.first.toColumnMap());
+      final result = await conn.execute('''
+      UPDATE incidents
+      SET $setClause
+      WHERE id = \$${values.length}
+      RETURNING *
+      ''', parameters: values);
+
+      if (result.isEmpty) {
+        throw StateError('Không tìm thấy sự vụ có id = $id');
+      }
+
+      return Incident.fromJson(result.first.toColumnMap());
     } finally {
       await conn.close();
     }
@@ -744,6 +799,7 @@ class DatabaseService {
     String? neighborhood,
     String? ward,
     int? householdId,
+    int? createdBy,
   }) async {
     final conn = await _connect();
     try {
@@ -770,6 +826,10 @@ class DatabaseService {
       if (householdId != null) {
         params.add(householdId);
         sql += ' AND ho_gia_dinh_id = \$${params.length}';
+      }
+      if (createdBy != null) {
+        params.add(createdBy);
+        sql += ' AND created_by = \$${params.length}';
       }
 
       final res = await conn.execute(sql, parameters: params);
@@ -987,7 +1047,12 @@ class DatabaseService {
     try {
       final res = await conn.execute(
         'INSERT INTO khu_pho (ten_khu_pho, mo_ta, dia_chi, parent_ten) VALUES (\$1, \$2, \$3, \$4) RETURNING *',
-        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.parentTen],
+        parameters: [
+          model.tenKhuPho,
+          model.moTa,
+          model.diaChi,
+          model.parentTen,
+        ],
       );
       return KhuPhoModel.fromJson(res.first.toColumnMap());
     } finally {
@@ -1000,7 +1065,13 @@ class DatabaseService {
     try {
       final res = await conn.execute(
         'UPDATE khu_pho SET ten_khu_pho = \$1, mo_ta = \$2, dia_chi = \$3, parent_ten = \$4, updated_at = NOW() WHERE id = \$5 RETURNING *',
-        parameters: [model.tenKhuPho, model.moTa, model.diaChi, model.parentTen, model.id],
+        parameters: [
+          model.tenKhuPho,
+          model.moTa,
+          model.diaChi,
+          model.parentTen,
+          model.id,
+        ],
       );
       return KhuPhoModel.fromJson(res.first.toColumnMap());
     } finally {
@@ -1035,7 +1106,9 @@ class DatabaseService {
       final res = await conn.execute(
         'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id ORDER BY d.ho_ten ASC',
       );
-      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+      return res
+          .map((row) => DaiDienModel.fromJson(row.toColumnMap()))
+          .toList();
     } finally {
       await conn.close();
     }
@@ -1048,7 +1121,9 @@ class DatabaseService {
         'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.khu_pho_id = \$1 ORDER BY d.ho_ten ASC',
         parameters: [khuPhoId],
       );
-      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+      return res
+          .map((row) => DaiDienModel.fromJson(row.toColumnMap()))
+          .toList();
     } finally {
       await conn.close();
     }
@@ -1073,7 +1148,13 @@ class DatabaseService {
     try {
       final res = await conn.execute(
         'INSERT INTO dai_dien_khu_pho (ho_ten, so_dien_thoai, email, dia_chi, khu_pho_id) VALUES (\$1, \$2, \$3, \$4, \$5) RETURNING *',
-        parameters: [model.hoTen, model.soDienThoai, model.email, model.diaChi, model.khuPhoId],
+        parameters: [
+          model.hoTen,
+          model.soDienThoai,
+          model.email,
+          model.diaChi,
+          model.khuPhoId,
+        ],
       );
       final created = DaiDienModel.fromJson(res.first.toColumnMap());
       // Fetch lại với tên khu phố
@@ -1091,7 +1172,14 @@ class DatabaseService {
     try {
       final res = await conn.execute(
         'UPDATE dai_dien_khu_pho SET ho_ten = \$1, so_dien_thoai = \$2, email = \$3, dia_chi = \$4, khu_pho_id = \$5, updated_at = NOW() WHERE id = \$6 RETURNING *',
-        parameters: [model.hoTen, model.soDienThoai, model.email, model.diaChi, model.khuPhoId, model.id],
+        parameters: [
+          model.hoTen,
+          model.soDienThoai,
+          model.email,
+          model.diaChi,
+          model.khuPhoId,
+          model.id,
+        ],
       );
       final updated = DaiDienModel.fromJson(res.first.toColumnMap());
       if (updated.id != null) {
@@ -1124,7 +1212,9 @@ class DatabaseService {
         'SELECT d.*, k.ten_khu_pho FROM dai_dien_khu_pho d LEFT JOIN khu_pho k ON d.khu_pho_id = k.id WHERE d.ho_ten ILIKE \$1 OR d.so_dien_thoai ILIKE \$1 OR d.email ILIKE \$1 ORDER BY d.ho_ten ASC',
         parameters: [escapedQuery],
       );
-      return res.map((row) => DaiDienModel.fromJson(row.toColumnMap())).toList();
+      return res
+          .map((row) => DaiDienModel.fromJson(row.toColumnMap()))
+          .toList();
     } finally {
       await conn.close();
     }
@@ -1169,33 +1259,35 @@ class DatabaseService {
     print('=== LOGIN ATTEMPT ===');
     print('Username input: "$username"');
     print('Password length: ${password.length}');
-    
+
     final conn = await _connect();
     try {
       await _ensureUsersTable(conn);
-      
+
       final trimmedUsername = username.trim();
       print('Querying DB for username: "$trimmedUsername"');
-      
+
       final res = await conn.execute(
         'SELECT * FROM users WHERE username = \$1 AND is_active = TRUE',
         parameters: [trimmedUsername],
       );
-      
+
       print('DB returned ${res.length} row(s)');
-      
+
       if (res.isEmpty) {
         print('ERROR: No user found in database');
         return null;
       }
 
       final userMap = res.first.toColumnMap();
-      print('User data from DB: id=${userMap['id']}, username=${userMap['username']}, role=${userMap['role']}');
-      
+      print(
+        'User data from DB: id=${userMap['id']}, username=${userMap['username']}, role=${userMap['role']}',
+      );
+
       final user = UserModel.fromJson(userMap);
       final trimmedPassword = password.trim();
       final hash = _hashPassword(trimmedPassword);
-      
+
       print('Password hash comparison:');
       print('  Stored: ${user.passwordHash}');
       print('  Input:  $hash');
@@ -1207,7 +1299,7 @@ class DatabaseService {
       }
 
       print('SUCCESS: Login passed');
-      
+
       // Update last login
       await conn.execute(
         'UPDATE users SET last_login = NOW() WHERE id = \$1',
@@ -1258,7 +1350,14 @@ class DatabaseService {
       final hash = _hashPassword(password);
       final res = await conn.execute(
         'INSERT INTO users (username, password_hash, email, full_name, phone, role) VALUES (\$1, \$2, \$3, \$4, \$5, \$6) RETURNING *',
-        parameters: [user.username, hash, user.email, user.fullName, user.phone, user.role],
+        parameters: [
+          user.username,
+          hash,
+          user.email,
+          user.fullName,
+          user.phone,
+          user.role,
+        ],
       );
       return UserModel.fromJson(res.first.toColumnMap());
     } finally {
@@ -1271,7 +1370,14 @@ class DatabaseService {
     try {
       final res = await conn.execute(
         'UPDATE users SET email = \$1, full_name = \$2, phone = \$3, role = \$4, avatar_url = \$5, updated_at = NOW() WHERE id = \$6 RETURNING *',
-        parameters: [user.email, user.fullName, user.phone, user.role, user.avatarUrl, user.id],
+        parameters: [
+          user.email,
+          user.fullName,
+          user.phone,
+          user.role,
+          user.avatarUrl,
+          user.id,
+        ],
       );
       return UserModel.fromJson(res.first.toColumnMap());
     } finally {
@@ -1279,7 +1385,11 @@ class DatabaseService {
     }
   }
 
-  Future<bool> changePassword(int userId, String oldPassword, String newPassword) async {
+  Future<bool> changePassword(
+    int userId,
+    String oldPassword,
+    String newPassword,
+  ) async {
     final conn = await _connect();
     try {
       final res = await conn.execute(
@@ -1364,7 +1474,8 @@ class DatabaseService {
 
       if (searchQuery != null && searchQuery.isNotEmpty) {
         params.add('%${searchQuery.trim()}%');
-        sql = 'SELECT * FROM users WHERE username ILIKE \$1 OR email ILIKE \$1 ORDER BY created_at DESC';
+        sql =
+            'SELECT * FROM users WHERE username ILIKE \$1 OR email ILIKE \$1 ORDER BY created_at DESC';
       }
 
       final res = await conn.execute(sql, parameters: params);

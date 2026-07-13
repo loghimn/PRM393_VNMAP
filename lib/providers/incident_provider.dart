@@ -13,6 +13,7 @@ class IncidentProvider extends ChangeNotifier {
   String _searchQuery = '';
   String? _filterStatus;
   String? _filterNeighborhood;
+  int? _createdByFilter;
   List<String> _neighborhoodList = [];
 
   List<Incident> get items => _items;
@@ -30,6 +31,7 @@ class IncidentProvider extends ChangeNotifier {
     String? status,
     String? neighborhood,
     int? householdId,
+    int? createdBy,
     int limit = 50,
     int offset = 0,
   }) async {
@@ -38,25 +40,45 @@ class IncidentProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (searchQuery != null) _searchQuery = searchQuery;
-      if (status != null) _filterStatus = status;
-      if (neighborhood != null) _filterNeighborhood = neighborhood;
+      _searchQuery = searchQuery ?? '';
+
+      // null nghĩa là xem tất cả trạng thái
+      _filterStatus = status;
+
+      // null nghĩa là xem tất cả khu phố
+      _filterNeighborhood = neighborhood;
+
+      // null nghĩa là admin xem tất cả người tạo
+      _createdByFilter = createdBy;
+
+      debugPrint(
+        'LOAD INCIDENTS: '
+        'createdBy=$_createdByFilter, '
+        'status=$_filterStatus, '
+        'householdId=$householdId',
+      );
 
       _items = await _db.fetchIncidentList(
         searchQuery: _searchQuery,
         status: _filterStatus,
         neighborhood: _filterNeighborhood,
         householdId: householdId,
+        createdBy: _createdByFilter,
         limit: limit,
         offset: offset,
       );
+
       _totalCount = await _db.countIncidents(
         searchQuery: _searchQuery,
         status: _filterStatus,
         neighborhood: _filterNeighborhood,
         householdId: householdId,
+        createdBy: _createdByFilter,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Lỗi load sự vụ: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
       _error = 'Error loading incidents: $e';
     } finally {
       _isLoading = false;
@@ -94,7 +116,7 @@ class IncidentProvider extends ChangeNotifier {
 
     try {
       await _db.createIncident(incident);
-      await loadItems();
+      await loadItems(createdBy: _createdByFilter);
       return true;
     } catch (e) {
       _error = 'Error creating incident: $e';
@@ -112,7 +134,7 @@ class IncidentProvider extends ChangeNotifier {
     try {
       await _db.updateIncident(incident);
       _selected = incident;
-      await loadItems();
+      await loadItems(createdBy: _createdByFilter);
       return true;
     } catch (e) {
       _error = 'Error updating incident: $e';
@@ -142,6 +164,7 @@ class IncidentProvider extends ChangeNotifier {
       status: status,
       handler: current.handler,
       notes: current.notes,
+      createdBy: current.createdBy,
       createdAt: current.createdAt,
       updatedAt: current.updatedAt,
       completedDate: status == IncidentStatus.completed
@@ -171,6 +194,7 @@ class IncidentProvider extends ChangeNotifier {
       status: current.status,
       handler: handler,
       notes: current.notes,
+      createdBy: current.createdBy,
       createdAt: current.createdAt,
       updatedAt: current.updatedAt,
       completedDate: current.completedDate,
@@ -186,7 +210,7 @@ class IncidentProvider extends ChangeNotifier {
     try {
       await _db.deleteIncident(id);
       if (_selected?.id == id) _selected = null;
-      await loadItems();
+      await loadItems(createdBy: _createdByFilter);
       return true;
     } catch (e) {
       _error = 'Error deleting incident: $e';
@@ -210,6 +234,22 @@ class IncidentProvider extends ChangeNotifier {
 
   void clearSelected() {
     _selected = null;
+    notifyListeners();
+  }
+
+  void reset() {
+    _items = [];
+    _selected = null;
+    _isLoading = false;
+    _error = null;
+    _totalCount = 0;
+
+    _searchQuery = '';
+    _filterStatus = null;
+    _filterNeighborhood = null;
+    _createdByFilter = null;
+    _neighborhoodList = [];
+
     notifyListeners();
   }
 }

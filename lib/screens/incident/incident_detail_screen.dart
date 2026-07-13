@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/incident_provider.dart';
 import '../../models/incident_model.dart';
 import '../../utils/app_theme.dart';
@@ -376,30 +377,38 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 const SizedBox(height: 16),
 
                 // ── Action Buttons ──
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.update_rounded,
-                        label: 'Cập nhật trạng thái',
-                        color: const Color(0xFF2196F3),
-                        onTap: incident.status != IncidentStatus.cancelled
-                            ? () => _updateStatus(incident)
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.person_add_rounded,
-                        label: 'Phân công',
-                        color: AppColors.primary,
-                        onTap: () => _assignHandler(incident),
-                      ),
-                    ),
-                  ],
+                Consumer<AuthProvider>(
+                  builder: (context, auth, child) {
+                    if (auth.isAdmin) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _ActionButton(
+                              icon: Icons.update_rounded,
+                              label: 'Cập nhật trạng thái',
+                              color: const Color(0xFF2196F3),
+                              onTap: incident.status != IncidentStatus.cancelled
+                                  ? () => _updateStatus(incident)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _ActionButton(
+                              icon: Icons.person_add_rounded,
+                              label: 'Phân công',
+                              color: AppColors.primary,
+                              onTap: () => _assignHandler(incident),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
-                const SizedBox(height: 16),
+                if (Provider.of<AuthProvider>(context, listen: false).isAdmin)
+                  const SizedBox(height: 16),
 
                 // ── Description ──
                 _buildSection(

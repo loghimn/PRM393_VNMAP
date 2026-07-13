@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/household_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/household_provider.dart';
 import '../../services/database_service.dart';
 import '../../utils/app_theme.dart';
@@ -112,6 +113,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final auth = context.read<AuthProvider>();
       final code = _isEditing
           ? widget.household!.householdCode
           : await _db.generateHouseholdCode();
@@ -129,6 +131,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
         email: _emailCtrl.text.trim(),
         population: int.tryParse(_popCtrl.text.trim()),
         notes: _notesCtrl.text.trim(),
+        createdBy: widget.household?.createdBy ?? auth.currentUser?.id,
       );
 
       final provider = context.read<HouseholdProvider>();

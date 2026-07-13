@@ -12,6 +12,7 @@ class HouseholdProvider extends ChangeNotifier {
   int _totalCount = 0;
   String _searchQuery = '';
   String? _filterNeighborhood;
+  int? _createdByFilter;
 
   List<Household> get items => _items;
   Household? get selected => _selected;
@@ -24,6 +25,7 @@ class HouseholdProvider extends ChangeNotifier {
   Future<void> loadItems({
     String? searchQuery,
     String? neighborhood,
+    int? createdBy,
     int limit = 50,
     int offset = 0,
   }) async {
@@ -34,16 +36,21 @@ class HouseholdProvider extends ChangeNotifier {
     try {
       if (searchQuery != null) _searchQuery = searchQuery;
       if (neighborhood != null) _filterNeighborhood = neighborhood;
+      _createdByFilter = createdBy;
 
       _items = await _db.fetchHouseholdList(
         searchQuery: _searchQuery,
         neighborhood: _filterNeighborhood,
+        ward: null,
+        createdBy: _createdByFilter,
         limit: limit,
         offset: offset,
       );
       _totalCount = await _db.countHouseholds(
         searchQuery: _searchQuery,
         neighborhood: _filterNeighborhood,
+        ward: null,
+        createdBy: _createdByFilter,
       );
     } catch (e) {
       _error = 'Error loading households: $e';
@@ -77,7 +84,7 @@ class HouseholdProvider extends ChangeNotifier {
 
     try {
       await _db.createHousehold(household);
-      await loadItems();
+      await loadItems(createdBy: _createdByFilter);
       return true;
     } catch (e) {
       _error = 'Error creating household: $e';
@@ -95,7 +102,7 @@ class HouseholdProvider extends ChangeNotifier {
     try {
       await _db.updateHousehold(household);
       _selected = household;
-      await loadItems();
+      await loadItems(createdBy: _createdByFilter);
       return true;
     } catch (e) {
       _error = 'Error updating household: $e';
@@ -113,7 +120,7 @@ class HouseholdProvider extends ChangeNotifier {
     try {
       await _db.deleteHousehold(id);
       if (_selected?.id == id) _selected = null;
-      await loadItems();
+      await loadItems(createdBy: _createdByFilter);
       return true;
     } catch (e) {
       _error = 'Error deleting household: $e';
@@ -141,6 +148,7 @@ class HouseholdProvider extends ChangeNotifier {
     try {
       final results = await _db.fetchHouseholdList(
         searchQuery: phone,
+        createdBy: _createdByFilter,
         limit: 10,
       );
       if (results.isNotEmpty) {

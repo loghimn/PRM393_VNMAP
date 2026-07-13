@@ -18,25 +18,77 @@ class IncidentListScreen extends StatefulWidget {
 
 class _IncidentListScreenState extends State<IncidentListScreen> {
   final _searchController = TextEditingController();
-  bool _isSearching = false;
+
+  AuthProvider? _authProvider;
+  String? _lastLoadKey;
+
   String _search = '';
   String? _statusFilter;
   String _sortBy = 'createdAt';
   bool _sortAsc = false;
 
   @override
+  @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<IncidentProvider>().loadItems(
-        householdId: widget.householdId,
-      );
+      if (!mounted) return;
+
+      _authProvider = context.read<AuthProvider>();
+
+      // Khi AuthProvider tải xong user thì gọi lại danh sách sự vụ
+      _authProvider!.addListener(_handleAuthChanged);
+
+      _handleAuthChanged();
+
       context.read<IncidentProvider>().loadNeighborhoodList();
     });
   }
 
+  void _handleAuthChanged() {
+    final auth = _authProvider;
+
+    if (!mounted || auth == null) return;
+
+    // Chờ AuthProvider tải xong thông tin đăng nhập
+    if (!auth.isLoggedIn || auth.currentUser == null) {
+      return;
+    }
+
+    final loadKey =
+        '${auth.currentUser!.id}-${auth.isAdmin}-${widget.householdId}';
+
+    // Tránh load nhiều lần với cùng tài khoản
+    if (_lastLoadKey == loadKey) {
+      return;
+    }
+
+    _lastLoadKey = loadKey;
+    _reloadIncidents();
+  }
+
+  Future<void> _reloadIncidents() async {
+    if (!mounted) return;
+
+    final auth = context.read<AuthProvider>();
+
+    if (!auth.isLoggedIn || auth.currentUser == null) {
+      return;
+    }
+
+    await context.read<IncidentProvider>().loadItems(
+      householdId: widget.householdId,
+
+      // Admin truyền null để lấy tất cả
+      // User truyền ID để chỉ lấy sự vụ của mình
+      createdBy: auth.isAdmin ? null : auth.currentUser!.id,
+    );
+  }
+
   @override
   void dispose() {
+    _authProvider?.removeListener(_handleAuthChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -93,8 +145,7 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -156,7 +207,7 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton.icon(
-                          onPressed: () => provider.loadItems(),
+                          onPressed: _reloadIncidents,
                           icon: const Icon(Icons.refresh_rounded, size: 18),
                           label: const Text('Thử lại'),
                         ),
@@ -196,7 +247,7 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                 }
 
                 return RefreshIndicator(
-                  onRefresh: () => provider.loadItems(),
+                  onRefresh: _reloadIncidents,
                   color: AppColors.primary,
                   child: ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
@@ -408,7 +459,8 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
   Widget _buildCreateButton(BuildContext context, bool isDark) {
     final auth = context.watch<AuthProvider>();
     final isAdmin = auth.isAdmin;
-    if (!isAdmin) return const SizedBox.shrink();
+
+    if (isAdmin) return const SizedBox.shrink();
 
     return Container(
       decoration: BoxDecoration(
@@ -427,8 +479,8 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
         ],
       ),
       child: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final saved = await Navigator.push<bool>(
             context,
             MaterialPageRoute(
               builder: (_) => ChangeNotifierProvider.value(
@@ -437,13 +489,20 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
               ),
             ),
           );
+
+          if (saved == true && mounted) {
+            await _reloadIncidents();
+          }
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text(
-          'Thêm sự cố',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        label: Text(
+          isAdmin ? 'Thêm sự vụ' : 'Tạo sự vụ',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -456,7 +515,6 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
     bool isDark,
   ) {
     final sc = _statusColor(inc.status);
-    final theme = Theme.of(context);
     final auth = context.watch<AuthProvider>();
     final isAdmin = auth.isAdmin;
 
@@ -602,7 +660,7 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                           ),
                         ],
                       ),
-                    if (isAdmin)
+                    if (!isAdmin)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [

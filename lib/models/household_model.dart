@@ -14,6 +14,7 @@ class Household {
   final String? notes;
   final double? longitude;
   final double? latitude;
+  final int? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -33,6 +34,7 @@ class Household {
     this.notes,
     this.longitude,
     this.latitude,
+    this.createdBy,
     this.createdAt,
     this.updatedAt,
   });
@@ -41,7 +43,8 @@ class Household {
     final parts = <String>[];
     if (houseNumber != null && houseNumber!.isNotEmpty) parts.add(houseNumber!);
     if (street != null && street!.isNotEmpty) parts.add(street!);
-    if (neighborhood != null && neighborhood!.isNotEmpty) parts.add('NB $neighborhood');
+    if (neighborhood != null && neighborhood!.isNotEmpty)
+      parts.add('NB $neighborhood');
     if (ward != null && ward!.isNotEmpty) parts.add(ward!);
     if (district != null && district!.isNotEmpty) parts.add(district!);
     if (city != null && city!.isNotEmpty) parts.add(city!);
@@ -77,6 +80,9 @@ class Household {
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
+      createdBy: json['created_by'] is int
+          ? json['created_by']
+          : int.tryParse('${json['created_by']}'),
     );
   }
 
@@ -97,6 +103,7 @@ class Household {
       'notes': notes,
       'longitude': longitude,
       'latitude': latitude,
+      'created_by': createdBy,
     };
   }
 
@@ -117,6 +124,7 @@ class Household {
       'notes': notes,
       'longitude': longitude,
       'latitude': latitude,
+      'created_by': createdBy,
     };
   }
 }

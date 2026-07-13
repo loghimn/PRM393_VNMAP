@@ -49,6 +49,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  Color get _cardColor => Theme.of(context).cardColor;
+  Color get _borderColor => Theme.of(context).dividerColor;
+  Color get _primaryColor => Theme.of(context).colorScheme.primary;
+  Color get _textColor =>
+      Theme.of(context).textTheme.bodyLarge?.color ??
+      Theme.of(context).colorScheme.onSurface;
+  Color get _mutedTextColor =>
+      Theme.of(context).textTheme.bodySmall?.color ??
+      Theme.of(context).colorScheme.onSurfaceVariant;
+  Color get _filledInputColor =>
+      Theme.of(context).inputDecorationTheme.fillColor ??
+      Theme.of(context).colorScheme.surfaceVariant ??
+      _cardColor;
+  Color get _iconSecondaryColor =>
+      Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? _mutedTextColor;
+
   Future<void> _saveProfile() async {
     setState(() => _isSaving = true);
     // Simulate saving (in a real app, you'd call the API)
@@ -105,16 +121,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _showChangePassword = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Đổi mật khẩu thành công'),
+              Icon(
+                Icons.check_circle,
+                color: Theme.of(context).colorScheme.onSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Đổi mật khẩu thành công',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSecondary,
+                ),
+              ),
             ],
           ),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          duration: const Duration(seconds: 2),
         ),
       );
     } else {
@@ -123,16 +147,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _passwordSuccess = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              Icon(Icons.error_outline, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Đổi mật khẩu thất bại'),
+              Icon(
+                Icons.error_outline,
+                color: Theme.of(context).colorScheme.onError,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Đổi mật khẩu thất bại',
+                style: TextStyle(color: Theme.of(context).colorScheme.onError),
+              ),
             ],
           ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -141,11 +171,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Thông tin tài khoản'),
-        backgroundColor: const Color(0xFF1E293B),
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.close : Icons.edit),
@@ -191,7 +219,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, true),
-                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
+                              ),
                               child: const Text('Đăng xuất'),
                             ),
                           ],
@@ -205,8 +237,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
+                      foregroundColor: Theme.of(context).colorScheme.error,
+                      side: BorderSide(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -214,7 +248,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: const Icon(Icons.logout),
                     label: const Text(
                       'ĐĂNG XUẤT',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -223,16 +260,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: _cardColor,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _borderColor),
                   ),
                   child: Column(
                     children: [
-                      _buildInfoRow('Vai trò', user.role == 'admin' ? 'Quản trị viên' : 'Người dùng'),
-                      const Divider(color: Color(0xFF334155)),
-                      _buildInfoRow('Ngày tạo', user.createdAt?.toString().substring(0, 10) ?? '--'),
-                      const Divider(color: Color(0xFF334155)),
-                      _buildInfoRow('Lần cuối đăng nhập', user.lastLogin?.toString().substring(0, 16) ?? '--'),
+                      _buildInfoRow(
+                        'Vai trò',
+                        user.role == 'admin' ? 'Quản trị viên' : 'Người dùng',
+                      ),
+                      Divider(color: _borderColor),
+                      _buildInfoRow(
+                        'Ngày tạo',
+                        user.createdAt?.toString().substring(0, 10) ?? '--',
+                      ),
+                      Divider(color: _borderColor),
+                      _buildInfoRow(
+                        'Lần cuối đăng nhập',
+                        user.lastLogin?.toString().substring(0, 16) ?? '--',
+                      ),
                     ],
                   ),
                 ),
@@ -255,13 +302,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: 100,
           height: 100,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary.withOpacity(0.9),
+                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.9),
+              ],
             ),
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -270,8 +320,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Center(
             child: Text(
               initials,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 40,
                 fontWeight: FontWeight.w700,
               ),
@@ -281,8 +331,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 16),
         Text(
           user.fullName ?? user.username,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _textColor,
             fontSize: 22,
             fontWeight: FontWeight.w700,
           ),
@@ -290,10 +340,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 4),
         Text(
           '@${user.username}',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 14,
-          ),
+          style: TextStyle(color: _mutedTextColor, fontSize: 14),
         ),
       ],
     );
@@ -303,17 +350,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: _borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Thông tin cá nhân',
             style: TextStyle(
-              color: Colors.white,
+              color: _textColor,
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -346,25 +393,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  foregroundColor: Colors.white,
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isSaving
-                    ? const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       )
-                    : const Text('Lưu thay đổi', style: TextStyle(fontWeight: FontWeight.w600)),
+                    : const Text(
+                        'Lưu thay đổi',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
               ),
             ),
           ] else ...[
             _buildDetailRow(Icons.person, 'Họ và tên', user.fullName ?? '--'),
-            const Divider(color: Color(0xFF334155)),
+            Divider(color: _borderColor),
             _buildDetailRow(Icons.email, 'Email', user.email ?? '--'),
-            const Divider(color: Color(0xFF334155)),
+            Divider(color: _borderColor),
             _buildDetailRow(Icons.phone, 'Số điện thoại', user.phone ?? '--'),
           ],
         ],
@@ -376,27 +430,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: _borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () => setState(() => _showChangePassword = !_showChangePassword),
+            onTap: () =>
+                setState(() => _showChangePassword = !_showChangePassword),
             child: Row(
               children: [
-                const Icon(Icons.lock_outline, color: Colors.white54, size: 20),
+                Icon(
+                  Icons.lock_outline,
+                  color: _mutedTextColor.withOpacity(0.9),
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
-                const Text(
+                Text(
                   'Đổi mật khẩu',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: _textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 Icon(
                   _showChangePassword ? Icons.expand_less : Icons.expand_more,
-                  color: Colors.white54,
+                  color: _mutedTextColor.withOpacity(0.9),
                 ),
               ],
             ),
@@ -408,7 +471,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'Mật khẩu cũ',
               icon: Icons.lock,
               obscureText: _obscureOldPassword,
-              onVisibilityChanged: (v) => setState(() => _obscureOldPassword = v),
+              onVisibilityChanged: (v) =>
+                  setState(() => _obscureOldPassword = v),
             ),
             const SizedBox(height: 16),
             _buildPasswordFieldFixed(
@@ -416,7 +480,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'Mật khẩu mới',
               icon: Icons.lock_open,
               obscureText: _obscureNewPassword,
-              onVisibilityChanged: (v) => setState(() => _obscureNewPassword = v),
+              onVisibilityChanged: (v) =>
+                  setState(() => _obscureNewPassword = v),
             ),
             const SizedBox(height: 16),
             _buildPasswordFieldFixed(
@@ -424,19 +489,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'Xác nhận mật khẩu mới',
               icon: Icons.lock_open,
               obscureText: _obscureConfirmPassword,
-              onVisibilityChanged: (v) => setState(() => _obscureConfirmPassword = v),
+              onVisibilityChanged: (v) =>
+                  setState(() => _obscureConfirmPassword = v),
             ),
             if (_passwordError != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                    Icon(
+                      Icons.error_outline,
+                      color: Theme.of(context).colorScheme.error,
+                      size: 16,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         _passwordError!,
-                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -447,12 +520,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.only(top: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle_outline, color: Colors.green, size: 16),
+                    Icon(
+                      Icons.check_circle_outline,
+                      color: Theme.of(context).colorScheme.secondary,
+                      size: 16,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         _passwordSuccess!,
-                        style: const TextStyle(color: Colors.green, fontSize: 13),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.secondary,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -465,18 +545,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _changePassword,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  foregroundColor: Colors.white,
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isSaving
-                    ? const SizedBox(
-                        width: 20, height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       )
-                    : const Text('Đổi mật khẩu', style: TextStyle(fontWeight: FontWeight.w600)),
+                    : const Text(
+                        'Đổi mật khẩu',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
               ),
             ),
           ],
@@ -484,7 +571,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
 
   Widget _buildPasswordFieldFixed({
     required TextEditingController controller,
@@ -496,29 +582,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return TextField(
       controller: controller,
       obscureText: obscureText,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: _textColor),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-        prefixIcon: Icon(icon, color: Colors.white.withValues(alpha: 0.6), size: 20),
+        labelStyle: TextStyle(color: _mutedTextColor),
+        prefixIcon: Icon(icon, color: _mutedTextColor, size: 20),
         suffixIcon: IconButton(
           icon: Icon(
             obscureText ? Icons.visibility_off : Icons.visibility,
-            color: Colors.white.withValues(alpha: 0.6),
+            color: _mutedTextColor,
           ),
           onPressed: () => onVisibilityChanged(!obscureText),
         ),
         filled: true,
-        fillColor: const Color(0xFF334155),
+        fillColor: _filledInputColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+          borderSide: BorderSide(color: _primaryColor, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -528,17 +617,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(icon, color: Colors.white54, size: 20),
+          Icon(icon, color: _mutedTextColor, size: 20),
           const SizedBox(width: 12),
           Expanded(
             flex: 2,
-            child: Text(label, style: const TextStyle(color: Colors.white54, fontSize: 14)),
+            child: Text(
+              label,
+              style: TextStyle(color: _mutedTextColor, fontSize: 14),
+            ),
           ),
           Expanded(
             flex: 3,
             child: Text(
               value,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: _textColor, fontSize: 14),
               textAlign: TextAlign.right,
             ),
           ),
@@ -558,22 +650,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: _textColor),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-        prefixIcon: Icon(icon, color: Colors.white.withValues(alpha: 0.6), size: 20),
+        labelStyle: TextStyle(color: _mutedTextColor),
+        prefixIcon: Icon(icon, color: _mutedTextColor, size: 20),
         filled: true,
-        fillColor: const Color(0xFF334155),
+        fillColor: _filledInputColor,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+          borderSide: BorderSide(color: _primaryColor, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -584,8 +679,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(label, style: TextStyle(color: _mutedTextColor, fontSize: 13)),
+          Text(
+            value,
+            style: TextStyle(
+              color: _textColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );

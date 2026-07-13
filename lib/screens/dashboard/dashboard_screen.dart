@@ -17,6 +17,7 @@ import 'package:vietnam_geo_dashboard/widgets/analytics/province_list_panel.dart
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/statistics/statistics_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -28,8 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late TabController _viewModeController;
-  int _selectedView =
-      0; // 0 = Dashboard, 1 = Map, 2 = Household, 3 = Incident, 4 = Statistics
+  int _selectedView = 0; // 0 = Dashboard, 1 = Map, 3 = Incident, 5 = Profile
   String _chartMetric = 'density';
   int? _hoveredSidebarItem;
   bool _isKPIExpanded = true;
@@ -66,39 +66,46 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 768;
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
     if (isMobile) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(child: _buildMainContent(isMobile: true)),
         bottomNavigationBar: NavigationBar(
-          selectedIndex: _selectedView,
+          selectedIndex: _getVisibleIndex(_selectedView, isAdmin),
           onDestinationSelected: (index) {
             setState(() {
-              _selectedView = index;
+              _selectedView = _getSelectionForVisibleIndex(index, isAdmin);
             });
           },
           backgroundColor: AppColors.surface,
           indicatorColor: AppColors.primary.withAlpha(30),
-          destinations: const [
-            NavigationDestination(
+          destinations: [
+            const NavigationDestination(
               icon: Icon(Icons.dashboard_rounded),
               label: 'Tổng quan',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.map_rounded),
               label: 'Bản đồ',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.home_work_rounded),
               label: 'Hộ gia đình',
             ),
-            NavigationDestination(
+            const NavigationDestination(
               icon: Icon(Icons.warning_amber_rounded),
-              label: 'Sự cố',
+              label: 'Sự vụ',
             ),
-            NavigationDestination(
-              icon: Icon(Icons.bar_chart_rounded),
-              label: 'Thống kê',
+            if (isAdmin)
+              const NavigationDestination(
+                icon: Icon(Icons.bar_chart_rounded),
+                label: 'Thống kê',
+              ),
+            const NavigationDestination(
+              icon: Icon(Icons.person_rounded),
+              label: 'Tài khoản',
             ),
           ],
         ),
@@ -166,7 +173,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                         onTap: () => setState(() => _selectedView = 1),
                       ),
                       const SizedBox(height: 6),
-                      // Household Button
                       _buildSidebarItem(
                         index: 2,
                         icon: Icons.home_work_rounded,
@@ -175,22 +181,30 @@ class _DashboardScreenState extends State<DashboardScreen>
                         onTap: () => setState(() => _selectedView = 2),
                       ),
                       const SizedBox(height: 6),
-                      // Incident Button
                       _buildSidebarItem(
                         index: 3,
                         icon: Icons.warning_amber_rounded,
-                        label: 'Sự cố',
+                        label: 'Sự vụ',
                         isSelected: _selectedView == 3,
                         onTap: () => setState(() => _selectedView = 3),
                       ),
+                      if (isAdmin) ...[
+                        const SizedBox(height: 6),
+                        _buildSidebarItem(
+                          index: 4,
+                          icon: Icons.bar_chart_rounded,
+                          label: 'Thống kê',
+                          isSelected: _selectedView == 4,
+                          onTap: () => setState(() => _selectedView = 4),
+                        ),
+                      ],
                       const SizedBox(height: 6),
-                      // Statistics Button
                       _buildSidebarItem(
-                        index: 4,
-                        icon: Icons.bar_chart_rounded,
-                        label: 'Thống kê',
-                        isSelected: _selectedView == 4,
-                        onTap: () => setState(() => _selectedView = 4),
+                        index: 5,
+                        icon: Icons.person_rounded,
+                        label: 'Tài khoản',
+                        isSelected: _selectedView == 5,
+                        onTap: () => setState(() => _selectedView = 5),
                       ),
                       const Spacer(),
                       // Sidebar Collapse Button
@@ -296,6 +310,42 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  int _getVisibleIndex(int selectedView, bool isAdmin) {
+    if (isAdmin) return selectedView;
+    switch (selectedView) {
+      case 0:
+        return 0;
+      case 1:
+        return 1;
+      case 2:
+        return 2;
+      case 3:
+        return 3;
+      case 5:
+        return 4;
+      default:
+        return 0;
+    }
+  }
+
+  int _getSelectionForVisibleIndex(int visibleIndex, bool isAdmin) {
+    if (isAdmin) return visibleIndex;
+    switch (visibleIndex) {
+      case 0:
+        return 0;
+      case 1:
+        return 1;
+      case 2:
+        return 2;
+      case 3:
+        return 3;
+      case 4:
+        return 5;
+      default:
+        return 0;
+    }
+  }
+
   Widget _buildSidebarItem({
     required int index,
     required IconData icon,
@@ -374,6 +424,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         return const IncidentListScreen();
       case 4:
         return const StatisticsScreen();
+      case 5:
+        return const ProfileScreen();
       default:
         return _buildDashboardView();
     }

@@ -75,6 +75,7 @@ class Incident {
   final IncidentStatus status;
   final String? handler;
   final String? notes;
+  final int? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? completedDate;
@@ -97,6 +98,7 @@ class Incident {
     this.status = IncidentStatus.received,
     this.handler,
     this.notes,
+    this.createdBy,
     this.createdAt,
     this.updatedAt,
     this.completedDate,
@@ -105,7 +107,8 @@ class Incident {
   String get fullAddress {
     final parts = <String>[];
     if (address != null && address!.isNotEmpty) parts.add(address!);
-    if (neighborhood != null && neighborhood!.isNotEmpty) parts.add('NB $neighborhood');
+    if (neighborhood != null && neighborhood!.isNotEmpty)
+      parts.add('NB $neighborhood');
     if (ward != null && ward!.isNotEmpty) parts.add(ward!);
     if (district != null && district!.isNotEmpty) parts.add(district!);
     if (city != null && city!.isNotEmpty) parts.add(city!);
@@ -137,6 +140,9 @@ class Incident {
       status: IncidentStatus.fromString(json['status']?.toString()),
       handler: json['handler']?.toString(),
       notes: json['notes']?.toString(),
+      createdBy: json['created_by'] is int
+          ? json['created_by']
+          : int.tryParse('${json['created_by']}'),
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -168,6 +174,7 @@ class Incident {
       'status': status.dbValue,
       'handler': handler,
       'notes': notes,
+      'created_by': createdBy,
       if (completedDate != null)
         'completed_date': completedDate!.toIso8601String(),
     };
