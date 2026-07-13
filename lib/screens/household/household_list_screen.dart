@@ -43,9 +43,6 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Xác nhận xóa'),
         content: Text(
-          'Bạn có chắc muốn xóa hộ gia đình "${item.headOfHousehold}"?',
-        title: const Text('Xác Nhận Xóa'),
-        content: Text(
           'Bạn có chắc chắn muốn xóa hộ gia đình "${item.headOfHousehold}" không?',
         ),
         actions: [
@@ -84,7 +81,6 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                 onSubmitted: _onSearch,
               )
             : const Text('Danh sách hộ gia đình'),
-            : const Text('Danh Sách Hộ Gia Đình'),
         actions: [
           IconButton(
             icon: Icon(_isSearching ? Icons.close : Icons.search),
@@ -118,7 +114,6 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                   ElevatedButton(
                     onPressed: () => provider.loadItems(),
                     child: const Text('Thử lại'),
-                    child: const Text('Thử Lại'),
                   ),
                 ],
               ),
@@ -147,12 +142,19 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
               itemBuilder: (context, index) {
                 final item = provider.items[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 4,
+                  ),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).primaryColor.withAlpha(30),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).primaryColor.withAlpha(30),
                       child: Text(
-                        item.headOfHousehold.isNotEmpty ? item.headOfHousehold[0].toUpperCase() : '?',
+                        item.headOfHousehold.isNotEmpty
+                            ? item.headOfHousehold[0].toUpperCase()
+                            : '?',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).primaryColor,
@@ -172,7 +174,10 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                             item.fullAddress,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
                           ),
                       ],
                     ),
@@ -183,7 +188,8 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => HouseholdFormScreen(household: item),
+                                    builder: (_) =>
+                                        HouseholdFormScreen(household: item),
                                   ),
                                 );
                               } else if (value == 'delete') {
@@ -191,10 +197,16 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                               }
                             },
                             itemBuilder: (context) => [
-                              const PopupMenuItem(value: 'edit', child: Text('Sửa')),
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Sửa'),
+                              ),
                               const PopupMenuItem(
                                 value: 'delete',
-                                child: Text('Xóa', style: TextStyle(color: Colors.red)),
+                                child: Text(
+                                  'Xóa',
+                                  style: TextStyle(color: Colors.red),
+                                ),
                               ),
                             ],
                           )
@@ -203,7 +215,8 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => HouseholdDetailScreen(householdId: item.id!),
+                          builder: (_) =>
+                              HouseholdDetailScreen(householdId: item.id!),
                         ),
                       );
                     },
@@ -219,100 +232,14 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const HouseholdFormScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const HouseholdFormScreen(),
+                  ),
                 );
               },
               child: const Icon(Icons.add),
             )
           : null,
-    );
-  }
-}
-                return _buildHouseholdCard(context, item, provider);
-              },
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const HouseholdFormScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildHouseholdCard(
-    BuildContext context,
-    Household item,
-    HouseholdProvider provider,
-  ) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).primaryColor.withAlpha(30),
-          child: Text(
-            item.headOfHousehold.isNotEmpty
-                ? item.headOfHousehold[0].toUpperCase()
-                : '?',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).primaryColor,
-            ),
-          ),
-        ),
-        title: Text(
-          item.headOfHousehold,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(item.householdCode),
-            if (item.fullAddress.isNotEmpty)
-              Text(
-                item.fullAddress,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) async {
-            if (value == 'edit') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => HouseholdFormScreen(household: item),
-                ),
-              );
-            } else if (value == 'delete') {
-              _deleteHousehold(item);
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'edit', child: Text('Sửa')),
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Xóa', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => HouseholdDetailScreen(householdId: item.id!),
-            ),
-          );
-        },
-      ),
     );
   }
 }

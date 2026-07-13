@@ -34,13 +34,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   Color _statusColor(IncidentStatus status) {
     switch (status) {
       case IncidentStatus.received:
-        return Colors.blue;
-      case IncidentStatus.processing:
-        return Colors.orange;
-      case IncidentStatus.completed:
-        return Colors.green;
-      case IncidentStatus.cancelled:
-        return Colors.red;
         return const Color(0xFF2196F3);
       case IncidentStatus.processing:
         return const Color(0xFFFF9800);
@@ -66,39 +59,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
 
   Future<void> _updateStatus(Incident incident) async {
     final newStatus = await showDialog<IncidentStatus>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('Cập nhật trạng thái'),
-        children: IncidentStatus.values
-            .where((t) => t != incident.status)
-            .map(
-              (t) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, t),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _statusColor(t),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(t.displayName),
-                  ],
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-
-    if (newStatus != null) {
-      final success = await context.read<IncidentProvider>().updateStatus(
-        widget.incidentId,
-        newStatus,
-    final statusMoi = await showDialog<IncidentStatus>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -134,16 +94,15 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       ),
     );
 
-    if (statusMoi != null) {
+    if (newStatus != null) {
       final success = await context.read<IncidentProvider>().updateStatus(
         widget.incidentId,
-        statusMoi,
+        newStatus,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Đã cập nhật trạng thái: "${newStatus.displayName}"'),
-            content: Text('Đã cập nhật trạng thái: ${statusMoi.displayName}'),
+            content: Text('Đã cập nhật trạng thái: ${newStatus.displayName}'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -156,12 +115,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Giao việc'),
-        content: TextField(
-          controller: _handlerController,
-          decoration: const InputDecoration(
-            labelText: 'Tên người xử lý',
-            border: OutlineInputBorder(),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Phân công xử lý'),
         content: TextField(
@@ -178,10 +131,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Hủy'),
           ),
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(ctx, _handlerController.text.trim()),
-            child: const Text('Giao'),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, _handlerController.text.trim()),
             style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
@@ -197,9 +146,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
         result,
       );
       if (success && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Đã giao cho "$result"')));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đã phân công cho "$result"'),
@@ -213,13 +159,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chi tiết sự vụ'),
-        actions: [
-          Consumer<IncidentProvider>(
-            builder: (context, provider, child) {
-              if (provider.selected == null) return const SizedBox.shrink();
-              return PopupMenuButton<String>(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Chi tiết sự cố'),
@@ -246,7 +185,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => IncidentFormScreen(incident: provider.selected),
                         builder: (_) =>
                             IncidentFormScreen(incident: provider.selected),
                       ),
@@ -256,10 +194,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'edit', child: Text('Sửa')),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Xóa', style: TextStyle(color: Colors.red)),
                   const PopupMenuItem(
                     value: 'edit',
                     child: Row(
@@ -293,7 +227,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       body: Consumer<IncidentProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
             return Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             );
@@ -304,13 +237,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(provider.error!),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => provider.loadById(widget.incidentId),
-                    child: const Text('Thử lại'),
                   Container(
                     width: 80,
                     height: 80,
@@ -345,125 +271,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
 
           final incident = provider.selected;
           if (incident == null) {
-            return const Center(child: Text('Chưa có thông tin'));
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context, incident),
-                const SizedBox(height: 16),
-                _buildActionButtons(incident),
-                const SizedBox(height: 16),
-                _buildSection('Mô tả', [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      incident.description ?? 'Không có mô tả',
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 16),
-                _buildSection('Địa chỉ', [
-                  _buildInfoRow('Địa chỉ', incident.address ?? '---'),
-                  _buildInfoRow('Phường/Xã', incident.neighborhood ?? '---'),
-                  _buildInfoRow('Xã/Thị trấn', incident.ward ?? '---'),
-                  _buildInfoRow('Quận/Huyện', incident.district ?? '---'),
-                  _buildInfoRow('Tỉnh/Thành phố', incident.city ?? '---'),
-                ]),
-                const SizedBox(height: 16),
-                _buildSection('Thông tin xử lý', [
-                  _buildInfoRow('Trạng thái', incident.status.displayName),
-                  _buildInfoRow('Người xử lý', incident.handler ?? 'Chưa phân công'),
-                  _buildInfoRow(
-                    'Ngày hoàn thành',
-                    incident.completedDate != null
-                        ? '${incident.completedDate!.day}/${incident.completedDate!.month}/${incident.completedDate!.year}'
-                        : '---',
-                  ),
-                ]),
-                if (incident.householdId != null) ...[
-                  const SizedBox(height: 16),
-                  _buildSection('Hộ gia đình liên quan', [
-                    _buildInfoRow('Mã hộ', 'HĐ${incident.householdId}'),
-                    _buildInfoRow('Chủ hộ', incident.headOfHousehold ?? '---'),
-                    _buildInfoRow('Điện thoại', incident.phone ?? '---'),
-                  ]),
-                ],
-                if (incident.notes != null && incident.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _buildSection('Ghi chú', [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(incident.notes!),
-                    ),
-                  ]),
-                ],
-                const SizedBox(height: 16),
-                _buildSection('Thời gian', [
-                  _buildInfoRow(
-                    'Ngày tạo',
-                    incident.createdAt != null
-                        ? '${incident.createdAt!.day}/${incident.createdAt!.month}/${incident.createdAt!.year}'
-                        : '---',
-                  ),
-                  _buildInfoRow(
-                    'Cập nhật',
-                    incident.updatedAt != null
-                        ? '${incident.updatedAt!.day}/${incident.updatedAt!.month}/${incident.updatedAt!.year}'
-                        : '---',
-                  ),
-                ]),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, Incident incident) {
-    final status = incident.status;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: _statusColor(status).withAlpha(30),
-              child: Icon(
-                Icons.report_problem,
-                color: _statusColor(status),
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    incident.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(incident.incidentCode, style: TextStyle(color: Colors.grey[600])),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -569,14 +376,35 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 const SizedBox(height: 16),
 
                 // ── Action Buttons ──
-                _buildActionButtons(incident),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.update_rounded,
+                        label: 'Cập nhật trạng thái',
+                        color: const Color(0xFF2196F3),
+                        onTap: incident.status != IncidentStatus.cancelled
+                            ? () => _updateStatus(incident)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.person_add_rounded,
+                        label: 'Phân công',
+                        color: AppColors.primary,
+                        onTap: () => _assignHandler(incident),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
 
                 // ── Description ──
                 _buildSection(
                   icon: Icons.description_rounded,
                   title: 'Mô tả',
-                  isDark: false,
                   children: [
                     Text(
                       incident.description ?? 'Không có mô tả',
@@ -596,7 +424,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 _buildSection(
                   icon: Icons.location_on_outlined,
                   title: 'Địa chỉ',
-                  isDark: false,
                   children: [
                     _buildInfoRow(
                       Icons.home_rounded,
@@ -631,7 +458,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 _buildSection(
                   icon: Icons.engineering_rounded,
                   title: 'Xử lý',
-                  isDark: false,
                   children: [
                     _buildStatusRow(incident.status),
                     _buildInfoRow(
@@ -653,7 +479,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   _buildSection(
                     icon: Icons.family_restroom_rounded,
                     title: 'Hộ gia đình liên quan',
-                    isDark: false,
                     children: [
                       _buildInfoRow(
                         Icons.qr_code_rounded,
@@ -680,7 +505,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                   _buildSection(
                     icon: Icons.notes_rounded,
                     title: 'Ghi chú',
-                    isDark: false,
                     children: [
                       Text(
                         incident.notes!,
@@ -699,7 +523,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 _buildSection(
                   icon: Icons.timeline_rounded,
                   title: 'Thời gian',
-                  isDark: false,
                   children: [
                     _buildInfoRow(
                       Icons.add_circle_outline_rounded,
@@ -721,89 +544,9 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     );
   }
 
-  Widget _buildActionButtons(Incident incident) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: incident.status != IncidentStatus.cancelled
-                ? () => _updateStatus(incident)
-                : null,
-            icon: const Icon(Icons.update, size: 18),
-            label: const Text('Cập nhật trạng thái'),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => _assignHandler(incident),
-            icon: const Icon(Icons.person_add, size: 18),
-            label: const Text('Giao việc'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSection(String title, List<Widget> children) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const Divider(),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(label, style: TextStyle(color: Colors.grey[600])),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-          child: _ActionButton(
-            icon: Icons.update_rounded,
-            label: 'Cập nhật trạng thái',
-            color: const Color(0xFF2196F3),
-            onTap: incident.status != IncidentStatus.cancelled
-                ? () => _updateStatus(incident)
-                : null,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.person_add_rounded,
-            label: 'Phân công',
-            color: AppColors.primary,
-            onTap: () => _assignHandler(incident),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSection({
     required IconData icon,
     required String title,
-    required bool isDark,
     required List<Widget> children,
   }) {
     return Container(
@@ -941,9 +684,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: Text(
-          'Bạn có chắc muốn xóa sự vụ "${provider.selected?.title}"?',
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Xác nhận xóa'),
         content: Text(
@@ -954,9 +694,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Hủy'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
@@ -979,7 +716,6 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     }
   }
 }
-}
 
 class _ActionButton extends StatelessWidget {
   final IconData icon;
@@ -998,34 +734,30 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onTap != null;
     return Material(
-      color: enabled ? color.withAlpha(15) : AppColors.surfaceSubtleLight,
+      color: enabled ? color.withAlpha(15) : Colors.grey.withAlpha(10),
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: enabled ? color.withAlpha(50) : AppColors.border,
+              color: enabled ? color.withAlpha(60) : Colors.grey.withAlpha(30),
+              width: 1.2,
             ),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
             children: [
-              Icon(
-                icon,
-                size: 24,
-                color: enabled ? color : AppColors.textMuted,
-              ),
+              Icon(icon, size: 24, color: enabled ? color : Colors.grey),
               const SizedBox(height: 6),
               Text(
                 label,
-                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: enabled ? color : AppColors.textMuted,
+                  color: enabled ? color : Colors.grey,
                 ),
               ),
             ],

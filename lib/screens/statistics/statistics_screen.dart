@@ -32,18 +32,15 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Color _statusColor(String displayName) {
     switch (displayName) {
       case 'Received':
-        return Colors.blue;
-      case 'Processing':
-        return Colors.orange;
-      case 'Completed':
-        return Colors.green;
-      case 'Cancelled':
       case 'Đã nhận':
         return Colors.blue;
+      case 'Processing':
       case 'Đang xử lý':
         return Colors.orange;
+      case 'Completed':
       case 'Hoàn thành':
         return Colors.green;
+      case 'Cancelled':
       case 'Đã hủy':
         return Colors.red;
       default:
@@ -55,7 +52,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thống kê sự vụ'),
         title: const Text('Thống kê sự cố'),
         bottom: TabBar(
           controller: _tabController,
@@ -65,10 +61,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           tabs: const [
             Tab(text: 'Theo tháng', icon: Icon(Icons.calendar_month, size: 18)),
             Tab(text: 'Theo khu phố', icon: Icon(Icons.location_on, size: 18)),
-            Tab(
-              text: 'Theo phường/xã',
-              icon: Icon(Icons.location_on, size: 18),
-            ),
             Tab(text: 'Theo trạng thái', icon: Icon(Icons.pie_chart, size: 18)),
           ],
         ),
@@ -114,7 +106,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
     final data = provider.incidentsByMonth;
     final total = data.values.fold<int>(0, (sum, v) => sum + v);
     if (data.isEmpty) {
-      return const Center(child: Text('Chưa có dữ liệu'));
       return const Center(child: Text('Không có dữ liệu'));
     }
 
@@ -123,7 +114,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Year selector
           Row(
             children: [
               const Text('Chọn năm: ', style: TextStyle(fontSize: 16)),
@@ -147,7 +137,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Tổng sự vụ: $total',
             'Tổng sự cố: $total',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
@@ -165,7 +154,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                       final month = group.x;
                       final value = rod.toY.toInt();
                       return BarTooltipItem(
-                        'Tháng $month\n$value sự vụ',
                         'Tháng $month\n$value sự cố',
                         const TextStyle(color: Colors.white),
                       );
@@ -217,7 +205,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 barGroups: data.entries.map((entry) {
                   final month =
                       int.tryParse(entry.key.replaceAll('Tháng ', '')) ?? 1;
-                      int.tryParse(entry.key.replaceAll('Month ', '')) ?? 1;
                   return BarChartGroupData(
                     x: month,
                     barRods: [
@@ -237,7 +224,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
             ),
           ),
           const SizedBox(height: 24),
-          // Data table
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -279,7 +265,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget _buildTheoKhuPhoTab(StatisticsProvider provider) {
     final data = provider.incidentsByNeighborhood;
     if (data.isEmpty) {
-      return const Center(child: Text('Chưa có dữ liệu'));
       return const Center(child: Text('Không có dữ liệu'));
     }
 
@@ -291,7 +276,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Sự vụ theo khu phố',
             'Sự cố theo phường/xã',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
@@ -342,7 +326,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Tổng',
                     'Tổng cộng',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
@@ -366,7 +349,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
   Widget _buildTheoTrangThaiTab(StatisticsProvider provider) {
     final data = provider.incidentsByStatus;
     if (data.isEmpty) {
-      return const Center(child: Text('No data available'));
       return const Center(child: Text('Không có dữ liệu'));
     }
 
@@ -378,7 +360,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Incidents by Status',
             'Sự cố theo trạng thái',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
@@ -408,7 +389,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
               ),
             ),
           const SizedBox(height: 24),
-          // Legend & details
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -416,7 +396,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Details',
                     'Chi tiết',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
@@ -465,7 +444,6 @@ class _StatisticsScreenState extends State<StatisticsScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Total',
                         'Tổng cộng',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/incident_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/incident_model.dart';
-import '../../models/incident_model.dart';
 import '../../utils/app_theme.dart';
 import 'incident_detail_screen.dart';
 import 'incident_form_screen.dart';
@@ -13,7 +12,6 @@ class IncidentListScreen extends StatefulWidget {
 
   const IncidentListScreen({super.key, this.householdId});
 
-  const IncidentListScreen({super.key, this.householdId});
   @override
   State<IncidentListScreen> createState() => _IncidentListScreenState();
 }
@@ -43,21 +41,12 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
     super.dispose();
   }
 
-  void _onSearch(String query) {
-    context.read<IncidentProvider>().loadItems(
-      searchQuery: query,
-      householdId: widget.householdId,
-    );
-  }
-
   Future<void> _deleteIncident(Incident incident) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Xác nhận xóa'),
-        content: Text(
-          'Bạn có chắc muốn xóa sự vụ "${incident.title}"?',
-        ),
+        content: Text('Bạn có chắc muốn xóa sự vụ "${incident.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -74,20 +63,6 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
     if (confirmed == true && incident.id != null) {
       await context.read<IncidentProvider>().delete(incident.id!);
     }
-  }
-
-  Color _statusColor(IncidentStatus status) {
-    switch (status) {
-      case IncidentStatus.received:
-        return Colors.blue;
-      case IncidentStatus.processing:
-        return Colors.orange;
-      case IncidentStatus.completed:
-        return Colors.green;
-      case IncidentStatus.cancelled:
-        return Colors.red;
-      context.read<IncidentProvider>().loadItems();
-    });
   }
 
   Color _statusColor(IncidentStatus s) {
@@ -118,188 +93,6 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    final isAdmin = auth.isAdmin;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Tìm kiếm sự vụ...',
-                  border: InputBorder.none,
-                ),
-                onSubmitted: _onSearch,
-              )
-            : const Text('Danh sách sự vụ'),
-        actions: [
-          IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() {
-                _isSearching = !_isSearching;
-                if (!_isSearching) {
-                  _searchController.clear();
-                  _onSearch('');
-                }
-              });
-            },
-          ),
-        ],
-      ),
-      body: Consumer<IncidentProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading && provider.items.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (provider.error != null && provider.items.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(provider.error!, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () =>
-                        provider.loadItems(householdId: widget.householdId),
-                    child: const Text('Thử lại'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (provider.items.isEmpty) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.report_problem_outlined,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text('Chưa có thông tin'),
-                ],
-              ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () =>
-                provider.loadItems(householdId: widget.householdId),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: provider.items.length,
-              itemBuilder: (context, index) {
-                final incident = provider.items[index];
-                final status = incident.status;
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    vertical: 4,
-                    horizontal: 4,
-                  ),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: _statusColor(status).withAlpha(30),
-                      child: Icon(
-                        Icons.report_problem,
-                        color: _statusColor(status),
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(
-                      incident.title,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(incident.incidentCode),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _statusColor(status).withAlpha(20),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            status.displayName,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: _statusColor(status),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: isAdmin
-                        ? PopupMenuButton<String>(
-                            onSelected: (value) async {
-                              if (value == 'edit') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => IncidentFormScreen(incident: incident),
-                                  ),
-                                );
-                              } else if (value == 'delete') {
-                                _deleteIncident(incident);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(value: 'edit', child: Text('Sửa')),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Text(
-                                  'Xóa',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                          )
-                        : null,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => IncidentDetailScreen(incidentId: incident.id!),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
-      floatingActionButton: isAdmin
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => IncidentFormScreen(householdId: widget.householdId),
-                  ),
-                );
-              },
-              child: const Icon(Icons.add),
-            )
-          : null,
-    );
-  }
-}
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -613,6 +406,10 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
   }
 
   Widget _buildCreateButton(BuildContext context, bool isDark) {
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
+    if (!isAdmin) return const SizedBox.shrink();
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -659,6 +456,9 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
     bool isDark,
   ) {
     final sc = _statusColor(inc.status);
+    final theme = Theme.of(context);
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
 
     return GestureDetector(
       onTap: () {
@@ -799,6 +599,34 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
+                          ),
+                        ],
+                      ),
+                    if (isAdmin)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_rounded, size: 18),
+                            tooltip: 'Sửa',
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      IncidentFormScreen(incident: inc),
+                                ),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.delete_rounded,
+                              size: 18,
+                              color: AppColors.error,
+                            ),
+                            tooltip: 'Xóa',
+                            onPressed: () => _deleteIncident(inc),
                           ),
                         ],
                       ),
