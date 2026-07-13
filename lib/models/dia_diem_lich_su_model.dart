@@ -7,6 +7,7 @@ class DiaDiemLichSu {
   final double? viDo;
   final String? moTa;
   final String? thoiKy;
+  final String? imageUrl;
   final String? ghiChu;
   final DateTime? createdAt;
 
@@ -19,6 +20,7 @@ class DiaDiemLichSu {
     this.viDo,
     this.moTa,
     this.thoiKy,
+    this.imageUrl,
     this.ghiChu,
     this.createdAt,
   });
@@ -33,6 +35,7 @@ class DiaDiemLichSu {
       viDo: (json['vi_do'] as num?)?.toDouble(),
       moTa: json['mo_ta'] as String?,
       thoiKy: json['thoi_ky'] as String?,
+      imageUrl: json['image_url'] as String?,
       ghiChu: json['ghi_chu'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
@@ -41,14 +44,15 @@ class DiaDiemLichSu {
   }
 
   Map<String, dynamic> toJson() => {
-        if (id != null) 'id': id,
-        'ten': ten,
-        'loai_di_tich': loaiDiTich,
-        'dia_chi': diaChi,
-        'kinh_do': kinhDo,
-        'vi_do': viDo,
-        'mo_ta': moTa,
-        'thoi_ky': thoiKy,
-        'ghi_chu': ghiChu,
-      };
+    if (id != null) 'id': id,
+    'ten': ten,
+    'loai_di_tich': loaiDiTich,
+    'dia_chi': diaChi,
+    'kinh_do': kinhDo,
+    'vi_do': viDo,
+    'mo_ta': moTa,
+    'thoi_ky': thoiKy,
+    'image_url': imageUrl,
+    'ghi_chu': ghiChu,
+  };
 }

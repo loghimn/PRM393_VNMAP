@@ -5,6 +5,7 @@ import '../models/province_model.dart';
 import '../models/high_school_model.dart';
 import '../models/household_model.dart';
 import '../models/incident_model.dart';
+import '../models/dia_diem_lich_su_model.dart';
 import '../models/khu_pho_model.dart';
 import '../models/dai_dien_model.dart';
 import '../models/user_model.dart';
@@ -105,6 +106,7 @@ class DatabaseService {
           vi_do DECIMAL(10, 7),
           mo_ta TEXT,
           thoi_ky VARCHAR(100),
+          image_url TEXT,
           ghi_chu TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -786,6 +788,117 @@ class DatabaseService {
     try {
       await conn.execute(
         'DELETE FROM incidents WHERE id = \$1',
+        parameters: [id],
+      );
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<DiaDiemLichSu>> fetchDiaDiemLichSuList({
+    String? searchQuery,
+  }) async {
+    final conn = await _connect();
+    try {
+      final params = <dynamic>[];
+      var sql = 'SELECT * FROM dia_diem_lich_su WHERE 1=1';
+      if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+        params.add('%${searchQuery.trim()}%');
+        sql +=
+            ' AND (ten ILIKE \$${params.length} OR loai_di_tich ILIKE \$${params.length} OR dia_chi ILIKE \$${params.length} OR thoi_ky ILIKE \$${params.length})';
+      }
+      sql += ' ORDER BY created_at DESC';
+      final res = await conn.execute(sql, parameters: params);
+      return res
+          .map((row) => DiaDiemLichSu.fromJson(row.toColumnMap()))
+          .toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DiaDiemLichSu?> fetchDiaDiemLichSuById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM dia_diem_lich_su WHERE id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return DiaDiemLichSu.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DiaDiemLichSu> createDiaDiemLichSu(DiaDiemLichSu item) async {
+    final conn = await _connect();
+    try {
+      final map = item.toJson();
+      map.remove('id');
+      map['created_at'] = DateTime.now().toIso8601String();
+      map['updated_at'] = DateTime.now().toIso8601String();
+
+      final columns = map.keys.join(', ');
+      final placeholders = map.keys
+          .toList()
+          .asMap()
+          .entries
+          .map((e) => '\$${e.key + 1}')
+          .join(', ');
+      final values = map.values.toList();
+
+      final res = await conn.execute(
+        'INSERT INTO dia_diem_lich_su ($columns) VALUES ($placeholders) RETURNING *',
+        parameters: values,
+      );
+      return DiaDiemLichSu.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<DiaDiemLichSu> updateDiaDiemLichSu(DiaDiemLichSu item) async {
+    final conn = await _connect();
+    try {
+      final id = item.id;
+      if (id == null) {
+        throw ArgumentError(
+          'Không thể cập nhật địa điểm lịch sử vì id bị null',
+        );
+      }
+      final map = Map<String, dynamic>.from(item.toJson());
+      map.remove('id');
+      map.remove('created_at');
+      map.remove('updated_at');
+
+      final entries = map.entries.toList();
+      final setClause = [
+        for (int i = 0; i < entries.length; i++)
+          '${entries[i].key} = \$${i + 1}',
+        'updated_at = NOW()',
+      ].join(', ');
+      final values = entries.map((e) => e.value).toList();
+      values.add(id);
+
+      final res = await conn.execute(
+        'UPDATE dia_diem_lich_su SET $setClause WHERE id = \$${values.length} RETURNING *',
+        parameters: values,
+      );
+      if (res.isEmpty) {
+        throw StateError('Không tìm thấy địa điểm lịch sử có id = $id');
+      }
+      return DiaDiemLichSu.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<void> deleteDiaDiemLichSu(int id) async {
+    final conn = await _connect();
+    try {
+      await conn.execute(
+        'DELETE FROM dia_diem_lich_su WHERE id = \$1',
         parameters: [id],
       );
     } finally {

@@ -7,6 +7,7 @@ import 'package:vietnam_geo_dashboard/providers/weather_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/household_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/incident_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/statistics_provider.dart';
+import 'package:vietnam_geo_dashboard/providers/dia_diem_lich_su_provider.dart';
 import 'package:vietnam_geo_dashboard/models/household_model.dart';
 import 'package:vietnam_geo_dashboard/models/incident_model.dart';
 import 'package:vietnam_geo_dashboard/providers/khu_pho_provider.dart';
@@ -37,6 +38,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => HouseholdProvider()),
         ChangeNotifierProvider(create: (_) => IncidentProvider()),
         ChangeNotifierProvider(create: (_) => StatisticsProvider()),
+        ChangeNotifierProvider(create: (_) => DiaDiemLichSuProvider()),
         ChangeNotifierProvider(create: (_) => KhuPhoProvider()),
         ChangeNotifierProvider(create: (_) => DaiDienProvider()),
       ],

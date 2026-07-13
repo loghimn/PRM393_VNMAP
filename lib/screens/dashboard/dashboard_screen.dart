@@ -19,6 +19,7 @@ import 'package:vietnam_geo_dashboard/screens/incident/incident_list_screen.dart
 import 'package:vietnam_geo_dashboard/screens/khu_pho/khu_pho_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/statistics/statistics_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/lich_su/dia_diem_lich_su_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -31,7 +32,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   late TabController _tabController;
   late TabController _viewModeController;
   int _selectedView =
-      0; // 0 = Dashboard, 1 = Map, 2 = Household, 3 = Incident, 4 = Khu phố (admin), 5 = Statistics (admin), 6 = Profile
+      0; // 0 = Dashboard, 1 = Map, 2 = Household, 3 = Incident, 4 = Khu phố (admin), 5 = Di tích (admin), 6 = Thống kê (admin), 7 = Profile
   String _chartMetric = 'density';
   int? _hoveredSidebarItem;
   bool _isKPIExpanded = true;
@@ -104,6 +105,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               const NavigationDestination(
                 icon: Icon(Icons.apartment_rounded),
                 label: 'Khu phố',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.history_edu_rounded),
+                label: 'Di tích',
               ),
               const NavigationDestination(
                 icon: Icon(Icons.bar_chart_rounded),
@@ -207,19 +212,27 @@ class _DashboardScreenState extends State<DashboardScreen>
                         const SizedBox(height: 6),
                         _buildSidebarItem(
                           index: 5,
-                          icon: Icons.bar_chart_rounded,
-                          label: 'Thống kê',
+                          icon: Icons.history_edu_rounded,
+                          label: 'Di tích',
                           isSelected: _selectedView == 5,
                           onTap: () => setState(() => _selectedView = 5),
+                        ),
+                        const SizedBox(height: 6),
+                        _buildSidebarItem(
+                          index: 6,
+                          icon: Icons.bar_chart_rounded,
+                          label: 'Thống kê',
+                          isSelected: _selectedView == 6,
+                          onTap: () => setState(() => _selectedView = 6),
                         ),
                       ],
                       const SizedBox(height: 6),
                       _buildSidebarItem(
-                        index: 6,
+                        index: 7,
                         icon: Icons.person_rounded,
                         label: 'Tài khoản',
-                        isSelected: _selectedView == 6,
-                        onTap: () => setState(() => _selectedView = 6),
+                        isSelected: _selectedView == 7,
+                        onTap: () => setState(() => _selectedView = 7),
                       ),
                       const Spacer(),
                       // Sidebar Collapse Button
@@ -336,7 +349,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         return 2;
       case 3:
         return 3;
-      case 5:
+      case 7:
         return 4;
       default:
         return 0;
@@ -355,7 +368,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 3:
         return 3;
       case 4:
-        return 5;
+        return 6;
+      case 5:
+        return 7;
       default:
         return 0;
     }
@@ -440,8 +455,10 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 4:
         return const KhuPhoListScreen();
       case 5:
-        return const StatisticsScreen();
+        return const DiaDiemLichSuListScreen();
       case 6:
+        return const StatisticsScreen();
+      case 7:
         return const ProfileScreen();
       default:
         return _buildDashboardView();
