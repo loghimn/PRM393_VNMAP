@@ -10,6 +10,7 @@ import '../../utils/app_theme.dart';
 class HouseholdFormScreen extends StatefulWidget {
   final Household? household;
   const HouseholdFormScreen({super.key, this.household});
+
   @override
   State<HouseholdFormScreen> createState() => _HouseholdFormScreenState();
 }
@@ -162,7 +163,11 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Lỗi: $errMsg'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
@@ -171,42 +176,17 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         );
       }
     }
-  }
-
-  // ── Themed Autocomplete Dropdown ──
-  Widget _buildDropdown({
-    required String label,
-    required TextEditingController ctrl,
-    required List<String> items,
-    required IconData icon,
-    String? hint,
-    void Function(String)? onChanged,
-  }) {
-    return Autocomplete<String>(
-      initialValue: TextEditingValue(text: ctrl.text),
-      optionsBuilder: (t) => t.text.isEmpty
-          ? items
-          : items.where((e) => e.toLowerCase().contains(t.text.toLowerCase())),
-      onSelected: (v) {
-        ctrl.text = v;
-        onChanged?.call(v);
-      },
-      fieldViewBuilder: (ctx, c, f, _) => TextFormField(
-        controller: c,
-        focusNode: f,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          hintText: hint,
-          prefixIcon: Icon(icon, size: 20),
-          suffixIcon: const Icon(Icons.arrow_drop_down),
-        ),
-      ),
-    );
   }
 
   // ── Section Header ──
@@ -214,14 +194,13 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
     required IconData icon,
     required String title,
     required Color color,
-    required bool isDark,
   }) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withAlpha(isDark ? 40 : 25),
+            color: color.withAlpha(20),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: color, size: 20),
@@ -241,21 +220,17 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
   }
 
   // ── Card wrapper ──
-  Widget _buildCard({required bool isDark, required Widget child}) {
+  Widget _buildCard({required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceBackground,
         borderRadius: BorderRadius.circular(AppColors.cardRadius),
-        border: Border.all(
-          color: isDark
-              ? AppColors.borderDark
-              : AppColors.borderLight.withAlpha(128),
-        ),
+        border: Border.all(color: AppColors.border.withAlpha(80)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(isDark ? 30 : 8),
+            color: Colors.black.withAlpha(8),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -279,11 +254,78 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
+      style: TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20),
+        labelStyle: TextStyle(color: AppColors.textSecondary),
+        prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondary),
+        filled: true,
+        fillColor: AppColors.searchBg,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border.withAlpha(80)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border.withAlpha(80)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
       ),
       validator: validator,
+    );
+  }
+
+  // ── Themed Autocomplete Dropdown ──
+  Widget _buildDropdown({
+    required String label,
+    required TextEditingController ctrl,
+    required List<String> items,
+    required IconData icon,
+    String? hint,
+    void Function(String)? onChanged,
+  }) {
+    return Autocomplete<String>(
+      initialValue: TextEditingValue(text: ctrl.text),
+      optionsBuilder: (t) => t.text.isEmpty
+          ? items
+          : items.where((e) => e.toLowerCase().contains(t.text.toLowerCase())),
+      onSelected: (v) {
+        ctrl.text = v;
+        onChanged?.call(v);
+      },
+      fieldViewBuilder: (ctx, c, f, _) => TextFormField(
+        controller: c,
+        focusNode: f,
+        style: TextStyle(color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: AppColors.textSecondary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.border.withAlpha(80)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.border.withAlpha(80)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          ),
+          hintText: hint,
+          hintStyle: TextStyle(color: AppColors.textSecondary),
+          prefixIcon: Icon(icon, size: 20, color: AppColors.textSecondary),
+          suffixIcon: Icon(
+            Icons.arrow_drop_down,
+            color: AppColors.textSecondary,
+          ),
+          filled: true,
+          fillColor: AppColors.searchBg,
+        ),
+      ),
     );
   }
 
@@ -293,6 +335,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -301,7 +344,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
             expandedHeight: 160,
             pinned: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
+              icon: Icon(Icons.arrow_back_rounded, color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
             flexibleSpace: FlexibleSpaceBar(
@@ -311,7 +354,10 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
               ),
               title: Text(
                 _isEditing ? 'Chỉnh sửa hộ gia đình' : 'Thêm hộ gia đình mới',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               background: Container(
                 decoration: const BoxDecoration(
@@ -349,11 +395,9 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                       icon: Icons.person_rounded,
                       title: 'Thông tin chủ hộ',
                       color: AppColors.primary,
-                      isDark: isDark,
                     ),
                     const SizedBox(height: 12),
                     _buildCard(
-                      isDark: isDark,
                       child: Column(
                         children: [
                           _buildField(
@@ -409,11 +453,9 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                       icon: Icons.location_on_rounded,
                       title: 'Địa chỉ',
                       color: AppColors.success,
-                      isDark: isDark,
                     ),
                     const SizedBox(height: 12),
                     _buildCard(
-                      isDark: isDark,
                       child: Column(
                         children: [
                           _buildDropdown(
@@ -481,17 +523,37 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                       icon: Icons.notes_rounded,
                       title: 'Ghi chú',
                       color: AppColors.secondary,
-                      isDark: isDark,
                     ),
                     const SizedBox(height: 12),
                     _buildCard(
-                      isDark: isDark,
                       child: TextFormField(
                         controller: _notesCtrl,
                         maxLines: 3,
-                        decoration: const InputDecoration(
+                        style: TextStyle(color: AppColors.textPrimary),
+                        decoration: InputDecoration(
                           hintText: 'Nhập ghi chú thêm...',
-                          alignLabelWithHint: true,
+                          hintStyle: TextStyle(color: AppColors.textSecondary),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: AppColors.border.withAlpha(80),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: AppColors.border.withAlpha(80),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.searchBg,
                         ),
                       ),
                     ),

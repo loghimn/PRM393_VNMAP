@@ -17,7 +17,6 @@ import 'package:vietnam_geo_dashboard/widgets/analytics/province_list_panel.dart
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/khu_pho/khu_pho_list_screen.dart';
-import 'package:vietnam_geo_dashboard/screens/statistics/statistics_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/lich_su/dia_diem_lich_su_list_screen.dart';
 
@@ -32,7 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   late TabController _tabController;
   late TabController _viewModeController;
   int _selectedView =
-      0; // 0 = Dashboard, 1 = Map, 2 = Household, 3 = Incident, 4 = Khu phố (admin), 5 = Di tích (admin), 6 = Thống kê (admin), 7 = Profile
+      0; // 0 = Dashboard, 1 = Map, 2 = Household, 3 = Incident, 4 = Khu phố (admin), 5 = Di tích, 6 = Profile
   String _chartMetric = 'density';
   int? _hoveredSidebarItem;
   bool _isKPIExpanded = true;
@@ -41,7 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _viewModeController = TabController(
       length: 2,
       vsync: this,
@@ -101,20 +100,15 @@ class _DashboardScreenState extends State<DashboardScreen>
               icon: Icon(Icons.warning_amber_rounded),
               label: 'Sự vụ',
             ),
-            if (isAdmin) ...[
+            if (isAdmin)
               const NavigationDestination(
                 icon: Icon(Icons.apartment_rounded),
                 label: 'Khu phố',
               ),
-              const NavigationDestination(
-                icon: Icon(Icons.history_edu_rounded),
-                label: 'Di tích',
-              ),
-              const NavigationDestination(
-                icon: Icon(Icons.bar_chart_rounded),
-                label: 'Thống kê',
-              ),
-            ],
+            const NavigationDestination(
+              icon: Icon(Icons.history_edu_rounded),
+              label: 'Di tích',
+            ),
             const NavigationDestination(
               icon: Icon(Icons.person_rounded),
               label: 'Tài khoản',
@@ -209,30 +203,22 @@ class _DashboardScreenState extends State<DashboardScreen>
                           isSelected: _selectedView == 4,
                           onTap: () => setState(() => _selectedView = 4),
                         ),
-                        const SizedBox(height: 6),
-                        _buildSidebarItem(
-                          index: 5,
-                          icon: Icons.history_edu_rounded,
-                          label: 'Di tích',
-                          isSelected: _selectedView == 5,
-                          onTap: () => setState(() => _selectedView = 5),
-                        ),
-                        const SizedBox(height: 6),
-                        _buildSidebarItem(
-                          index: 6,
-                          icon: Icons.bar_chart_rounded,
-                          label: 'Thống kê',
-                          isSelected: _selectedView == 6,
-                          onTap: () => setState(() => _selectedView = 6),
-                        ),
                       ],
                       const SizedBox(height: 6),
                       _buildSidebarItem(
-                        index: 7,
+                        index: 5,
+                        icon: Icons.history_edu_rounded,
+                        label: 'Di tích',
+                        isSelected: _selectedView == 5,
+                        onTap: () => setState(() => _selectedView = 5),
+                      ),
+                      const SizedBox(height: 6),
+                      _buildSidebarItem(
+                        index: 6,
                         icon: Icons.person_rounded,
                         label: 'Tài khoản',
-                        isSelected: _selectedView == 7,
-                        onTap: () => setState(() => _selectedView = 7),
+                        isSelected: _selectedView == 6,
+                        onTap: () => setState(() => _selectedView = 6),
                       ),
                       const Spacer(),
                       // Sidebar Collapse Button
@@ -349,8 +335,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         return 2;
       case 3:
         return 3;
-      case 7:
+      case 5:
         return 4;
+      case 6:
+        return 5;
       default:
         return 0;
     }
@@ -368,9 +356,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 3:
         return 3;
       case 4:
-        return 6;
+        return 5;
       case 5:
-        return 7;
+        return 6;
       default:
         return 0;
     }
@@ -421,14 +409,14 @@ class _DashboardScreenState extends State<DashboardScreen>
               children: [
                 Icon(
                   icon,
-                  color: isSelected ? Colors.white : AppColors.textMuted,
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
                   size: 20,
                 ),
                 const SizedBox(height: 3),
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : AppColors.textMuted,
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
                     fontSize: 8,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -457,8 +445,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 5:
         return const DiaDiemLichSuListScreen();
       case 6:
-        return const StatisticsScreen();
-      case 7:
         return const ProfileScreen();
       default:
         return _buildDashboardView();
@@ -718,6 +704,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                               ],
                             ),
                           ),
+                          const Tab(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.assessment, size: 12),
+                                SizedBox(width: 4),
+                                Text('Thống kê'),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -743,6 +739,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           },
                         ),
                         OverviewStatisticsTab(),
+                        _buildIncidentStatsTab(),
                       ],
                     ),
                   ),
