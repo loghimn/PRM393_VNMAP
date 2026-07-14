@@ -74,47 +74,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       return Scaffold(
         backgroundColor: AppColors.background,
         body: SafeArea(child: _buildMainContent(isMobile: true)),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _getVisibleIndex(_selectedView, isAdmin),
-          onDestinationSelected: (index) {
-            setState(() {
-              _selectedView = _getSelectionForVisibleIndex(index, isAdmin);
-            });
-          },
-          backgroundColor: AppColors.surface,
-          indicatorColor: AppColors.primary.withAlpha(30),
-          destinations: [
-            const NavigationDestination(
-              icon: Icon(Icons.dashboard_rounded),
-              label: 'Tổng quan',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.map_rounded),
-              label: 'Bản đồ',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.home_work_rounded),
-              label: 'Hộ gia đình',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.warning_amber_rounded),
-              label: 'Sự vụ',
-            ),
-            if (isAdmin)
-              const NavigationDestination(
-                icon: Icon(Icons.apartment_rounded),
-                label: 'Khu phố',
-              ),
-            const NavigationDestination(
-              icon: Icon(Icons.history_edu_rounded),
-              label: 'Di tích',
-            ),
-            const NavigationDestination(
-              icon: Icon(Icons.person_rounded),
-              label: 'Tài khoản',
-            ),
-          ],
-        ),
+        bottomNavigationBar: _buildBottomNavigation(isAdmin),
       );
     }
     return Scaffold(
@@ -160,67 +120,78 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      // Dashboard Button
-                      _buildSidebarItem(
-                        index: 0,
-                        icon: Icons.dashboard_rounded,
-                        label: 'Tổng quan',
-                        isSelected: _selectedView == 0,
-                        onTap: () => setState(() => _selectedView = 0),
-                      ),
-                      const SizedBox(height: 6),
-                      // Map Button
-                      _buildSidebarItem(
-                        index: 1,
-                        icon: Icons.map_rounded,
-                        label: 'Bản đồ',
-                        isSelected: _selectedView == 1,
-                        onTap: () => setState(() => _selectedView = 1),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildSidebarItem(
-                        index: 2,
-                        icon: Icons.home_work_rounded,
-                        label: 'Hộ gia đình',
-                        isSelected: _selectedView == 2,
-                        onTap: () => setState(() => _selectedView = 2),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildSidebarItem(
-                        index: 3,
-                        icon: Icons.warning_amber_rounded,
-                        label: 'Sự vụ',
-                        isSelected: _selectedView == 3,
-                        onTap: () => setState(() => _selectedView = 3),
-                      ),
-                      if (isAdmin) ...[
-                        const SizedBox(height: 6),
-                        _buildSidebarItem(
-                          index: 4,
-                          icon: Icons.apartment_rounded,
-                          label: 'Khu phố',
-                          isSelected: _selectedView == 4,
-                          onTap: () => setState(() => _selectedView = 4),
+                      const SizedBox(height: 16),
+                      // Scrollable navigation items
+                      Expanded(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            children: [
+                              // Dashboard Button
+                              _buildSidebarItem(
+                                index: 0,
+                                icon: Icons.dashboard_rounded,
+                                label: 'Tổng quan',
+                                isSelected: _selectedView == 0,
+                                onTap: () => setState(() => _selectedView = 0),
+                              ),
+                              const SizedBox(height: 6),
+                              // Map Button
+                              _buildSidebarItem(
+                                index: 1,
+                                icon: Icons.map_rounded,
+                                label: 'Bản đồ',
+                                isSelected: _selectedView == 1,
+                                onTap: () => setState(() => _selectedView = 1),
+                              ),
+                              const SizedBox(height: 6),
+                              _buildSidebarItem(
+                                index: 2,
+                                icon: Icons.home_work_rounded,
+                                label: 'Hộ gia đình',
+                                isSelected: _selectedView == 2,
+                                onTap: () => setState(() => _selectedView = 2),
+                              ),
+                              const SizedBox(height: 6),
+                              _buildSidebarItem(
+                                index: 3,
+                                icon: Icons.warning_amber_rounded,
+                                label: 'Sự vụ',
+                                isSelected: _selectedView == 3,
+                                onTap: () => setState(() => _selectedView = 3),
+                              ),
+                              if (isAdmin) ...[
+                                const SizedBox(height: 6),
+                                _buildSidebarItem(
+                                  index: 4,
+                                  icon: Icons.apartment_rounded,
+                                  label: 'Khu phố',
+                                  isSelected: _selectedView == 4,
+                                  onTap: () =>
+                                      setState(() => _selectedView = 4),
+                                ),
+                              ],
+                              const SizedBox(height: 6),
+                              _buildSidebarItem(
+                                index: 5,
+                                icon: Icons.history_edu_rounded,
+                                label: 'Di tích',
+                                isSelected: _selectedView == 5,
+                                onTap: () => setState(() => _selectedView = 5),
+                              ),
+                              const SizedBox(height: 6),
+                              _buildSidebarItem(
+                                index: 6,
+                                icon: Icons.person_rounded,
+                                label: 'Tài khoản',
+                                isSelected: _selectedView == 6,
+                                onTap: () => setState(() => _selectedView = 6),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ),
                         ),
-                      ],
-                      const SizedBox(height: 6),
-                      _buildSidebarItem(
-                        index: 5,
-                        icon: Icons.history_edu_rounded,
-                        label: 'Di tích',
-                        isSelected: _selectedView == 5,
-                        onTap: () => setState(() => _selectedView = 5),
                       ),
-                      const SizedBox(height: 6),
-                      _buildSidebarItem(
-                        index: 6,
-                        icon: Icons.person_rounded,
-                        label: 'Tài khoản',
-                        isSelected: _selectedView == 6,
-                        onTap: () => setState(() => _selectedView = 6),
-                      ),
-                      const Spacer(),
                       // Sidebar Collapse Button
                       GestureDetector(
                         onTap: () {
@@ -451,304 +422,393 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  Widget _buildBottomNavigation(bool isAdmin) {
+    final navItems = _buildNavItems(isAdmin);
+    final navHeight = isAdmin ? 80.0 : 72.0;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.border.withValues(alpha: 0.2)),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: navHeight,
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              navigationBarTheme: NavigationBarThemeData(
+                backgroundColor: Colors.transparent,
+                indicatorColor: AppColors.primary.withAlpha(25),
+                labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                  // Same TextStyle for both states to prevent text shift
+                  return TextStyle(
+                    color: states.contains(WidgetState.selected)
+                        ? AppColors.primary
+                        : AppColors.textMuted.withValues(alpha: 0.6),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    height: 1.0,
+                  );
+                }),
+                iconTheme: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return const IconThemeData(
+                      color: AppColors.primary,
+                      size: 22,
+                    );
+                  }
+                  return IconThemeData(
+                    color: AppColors.textMuted.withValues(alpha: 0.6),
+                    size: 20,
+                  );
+                }),
+                elevation: 0,
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                height: navHeight,
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              ),
+            ),
+            child: NavigationBar(
+              key: ValueKey(isAdmin),
+              selectedIndex: _getVisibleIndex(_selectedView, isAdmin),
+              onDestinationSelected: (index) {
+                setState(() {
+                  _selectedView = _getSelectionForVisibleIndex(index, isAdmin);
+                });
+              },
+              animationDuration: Duration.zero,
+              destinations: navItems,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<NavigationDestination> _buildNavItems(bool isAdmin) {
+    final items = <NavigationDestination>[];
+    void addItem(IconData icon, String label) {
+      items.add(
+        NavigationDestination(
+          icon: Icon(icon, size: 20),
+          selectedIcon: Icon(icon, size: 22),
+          label: label,
+        ),
+      );
+    }
+
+    addItem(Icons.dashboard_rounded, 'Tổng quan');
+    addItem(Icons.map_rounded, 'Bản đồ');
+    addItem(Icons.home_work_rounded, 'Hộ gia đình');
+    addItem(Icons.warning_amber_rounded, 'Sự vụ');
+    if (isAdmin) {
+      addItem(Icons.apartment_rounded, 'Khu phố');
+    }
+    addItem(Icons.history_edu_rounded, 'Di tích');
+    addItem(Icons.person_rounded, 'Tài khoản');
+    return items;
+  }
+
   Widget _buildDashboardView() {
     return Container(
       color: AppColors.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header (Very Compact) ──
-          Container(
-            padding: const EdgeInsets.fromLTRB(32, 8, 32, 6),
+          // ── Header ──
+          _buildHeader(),
+          // ── Content Section ──
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+                return Padding(
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Tab Bar
+                      _buildTabBar(),
+                      const SizedBox(height: 12),
+                      // Tab Content
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            PopulationDensityChart(
+                              onMetricChanged: (metric) {
+                                setState(() {
+                                  _chartMetric = metric;
+                                });
+                              },
+                            ),
+                            Consumer<ProvinceProvider>(
+                              builder: (context, provider, child) {
+                                return ProvinceComparison(
+                                  provinces: provider.provinces,
+                                );
+                              },
+                            ),
+                            OverviewStatisticsTab(),
+                            _buildIncidentStatsTab(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final hPad = isMobile ? 12.0 : 32.0;
+        return Container(
+          padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 12),
+          decoration: BoxDecoration(
             color: AppColors.surfaceBackground,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title row - small
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
+            border: Border(
+              bottom: BorderSide(
+                color: AppColors.border.withValues(alpha: 0.15),
+              ),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Bảng Điều Khiển Dữ Liệu Việt Nam",
-                          style: AppTypography.h3.copyWith(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
+                        const SizedBox(height: 4),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Bảng Dữ Liệu Việt Nam",
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: isMobile ? 24 : 30,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.5,
+                              height: 1.2,
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 4),
                         Text(
-                          'Phân tích dân số, diện tích và mật độ 34 tỉnh/thành phố',
-                          style: AppTypography.caption.copyWith(
-                            color: AppColors.textMuted,
-                            fontSize: 10,
+                          '34 tỉnh/thành phố',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: isMobile ? 13 : 15,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // ── Toggle row ──
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isKPIExpanded = !_isKPIExpanded;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: _isKPIExpanded
-                              ? AppColors.primaryGradient
-                              : null,
+                  ),
+                  const SizedBox(width: 8),
+                  // Quick stats toggle dropdown
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isKPIExpanded = !_isKPIExpanded;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: _isKPIExpanded
+                            ? AppColors.primaryGradient
+                            : null,
+                        color: _isKPIExpanded
+                            ? null
+                            : AppColors.surfaceBackground,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
                           color: _isKPIExpanded
-                              ? null
-                              : AppColors.surfaceBackground,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: _isKPIExpanded
-                                ? Colors.transparent
-                                : AppColors.border.withValues(alpha: 0.3),
-                          ),
+                              ? Colors.transparent
+                              : AppColors.border.withValues(alpha: 0.3),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _isKPIExpanded
-                                  ? Icons.bar_chart_rounded
-                                  : Icons.format_list_bulleted_rounded,
-                              size: 10,
-                              color: _isKPIExpanded
-                                  ? Colors.white
-                                  : AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              _isKPIExpanded
-                                  ? 'Thống kê nhanh'
-                                  : 'Danh sách Tỉnh/TP',
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isKPIExpanded
+                                ? Icons.bar_chart_rounded
+                                : Icons.format_list_bulleted_rounded,
+                            size: 13,
+                            color: _isKPIExpanded
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              _isKPIExpanded ? 'Thống kê' : 'Danh sách',
                               style: TextStyle(
                                 color: _isKPIExpanded
                                     ? Colors.white
                                     : AppColors.textSecondary,
-                                fontSize: 9,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isKPIExpanded = !_isKPIExpanded;
-                        });
-                      },
-                      child: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceBackground,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: AppColors.border.withValues(alpha: 0.3),
                           ),
-                        ),
-                        child: Center(
-                          child: AnimatedRotation(
+                          const SizedBox(width: 4),
+                          AnimatedRotation(
                             duration: const Duration(milliseconds: 200),
                             turns: _isKPIExpanded ? 0.0 : 0.5,
                             child: Icon(
                               Icons.keyboard_arrow_up_rounded,
-                              size: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Consumer<ProvinceProvider>(
-                      builder: (context, provider, child) {
-                        return Text(
-                          '${provider.provinces.length} tỉnh/thành phố',
-                          style: AppTypography.small.copyWith(
-                            color: AppColors.textMuted,
-                            fontSize: 10,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                // ── KPI Cards or Province List ──
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 300),
-                  crossFadeState: _isKPIExpanded
-                      ? CrossFadeState.showFirst
-                      : CrossFadeState.showSecond,
-                  firstChild: Consumer<ProvinceProvider>(
-                    builder: (context, provider, child) {
-                      return _buildKPIRow(provider);
-                    },
-                  ),
-                  secondChild: Container(
-                    height: 140,
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceBackground,
-                      borderRadius: BorderRadius.circular(AppColors.cardRadius),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: ProvinceListPanel(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // ── Content Section ──
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Tab Bar - compact
-                  Container(
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceBackground,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.2),
-                      ),
-                      boxShadow: AppColors.cardShadow,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: TabBar(
-                        controller: _tabController,
-                        labelColor: Colors.white,
-                        unselectedLabelColor: AppColors.textSecondary,
-                        indicator: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
-                        ),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        indicatorPadding: const EdgeInsets.all(3),
-                        dividerColor: Colors.transparent,
-                        labelStyle: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11,
-                        ),
-                        unselectedLabelStyle: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 11,
-                        ),
-                        tabs: [
-                          Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _chartMetric == 'density'
-                                      ? Icons.density_small
-                                      : _chartMetric == 'area'
-                                      ? Icons.straighten
-                                      : Icons.people,
-                                  size: 12,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _chartMetric == 'density'
-                                      ? 'Mật Độ Dân Số'
-                                      : _chartMetric == 'area'
-                                      ? 'Diện tích'
-                                      : 'Dân số',
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.compare_arrows, size: 12),
-                                SizedBox(width: 4),
-                                Text('So sánh'),
-                              ],
-                            ),
-                          ),
-                          const Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.insights, size: 12),
-                                SizedBox(width: 4),
-                                Text('Tổng quan'),
-                              ],
-                            ),
-                          ),
-                          const Tab(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.assessment, size: 12),
-                                SizedBox(width: 4),
-                                Text('Thống kê'),
-                              ],
+                              size: 13,
+                              color: _isKPIExpanded
+                                  ? Colors.white
+                                  : AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  // Tab Content
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        PopulationDensityChart(
-                          onMetricChanged: (metric) {
-                            setState(() {
-                              _chartMetric = metric;
-                            });
-                          },
-                        ),
-                        Consumer<ProvinceProvider>(
-                          builder: (context, provider, child) {
-                            return ProvinceComparison(
-                              provinces: provider.provinces,
-                            );
-                          },
-                        ),
-                        OverviewStatisticsTab(),
-                        _buildIncidentStatsTab(),
-                      ],
+                ],
+              ),
+              const SizedBox(height: 14),
+              // ── KPI Cards or Province List ──
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 300),
+                crossFadeState: _isKPIExpanded
+                    ? CrossFadeState.showFirst
+                    : CrossFadeState.showSecond,
+                firstChild: Consumer<ProvinceProvider>(
+                  builder: (context, provider, child) {
+                    return _buildKPIRow(provider);
+                  },
+                ),
+                secondChild: Container(
+                  height: 140,
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceBackground,
+                    borderRadius: BorderRadius.circular(AppColors.cardRadius),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.3),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  child: ProvinceListPanel(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.2)),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: TabBar(
+          controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicator: BoxDecoration(gradient: AppColors.primaryGradient),
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicatorPadding: const EdgeInsets.all(3),
+          dividerColor: Colors.transparent,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _chartMetric == 'density'
+                        ? Icons.density_small
+                        : _chartMetric == 'area'
+                        ? Icons.straighten
+                        : Icons.people,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _chartMetric == 'density'
+                        ? 'Mật độ'
+                        : _chartMetric == 'area'
+                        ? 'Diện tích'
+                        : 'Dân số',
+                  ),
                 ],
               ),
             ),
-          ),
-        ],
+            const Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.compare_arrows, size: 14),
+                  SizedBox(width: 6),
+                  Text('So sánh'),
+                ],
+              ),
+            ),
+            const Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.insights, size: 14),
+                  SizedBox(width: 6),
+                  Text('Tổng quan'),
+                ],
+              ),
+            ),
+            const Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.assessment, size: 14),
+                  SizedBox(width: 6),
+                  Text('Thống kê'),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1151,68 +1211,70 @@ class _DashboardScreenState extends State<DashboardScreen>
         lowestName = p.name;
       }
     }
-    return Row(
-      children: [
-        _buildKPI(
-          icon: Icons.location_city_rounded,
-          value: '${provinces.length}',
-          label: 'Tỉnh/TP',
-          gradientColors: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
-          trend: '+0%',
-        ),
-        const SizedBox(width: 8),
-        _buildKPI(
-          icon: Icons.people_rounded,
-          value: _formatCompact(totalPopulation),
-          label: 'Tổng dân số',
-          gradientColors: const [Color(0xFF06B6D4), Color(0xFF0891B2)],
-          sublabel: 'Toàn quốc',
-        ),
-        const SizedBox(width: 8),
-        _buildKPI(
-          icon: Icons.density_small_rounded,
-          value: _formatCompact(avgDensity.toInt()),
-          label: 'Mật độ TB',
-          gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
-          sublabel: 'người/km\u00b2',
-        ),
-        const SizedBox(width: 8),
-        _buildKPI(
-          icon: Icons.arrow_upward_rounded,
-          value: highestName.isNotEmpty
-              ? _formatCompact(highestValue.toInt())
-              : '-',
-          label: 'Cao nhất: $highestName',
-          gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
-          badge: '🏆',
-        ),
-        const SizedBox(width: 8),
-        _buildKPI(
-          icon: Icons.arrow_downward_rounded,
-          value: lowestName.isNotEmpty
-              ? _formatCompact(lowestValue.toInt())
-              : '-',
-          label: 'Thấp nhất: $lowestName',
-          gradientColors: const [Color(0xFFEF4444), Color(0xFFDC2626)],
-          badge: '📍',
-        ),
-      ],
+
+    final kpiData = [
+      _KpiData(
+        icon: Icons.density_small_rounded,
+        value: _formatCompact(avgDensity.toInt()),
+        label: 'Mật độ TB',
+        gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
+        sublabel: 'người/km\u00b2',
+      ),
+      _KpiData(
+        icon: Icons.arrow_upward_rounded,
+        value: highestName.isNotEmpty
+            ? _formatCompact(highestValue.toInt())
+            : '-',
+        label: 'Cao nhất',
+        gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
+        sublabel: highestName,
+        badge: '🏆',
+      ),
+      _KpiData(
+        icon: Icons.arrow_downward_rounded,
+        value: lowestName.isNotEmpty
+            ? _formatCompact(lowestValue.toInt())
+            : '-',
+        label: 'Thấp nhất',
+        gradientColors: const [Color(0xFFEF4444), Color(0xFFDC2626)],
+        sublabel: lowestName,
+        badge: '📍',
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 16) / 3;
+        final isCompact = cardWidth < 140;
+        return Row(
+          children: kpiData.map((kpi) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildKPI(kpi: kpi, width: cardWidth, compact: isCompact),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
   Widget _buildKPI({
-    required IconData icon,
-    required String value,
-    required String label,
-    required List<Color> gradientColors,
-    String? sublabel,
-    String? trend,
-    String? badge,
+    required _KpiData kpi,
+    double? width,
+    bool compact = false,
   }) {
-    return Expanded(
+    final cardValue = compact ? 24.0 : 30.0;
+    final cardLabel = compact ? 13.0 : 15.0;
+    final cardCaption = compact ? 11.0 : 13.0;
+    final vPad = compact ? 10.0 : 16.0;
+    final iconSize = compact ? 14.0 : 16.0;
+    final iconBox = compact ? 26.0 : 32.0;
+    return SizedBox(
+      width: width ?? 170,
+      height: compact ? 110 : 130,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.all(vPad),
         decoration: BoxDecoration(
           color: AppColors.surfaceBackground,
           borderRadius: BorderRadius.circular(AppColors.cardRadius),
@@ -1222,83 +1284,73 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Icon row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  width: 24,
-                  height: 24,
+                  width: iconBox,
+                  height: iconBox,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: gradientColors,
+                      colors: kpi.gradientColors,
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
-                        color: gradientColors[0].withValues(alpha: 0.3),
+                        color: kpi.gradientColors[0].withValues(alpha: 0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Icon(icon, color: Colors.white, size: 12),
+                  child: Icon(kpi.icon, color: Colors.white, size: iconSize),
                 ),
-                if (badge != null)
-                  Text(badge, style: const TextStyle(fontSize: 12)),
-                if (trend != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      trend,
-                      style: TextStyle(
-                        color: AppColors.success,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                if (kpi.badge != null)
+                  Text(
+                    kpi.badge!,
+                    style: TextStyle(fontSize: compact ? 12 : 14),
                   ),
               ],
             ),
-            const SizedBox(height: 4),
+            const Spacer(),
+            // Value
             Text(
-              value,
+              kpi.value,
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 20,
+                fontSize: cardValue,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
+                letterSpacing: -0.5,
                 height: 1.0,
               ),
             ),
-            const SizedBox(height: 1),
+            const SizedBox(height: 4),
+            // Label
             Text(
-              label,
-              style: AppTypography.caption.copyWith(
+              kpi.label,
+              style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 10,
+                fontSize: cardLabel,
+                fontWeight: FontWeight.w500,
+                height: 1.2,
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
-            if (sublabel != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: Text(
-                  sublabel,
-                  style: AppTypography.small.copyWith(
-                    color: AppColors.textMuted,
-                    fontSize: 9,
-                  ),
+            if (kpi.sublabel != null && kpi.sublabel!.isNotEmpty)
+              Text(
+                kpi.sublabel!,
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: cardCaption,
+                  fontWeight: FontWeight.w500,
+                  height: 1.3,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
           ],
         ),
@@ -1491,4 +1543,22 @@ class _DashboardScreenState extends State<DashboardScreen>
       ],
     );
   }
+}
+
+class _KpiData {
+  final IconData icon;
+  final String value;
+  final String label;
+  final List<Color> gradientColors;
+  final String? sublabel;
+  final String? badge;
+
+  const _KpiData({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.gradientColors,
+    this.sublabel,
+    this.badge,
+  });
 }

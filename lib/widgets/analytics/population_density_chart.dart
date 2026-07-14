@@ -14,8 +14,6 @@ class PopulationDensityChart extends StatefulWidget {
 
 class _PopulationDensityChartState extends State<PopulationDensityChart> {
   String _selectedMetric = 'density'; // 'density', 'area', 'population'
-  int? _customLimit;
-  final TextEditingController _limitController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -29,7 +27,6 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
 
   @override
   void dispose() {
-    _limitController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -41,38 +38,42 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
     widget.onMetricChanged?.call(metric);
   }
 
+  // ── Filter Chips: height 44, radius 22, padding 20 ──
   Widget _buildMetricChip(String metric, String label) {
     final isSelected = _selectedMetric == metric;
     return GestureDetector(
       onTap: () => _onMetricSelected(metric),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        height: 44,
         decoration: BoxDecoration(
           gradient: isSelected ? AppColors.primaryGradient : null,
           color: isSelected ? null : AppColors.surfaceBackground,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: isSelected
                 ? Colors.transparent
-                : AppColors.border.withOpacity(0.5),
+                : AppColors.border.withValues(alpha: 0.5),
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
                 ]
               : [],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textMuted,
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : AppColors.textMuted,
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
         ),
       ),
@@ -167,14 +168,6 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
       );
     }
 
-    // Apply custom limit
-    final List<Map<String, dynamic>> filteredList;
-    if (_customLimit != null && _customLimit! > 0) {
-      filteredList = sortedList.take(_customLimit!).toList();
-    } else {
-      filteredList = sortedList;
-    }
-
     final highestProvince = sortedList.first;
     final lowestProvince = sortedList.last;
 
@@ -242,39 +235,62 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Title Row ──
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        titleText,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitleText,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+            // ── Section Title ──
+            // margin-top: 24, margin-bottom: 8
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titleText,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      height: 1.2,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitleText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
-            // ── Metric Chips + Limit Field ──
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Row(
+            // ── Section Subtitle ──
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Text(
+                'So sánh số liệu giữa các tỉnh/thành phố',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+            ),
+
+            // ── Filter Chips (height 44, radius 22, padding 20) ──
+            LayoutBuilder(
+              builder: (context, constraints) {
+                // If 3 chips × (some width) + 2 × 8 gap would overflow, use Wrap
+                final chipWidth = (constraints.maxWidth - 16) / 3;
+                final needsWrap = chipWidth < 80;
+                if (needsWrap) {
+                  return Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _buildMetricChip('density', 'Mật độ'),
+                      _buildMetricChip('area', 'Diện tích'),
+                      _buildMetricChip('population', 'Dân số'),
+                    ],
+                  );
+                }
+                return Row(
                   children: [
                     _buildMetricChip('density', 'Mật độ'),
                     const SizedBox(width: 8),
@@ -282,236 +298,164 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
                     const SizedBox(width: 8),
                     _buildMetricChip('population', 'Dân số'),
                   ],
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SizedBox(
-                    height: 36,
-                    child: TextField(
-                      controller: _limitController,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 13,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Nhập số lượng top...',
-                        hintStyle: TextStyle(
-                          color: AppColors.textMuted.withOpacity(0.5),
-                          fontSize: 11,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 0,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surfaceBackground,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(999),
-                          borderSide: BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(999),
-                          borderSide: BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(999),
-                          borderSide: BorderSide(color: AppColors.primary),
-                        ),
-                        suffixIcon: _limitController.text.isNotEmpty
-                            ? GestureDetector(
-                                onTap: () {
-                                  _limitController.clear();
-                                  setState(() {
-                                    _customLimit = null;
-                                  });
-                                },
-                                child: Icon(
-                                  Icons.clear,
-                                  size: 14,
-                                  color: AppColors.textMuted,
-                                ),
-                              )
-                            : null,
-                      ),
-                      onChanged: (val) {
-                        setState(() {
-                          if (val.isEmpty) {
-                            _customLimit = null;
-                          } else {
-                            _customLimit = int.tryParse(val);
-                          }
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
+                );
+              },
             ),
             const SizedBox(height: 16),
 
-            // ── Bar Chart (White Card) ──
-            // Use SizedBox with a reasonable height instead of Expanded to avoid overflow
-            SizedBox(
-              height: 400,
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceBackground,
-                  borderRadius: BorderRadius.circular(AppColors.cardRadius),
-                  border: Border.all(color: AppColors.border.withOpacity(0.4)),
-                  boxShadow: AppColors.cardShadow,
+            // ── Ranking Card ──
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceBackground,
+                borderRadius: BorderRadius.circular(AppColors.cardRadius),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.4),
                 ),
-                child: Scrollbar(
-                  thumbVisibility: true,
-                  trackVisibility: true,
+                boxShadow: AppColors.cardShadow,
+              ),
+              child: Scrollbar(
+                thumbVisibility: true,
+                trackVisibility: true,
+                controller: _scrollController,
+                child: ListView.builder(
                   controller: _scrollController,
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: filteredList.length,
-                    padding: const EdgeInsets.only(right: 16),
-                    itemBuilder: (context, index) {
-                      final data = filteredList[index];
-                      final name = data['name'] as String;
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: sortedList.length,
+                  padding: const EdgeInsets.only(right: 12),
+                  itemBuilder: (context, index) {
+                    final data = sortedList[index];
+                    final name = data['name'] as String;
 
-                      double metricValue;
-                      String displayValue;
-                      if (_selectedMetric == 'density') {
-                        metricValue = data['density'] as double;
-                        displayValue = _formatMetricValue(
-                          metricValue,
-                          'density',
-                        );
-                      } else if (_selectedMetric == 'area') {
-                        metricValue = data['area'] as double;
-                        displayValue = _formatMetricValue(metricValue, 'area');
-                      } else {
-                        metricValue = data['population'] as double;
-                        displayValue = _formatMetricValue(
-                          metricValue,
-                          'population',
-                        );
-                      }
-
-                      final originalIndex = sortedList.indexWhere(
-                        (element) => element['key'] == data['key'],
+                    double metricValue;
+                    String displayValue;
+                    if (_selectedMetric == 'density') {
+                      metricValue = data['density'] as double;
+                      displayValue = _formatMetricValue(metricValue, 'density');
+                    } else if (_selectedMetric == 'area') {
+                      metricValue = data['area'] as double;
+                      displayValue = _formatMetricValue(metricValue, 'area');
+                    } else {
+                      metricValue = data['population'] as double;
+                      displayValue = _formatMetricValue(
+                        metricValue,
+                        'population',
                       );
-                      final widthFactor = maxVal > 0
-                          ? metricValue / maxVal
-                          : 0.0;
+                    }
 
-                      // Color based on rank
-                      final isTop3 = originalIndex < 3;
-                      final Color barColor = isTop3
-                          ? const Color(0xFF2563EB)
-                          : const Color(0xFF60A5FA);
+                    final widthFactor = maxVal > 0 ? metricValue / maxVal : 0.0;
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6.0),
-                        child: Row(
-                          children: [
-                            // Rank Badge
-                            SizedBox(
-                              width: 30,
-                              child: Text(
-                                '#${originalIndex + 1}',
-                                style: TextStyle(
-                                  color: isTop3
-                                      ? AppColors.primary
-                                      : AppColors.textMuted,
-                                  fontWeight: isTop3
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  fontSize: 11,
+                    // Color based on rank
+                    final isTop3 = index < 3;
+                    final isBottom3 = index >= sortedList.length - 3;
+                    final Color barColor = isTop3
+                        ? AppColors.primary
+                        : isBottom3
+                        ? AppColors.error.withValues(alpha: 0.6)
+                        : AppColors.primaryLight.withValues(alpha: 0.6);
+
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        top: 12,
+                        bottom: index == sortedList.length - 1 ? 0 : 12,
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isCompact = constraints.maxWidth < 360;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Rank Number (#1, #2, ...)
+                              SizedBox(
+                                width: isCompact ? 22 : 28,
+                                child: Text(
+                                  '#${index + 1}',
+                                  style: TextStyle(
+                                    color: isTop3
+                                        ? AppColors.primary
+                                        : AppColors.textMuted,
+                                    fontWeight: isTop3
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    fontSize: isCompact ? 12 : 14,
+                                  ),
                                 ),
                               ),
-                            ),
-                            // Province Name
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                name,
-                                style: TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Horizontal Bar
-                            Expanded(
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return Stack(
-                                    children: [
-                                      // Background Track
-                                      Container(
-                                        height: 14,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.border.withOpacity(
-                                            0.25,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            999,
-                                          ),
+                              const SizedBox(width: 8),
+                              // Province Name + Progress Bar
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Province name
+                                    Text(
+                                      name,
+                                      style: TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: isCompact ? 14 : 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    // Progress bar
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: SizedBox(
+                                        height: 6,
+                                        child: Row(
+                                          children: [
+                                            FractionallySizedBox(
+                                              widthFactor: min(
+                                                widthFactor * 0.9,
+                                                0.95,
+                                              ),
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: isTop3
+                                                      ? AppColors
+                                                            .primaryGradient
+                                                      : null,
+                                                  color: isTop3
+                                                      ? null
+                                                      : barColor,
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      // Solid Bar (No Animation)
-                                      FractionallySizedBox(
-                                        alignment: Alignment.centerLeft,
-                                        widthFactor: max(widthFactor, 0.015),
-                                        child: Container(
-                                          height: 14,
-                                          decoration: BoxDecoration(
-                                            color: barColor,
-                                            borderRadius:
-                                                BorderRadius.circular(999),
-                                            boxShadow: isTop3
-                                                ? [
-                                                    BoxShadow(
-                                                      color: AppColors
-                                                          .primary
-                                                          .withOpacity(0.2),
-                                                      blurRadius: 4,
-                                                      offset: const Offset(
-                                                        0,
-                                                        1,
-                                                      ),
-                                                    ),
-                                                  ]
-                                                : [],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Value Label
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                displayValue,
-                                style: TextStyle(
-                                  color: isTop3
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                    ),
+                                  ],
                                 ),
-                                textAlign: TextAlign.right,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                              const SizedBox(width: 8),
+                              // Value label - right aligned
+                              Flexible(
+                                child: Text(
+                                  displayValue,
+                                  style: TextStyle(
+                                    color: isTop3
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
+                                    fontSize: isCompact ? 11 : 13,
+                                    fontWeight: isTop3
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -528,7 +472,7 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
                       color: AppColors.surfaceBackground,
                       borderRadius: BorderRadius.circular(AppColors.cardRadius),
                       border: Border.all(
-                        color: AppColors.border.withOpacity(0.4),
+                        color: AppColors.border.withValues(alpha: 0.4),
                       ),
                       boxShadow: AppColors.cardShadow,
                     ),
@@ -595,7 +539,7 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
                       color: AppColors.surfaceBackground,
                       borderRadius: BorderRadius.circular(AppColors.cardRadius),
                       border: Border.all(
-                        color: AppColors.border.withOpacity(0.4),
+                        color: AppColors.border.withValues(alpha: 0.4),
                       ),
                       boxShadow: AppColors.cardShadow,
                     ),
@@ -664,7 +608,7 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.highlightBg.withOpacity(0.5),
+                color: AppColors.highlightBg.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
