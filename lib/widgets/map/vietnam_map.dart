@@ -36,77 +36,77 @@ class _VietnamMapState extends State<VietnamMap> {
         return LayoutBuilder(
           builder: (context, constraints) {
             return MouseRegion(
-              onHover: (event) async {
-                setState(() {
-                  mousePosition = event.localPosition;
-                });
+              onHover: (event) {
+                final localPos = event.localPosition;
+                // Schedule hover handling after the current device update/frame to
+                // avoid reentrant updates that can trigger mouse_tracker assertions.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  setState(() {
+                    mousePosition = localPos;
+                  });
 
-                final provider = context.read<ProvinceProvider>();
-                final canvasSize = Size(
-                  constraints.maxWidth,
-                  constraints.maxHeight,
-                );
-
-                var province = getProvinceFromPosition(
-                  event.localPosition,
-                  provider.provinces,
-                  provider.specialZones,
-                  canvasSize,
-                );
-                if (provider.focusedProvince != null) {
-                  // Check if the mouse is inside the focused province's bounds first
-                  final provinceHit = getProvinceFromPosition(
-                    event.localPosition,
-                    [provider.focusedProvince!],
-                    [],
-                    canvasSize,
+                  final provider = context.read<ProvinceProvider>();
+                  final canvasSize = Size(
+                    constraints.maxWidth,
+                    constraints.maxHeight,
                   );
 
-                  if (provinceHit == null) {
-                    province = null;
-                  } else {
-                    // If inside, then check for communes
-                    // IMPORTANT: Include communes in transform calculation to match painter
-                    final regionsForTransform = [
-                      provider.focusedProvince!,
-                      ...provider.focusedCommunes,
-                    ];
-                    final transform = calculateMapTransform(
-                      canvasSize,
-                      regionsForTransform,
-                    );
-                    final adjustedPos = Offset(
-                      (event.localPosition.dx - transform.offsetX) /
-                          transform.scale,
-                      (event.localPosition.dy - transform.offsetY) /
-                          transform.scale,
-                    );
-                    province =
-                        getCommuneFromPositionRaw(
-                          adjustedPos,
-                          provider.focusedCommunes,
-                          provider.focusedProvince!,
-                        ) ??
-                        provider.focusedProvince;
-                  }
-                } else {
-                  province = getProvinceFromPosition(
-                    event.localPosition,
+                  var province = getProvinceFromPosition(
+                    localPos,
                     provider.provinces,
                     provider.specialZones,
                     canvasSize,
                   );
-                }
+                  if (provider.focusedProvince != null) {
+                    final provinceHit = getProvinceFromPosition(
+                      localPos,
+                      [provider.focusedProvince!],
+                      [],
+                      canvasSize,
+                    );
 
-                if (province != provider.hoveredProvince) {
-                  provider.setHoveredProvince(province);
-
-                  if (province != null) {
-                    // prefetch weather for hovered province
-                    final weatherProv = context.read<WeatherProvider>();
-                    weatherProv.fetchWeatherForProvince(province);
+                    if (provinceHit == null) {
+                      province = null;
+                    } else {
+                      final regionsForTransform = [
+                        provider.focusedProvince!,
+                        ...provider.focusedCommunes,
+                      ];
+                      final transform = calculateMapTransform(
+                        canvasSize,
+                        regionsForTransform,
+                      );
+                      final adjustedPos = Offset(
+                        (localPos.dx - transform.offsetX) / transform.scale,
+                        (localPos.dy - transform.offsetY) / transform.scale,
+                      );
+                      province =
+                          getCommuneFromPositionRaw(
+                            adjustedPos,
+                            provider.focusedCommunes,
+                            provider.focusedProvince!,
+                          ) ??
+                          provider.focusedProvince;
+                    }
+                  } else {
+                    province = getProvinceFromPosition(
+                      localPos,
+                      provider.provinces,
+                      provider.specialZones,
+                      canvasSize,
+                    );
                   }
-                }
+
+                  if (province != provider.hoveredProvince) {
+                    provider.setHoveredProvince(province);
+
+                    if (province != null) {
+                      final weatherProv = context.read<WeatherProvider>();
+                      weatherProv.fetchWeatherForProvince(province);
+                    }
+                  }
+                });
               },
               child: GestureDetector(
                 onTapDown: (details) async {

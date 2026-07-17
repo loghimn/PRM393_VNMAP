@@ -304,61 +304,71 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _buildFilterChip(
-            label: 'Tất cả',
-            selected: _statusFilter == null,
-            color: AppColors.primary,
-            onTap: () => setState(() => _statusFilter = null),
-          ),
-          const SizedBox(width: 6),
-          _buildFilterChip(
-            label: 'Tiếp nhận',
-            selected: _statusFilter == IncidentStatus.received.name,
-            color: AppColors.primary,
-            onTap: () => setState(
-              () =>
-                  _statusFilter = _statusFilter == IncidentStatus.received.name
-                  ? null
-                  : IncidentStatus.received.name,
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  _buildFilterChip(
+                    label: 'Tất cả',
+                    selected: _statusFilter == null,
+                    color: AppColors.primary,
+                    onTap: () => setState(() => _statusFilter = null),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildFilterChip(
+                    label: 'Tiếp nhận',
+                    selected: _statusFilter == IncidentStatus.received.name,
+                    color: AppColors.primary,
+                    onTap: () => setState(
+                      () =>
+                          _statusFilter = _statusFilter == IncidentStatus.received.name
+                          ? null
+                          : IncidentStatus.received.name,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildFilterChip(
+                    label: 'Xử lý',
+                    selected: _statusFilter == IncidentStatus.processing.name,
+                    color: AppColors.warning,
+                    onTap: () => setState(
+                      () => _statusFilter =
+                          _statusFilter == IncidentStatus.processing.name
+                          ? null
+                          : IncidentStatus.processing.name,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildFilterChip(
+                    label: 'Đã xong',
+                    selected: _statusFilter == IncidentStatus.completed.name,
+                    color: AppColors.success,
+                    onTap: () => setState(
+                      () =>
+                          _statusFilter = _statusFilter == IncidentStatus.completed.name
+                          ? null
+                          : IncidentStatus.completed.name,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _buildFilterChip(
+                    label: 'Hủy',
+                    selected: _statusFilter == IncidentStatus.cancelled.name,
+                    color: AppColors.error,
+                    onTap: () => setState(
+                      () =>
+                          _statusFilter = _statusFilter == IncidentStatus.cancelled.name
+                          ? null
+                          : IncidentStatus.cancelled.name,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 6),
-          _buildFilterChip(
-            label: 'Xử lý',
-            selected: _statusFilter == IncidentStatus.processing.name,
-            color: AppColors.warning,
-            onTap: () => setState(
-              () => _statusFilter =
-                  _statusFilter == IncidentStatus.processing.name
-                  ? null
-                  : IncidentStatus.processing.name,
-            ),
-          ),
-          const SizedBox(width: 6),
-          _buildFilterChip(
-            label: 'Đã xong',
-            selected: _statusFilter == IncidentStatus.completed.name,
-            color: AppColors.success,
-            onTap: () => setState(
-              () =>
-                  _statusFilter = _statusFilter == IncidentStatus.completed.name
-                  ? null
-                  : IncidentStatus.completed.name,
-            ),
-          ),
-          const SizedBox(width: 6),
-          _buildFilterChip(
-            label: 'Hủy',
-            selected: _statusFilter == IncidentStatus.cancelled.name,
-            color: AppColors.error,
-            onTap: () => setState(
-              () =>
-                  _statusFilter = _statusFilter == IncidentStatus.cancelled.name
-                  ? null
-                  : IncidentStatus.cancelled.name,
-            ),
-          ),
-          const Spacer(),
+          const SizedBox(width: 10),
           PopupMenuButton<String>(
             icon: Container(
               padding: const EdgeInsets.all(6),
