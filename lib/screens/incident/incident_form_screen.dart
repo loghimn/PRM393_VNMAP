@@ -263,6 +263,8 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -590,21 +592,23 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
               isDark: isDark,
             ),
 
-            const SizedBox(height: 24),
+            if (isAdmin) ...[
+              const SizedBox(height: 24),
 
-            // ===== SECTION: PHÂN CÔNG XỬ LÝ =====
-            _buildSectionHeader(
-              icon: Icons.assignment_ind_rounded,
-              title: 'Phân công xử lý',
-              isDark: isDark,
-            ),
-            const SizedBox(height: 12),
-            _buildTextField(
-              controller: _handlerController,
-              label: 'Người xử lý',
-              icon: Icons.engineering_rounded,
-              isDark: isDark,
-            ),
+              // ===== SECTION: PHÂN CÔNG XỬ LÝ =====
+              _buildSectionHeader(
+                icon: Icons.assignment_ind_rounded,
+                title: 'Phân công xử lý',
+                isDark: isDark,
+              ),
+              const SizedBox(height: 12),
+              _buildTextField(
+                controller: _handlerController,
+                label: 'Người xử lý',
+                icon: Icons.engineering_rounded,
+                isDark: isDark,
+              ),
+            ],
 
             const SizedBox(height: 24),
 

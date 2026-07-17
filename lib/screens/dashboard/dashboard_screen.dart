@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vietnam_geo_dashboard/providers/auth_provider.dart';
@@ -47,6 +48,13 @@ class _DashboardScreenState extends State<DashboardScreen>
       initialIndex: 0,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      if (!auth.isAdmin && _selectedView == 0) {
+        setState(() {
+          _selectedView = 1;
+        });
+      }
+
       final provinceProvider = context.read<ProvinceProvider>();
       final weatherProvider = context.read<WeatherProvider>();
       final statsProvider = context.read<StatisticsProvider>();
@@ -128,14 +136,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                           child: Column(
                             children: [
                               // Dashboard Button
-                              _buildSidebarItem(
-                                index: 0,
-                                icon: Icons.dashboard_rounded,
-                                label: 'Tổng quan',
-                                isSelected: _selectedView == 0,
-                                onTap: () => setState(() => _selectedView = 0),
-                              ),
-                              const SizedBox(height: 6),
+                              if (isAdmin) ...[
+                                _buildSidebarItem(
+                                  index: 0,
+                                  icon: Icons.dashboard_rounded,
+                                  label: 'Tổng quan',
+                                  isSelected: _selectedView == 0,
+                                  onTap: () => setState(() => _selectedView = 0),
+                                ),
+                                const SizedBox(height: 6),
+                              ],
                               // Map Button
                               _buildSidebarItem(
                                 index: 1,
@@ -298,18 +308,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   int _getVisibleIndex(int selectedView, bool isAdmin) {
     if (isAdmin) return selectedView;
     switch (selectedView) {
-      case 0:
-        return 0;
       case 1:
-        return 1;
+        return 0;
       case 2:
-        return 2;
+        return 1;
       case 3:
-        return 3;
+        return 2;
       case 5:
-        return 4;
+        return 3;
       case 6:
-        return 5;
+        return 4;
       default:
         return 0;
     }
@@ -319,19 +327,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (isAdmin) return visibleIndex;
     switch (visibleIndex) {
       case 0:
-        return 0;
-      case 1:
         return 1;
-      case 2:
+      case 1:
         return 2;
-      case 3:
+      case 2:
         return 3;
-      case 4:
+      case 3:
         return 5;
-      case 5:
+      case 4:
         return 6;
       default:
-        return 0;
+        return 1;
     }
   }
 
@@ -402,7 +408,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildMainContent({required bool isMobile}) {
-    switch (_selectedView) {
+    final auth = context.watch<AuthProvider>();
+    final isAdmin = auth.isAdmin;
+    final activeView = (!isAdmin && _selectedView == 0) ? 1 : _selectedView;
+
+    switch (activeView) {
       case 0:
         return _buildDashboardView();
       case 1:
@@ -499,7 +509,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
     }
 
-    addItem(Icons.dashboard_rounded, 'Tổng quan');
+    if (isAdmin) {
+      addItem(Icons.dashboard_rounded, 'Tổng quan');
+    }
     addItem(Icons.map_rounded, 'Bản đồ');
     addItem(Icons.home_work_rounded, 'Hộ gia đình');
     addItem(Icons.warning_amber_rounded, 'Sự vụ');
@@ -519,6 +531,37 @@ class _DashboardScreenState extends State<DashboardScreen>
         children: [
           // ── Header ──
           _buildHeader(),
+          // ── KPI Row (Separated) ──
+          Consumer<ProvinceProvider>(
+            builder: (context, provider, child) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 16,
+                ),
+                child: AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 300),
+                  crossFadeState: _isKPIExpanded
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  firstChild: _buildKPIRow(provider),
+                  secondChild: Container(
+                    height: 140,
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceBackground,
+                      borderRadius: BorderRadius.circular(AppColors.cardRadius),
+                      border: Border.all(
+                        color: AppColors.border.withValues(alpha: 0.3),
+                      ),
+                      boxShadow: AppColors.cardShadow,
+                    ),
+                    child: ProvinceListPanel(),
+                  ),
+                ),
+              );
+            },
+          ),
           // ── Content Section ──
           Expanded(
             child: LayoutBuilder(
@@ -695,30 +738,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ],
               ),
               const SizedBox(height: 14),
-              // ── KPI Cards or Province List ──
-              AnimatedCrossFade(
-                duration: const Duration(milliseconds: 300),
-                crossFadeState: _isKPIExpanded
-                    ? CrossFadeState.showFirst
-                    : CrossFadeState.showSecond,
-                firstChild: Consumer<ProvinceProvider>(
-                  builder: (context, provider, child) {
-                    return _buildKPIRow(provider);
-                  },
-                ),
-                secondChild: Container(
-                  height: 140,
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceBackground,
-                    borderRadius: BorderRadius.circular(AppColors.cardRadius),
-                    border: Border.all(
-                      color: AppColors.border.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: ProvinceListPanel(),
-                ),
-              ),
             ],
           ),
         );
@@ -738,12 +757,20 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: TabBar(
+          isScrollable: true,
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: AppColors.textSecondary,
-          indicator: BoxDecoration(gradient: AppColors.primaryGradient),
+          indicator: BoxDecoration(
+            gradient: AppColors.primaryGradient,
+            borderRadius: BorderRadius.circular(12),
+          ),
           indicatorSize: TabBarIndicatorSize.tab,
-          indicatorPadding: const EdgeInsets.all(3),
+          indicatorPadding: const EdgeInsets.symmetric(
+            vertical: 6,
+            horizontal: 4,
+          ),
+          labelPadding: const EdgeInsets.symmetric(horizontal: 16),
           dividerColor: Colors.transparent,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -839,10 +866,52 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           );
         }
+
+        final statusData = provider.incidentsByStatus;
+        final total = statusData.values.fold<int>(0, (sum, v) => sum + v);
+        final received = statusData['Received'] ?? 0;
+        final processing = statusData['Processing'] ?? 0;
+        final completed = statusData['Completed'] ?? 0;
+
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: Column(
             children: [
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 2.2,
+                children: [
+                  _buildIncidentKpiCard(
+                    title: 'Tổng sự vụ',
+                    value: '$total',
+                    icon: Icons.assignment_rounded,
+                    gradient: const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                  ),
+                  _buildIncidentKpiCard(
+                    title: 'Đã hoàn thành',
+                    value: '$completed',
+                    icon: Icons.check_circle_rounded,
+                    gradient: const [Color(0xFF10B981), Color(0xFF34D399)],
+                  ),
+                  _buildIncidentKpiCard(
+                    title: 'Đang xử lý',
+                    value: '$processing',
+                    icon: Icons.sync_rounded,
+                    gradient: const [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                  ),
+                  _buildIncidentKpiCard(
+                    title: 'Đang chờ',
+                    value: '$received',
+                    icon: Icons.hourglass_empty_rounded,
+                    gradient: const [Color(0xFF6366F1), Color(0xFF818CF8)],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               _buildMonthChart(provider),
               const SizedBox(height: 16),
               _buildNeighborhoodChart(provider),
@@ -855,133 +924,262 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildMonthChart(StatisticsProvider provider) {
-    final data = provider.incidentsByMonth;
-    if (data.isEmpty) return const SizedBox();
-    return Card(
-      color: AppColors.surfaceBackground,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildIncidentKpiCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required List<Color> gradient,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border.withAlpha(30)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradient,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Theo tháng',
+                Text(
+                  title,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                DropdownButton<int>(
-                  value: provider.selectedYear,
-                  dropdownColor: const Color(0xff334155),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                  items: List.generate(
-                    5,
-                    (i) => DropdownMenuItem(
-                      value: DateTime.now().year - i,
-                      child: Text('${DateTime.now().year - i}'),
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
                   ),
-                  onChanged: (year) {
-                    if (year != null) {
-                      provider.setSelectedYear(year);
-                      provider.loadByMonth();
-                    }
-                  },
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 180,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: data.values.isNotEmpty
-                      ? data.values.reduce((a, b) => a > b ? a : b).toDouble() +
-                            2
-                      : 10,
-                  barTouchData: BarTouchData(
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          'Tháng ${group.x}\n${rod.toY.toInt()} sự vụ',
-                          const TextStyle(color: Colors.white),
-                        );
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonthChart(StatisticsProvider provider) {
+    final data = provider.incidentsByMonth;
+    if (data.isEmpty) return const SizedBox();
+
+    final double maxVal = data.values.isNotEmpty
+        ? data.values.reduce((a, b) => a > b ? a : b).toDouble()
+        : 10;
+    final double maxY = maxVal + (maxVal * 0.15).ceilToDouble(); // give some headroom
+    final double interval = maxY > 10 ? (maxY / 5).ceilToDouble() : 2;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppColors.cardRadius),
+        border: Border.all(color: AppColors.border.withAlpha(40)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Thống kê theo tháng',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.border.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: provider.selectedYear,
+                    dropdownColor: AppColors.surfaceSubtleDark,
+                    icon: const Icon(Icons.arrow_drop_down, color: AppColors.primaryLight, size: 18),
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    items: List.generate(
+                      5,
+                      (i) => DropdownMenuItem(
+                        value: DateTime.now().year - i,
+                        child: Text('${DateTime.now().year - i}'),
+                      ),
+                    ),
+                    onChanged: (year) {
+                      if (year != null) {
+                        provider.setSelectedYear(year);
+                        provider.loadByMonth();
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 200,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: maxY <= 0 ? 10 : maxY,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (group) => AppColors.surfaceSubtleDark.withAlpha(240),
+                    tooltipBorder: BorderSide(color: AppColors.primary.withAlpha(100), width: 1),
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    tooltipMargin: 8,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        'Tháng ${group.x}\n',
+                        const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: '${rod.toY.toInt()} sự vụ',
+                            style: const TextStyle(
+                              color: AppColors.primaryLight,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final intVal = value.toInt();
+                        if (intVal >= 1 && intVal <= 12) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              'T$intVal',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox();
+                      },
+                      reservedSize: 24,
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      interval: interval <= 0 ? 2 : interval,
+                      getTitlesWidget: (value, meta) {
+                        if (value == value.toInt()) {
+                          return Text(
+                            '${value.toInt()}',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 9,
+                            ),
+                          );
+                        }
+                        return const SizedBox();
                       },
                     ),
                   ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) => value % 2 == 0
-                            ? Text(
-                                'T${value.toInt()}',
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 9,
-                                ),
-                              )
-                            : const SizedBox(),
-                        reservedSize: 20,
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 24,
-                        getTitlesWidget: (value, meta) => Text(
-                          '${value.toInt()}',
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 9,
-                          ),
-                        ),
-                      ),
-                    ),
-                    topTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 1,
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: data.entries.map((entry) {
-                    final month =
-                        int.tryParse(entry.key.replaceAll('Month ', '')) ?? 1;
-                    return BarChartGroupData(
-                      x: month,
-                      barRods: [
-                        BarChartRodData(
-                          toY: entry.value.toDouble(),
-                          color: Colors.blue.shade400,
-                          width: 14,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(4),
-                            topRight: Radius.circular(4),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
                 ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: interval <= 0 ? 2 : interval,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: AppColors.border.withAlpha(20),
+                    strokeWidth: 1,
+                    dashArray: [4, 4],
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                barGroups: data.entries.map((entry) {
+                  final month =
+                      int.tryParse(entry.key.replaceAll('Month ', '')) ?? 1;
+                  return BarChartGroupData(
+                    x: month,
+                    barRods: [
+                      BarChartRodData(
+                        toY: entry.value.toDouble(),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF06B6D4)],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
+                        width: 10,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(4),
+                          topRight: Radius.circular(4),
+                        ),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: maxY <= 0 ? 10 : maxY,
+                          color: AppColors.border.withAlpha(10),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -992,65 +1190,157 @@ class _DashboardScreenState extends State<DashboardScreen>
     final maxValue = data.values.isNotEmpty
         ? data.values.reduce((a, b) => a > b ? a : b).toDouble()
         : 1;
-    return Card(
-      color: AppColors.surfaceBackground,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Theo khu phố',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+
+    final entries = data.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    int rank = 1;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppColors.cardRadius),
+        border: Border.all(color: AppColors.border.withAlpha(40)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Thống kê theo khu phố',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
-            const SizedBox(height: 8),
-            ...data.entries.map(
-              (entry) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+          const SizedBox(height: 16),
+          ...entries.map((entry) {
+            final currentRank = rank++;
+            
+            List<Color> gradientColors;
+            if (currentRank == 1) {
+              gradientColors = const [Color(0xFFF59E0B), Color(0xFFD97706)];
+            } else if (currentRank == 2) {
+              gradientColors = const [Color(0xFF94A3B8), Color(0xFF64748B)];
+            } else if (currentRank == 3) {
+              gradientColors = const [Color(0xFFB45309), Color(0xFF78350F)];
+            } else {
+              gradientColors = const [Color(0xFF3B82F6), Color(0xFF60A5FA)];
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  _buildRankBadge(currentRank),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            entry.key,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              entry.key,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
+                            Text(
+                              '${entry.value} sự vụ',
+                              style: TextStyle(
+                                color: currentRank <= 3 
+                                    ? gradientColors[0] 
+                                    : AppColors.textSecondary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${entry.value}',
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
+                        const SizedBox(height: 6),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final double pct = maxValue > 0 ? entry.value / maxValue : 0;
+                            return Stack(
+                              children: [
+                                Container(
+                                  height: 6,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.border.withAlpha(20),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ),
+                                Container(
+                                  height: 6,
+                                  width: constraints.maxWidth * pct,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: gradientColors,
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: gradientColors[0].withAlpha(60),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: maxValue > 0 ? entry.value / maxValue : 0,
-                        minHeight: 6,
-                        backgroundColor: Colors.grey.shade800,
-                        valueColor: const AlwaysStoppedAnimation(Colors.blue),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRankBadge(int rank) {
+    if (rank == 1) {
+      return const Text('🥇', style: TextStyle(fontSize: 16));
+    } else if (rank == 2) {
+      return const Text('🥈', style: TextStyle(fontSize: 16));
+    } else if (rank == 3) {
+      return const Text('🥉', style: TextStyle(fontSize: 16));
+    }
+
+    return Container(
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.border.withAlpha(30),
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        '$rank',
+        style: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -1060,128 +1350,154 @@ class _DashboardScreenState extends State<DashboardScreen>
     final data = provider.incidentsByStatus;
     if (data.isEmpty) return const SizedBox();
     final total = data.values.fold<int>(0, (sum, v) => sum + v);
-    return Card(
-      color: AppColors.surfaceBackground,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Theo trạng thái',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppColors.cardRadius),
+        border: Border.all(color: AppColors.border.withAlpha(40)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Trạng thái xử lý',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
-            const SizedBox(height: 8),
-            if (total > 0)
-              SizedBox(
-                height: 160,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 30,
-                    sections: data.entries.map((entry) {
-                      Color color;
-                      switch (entry.key) {
-                        case 'Received':
-                          color = Colors.blue;
-                          break;
-                        case 'Processing':
-                          color = Colors.orange;
-                          break;
-                        case 'Completed':
-                          color = Colors.green;
-                          break;
-                        case 'Cancelled':
-                          color = Colors.red;
-                          break;
-                        default:
-                          color = Colors.grey;
-                      }
-                      return PieChartSectionData(
-                        color: color,
-                        value: entry.value.toDouble(),
-                        title:
-                            '${(entry.value / total * 100).toStringAsFixed(0)}%',
-                        radius: 50,
-                        titleStyle: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    }).toList(),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: SizedBox(
+                  height: 120,
+                  child: PieChart(
+                    PieChartData(
+                      sectionsSpace: 3,
+                      centerSpaceRadius: 35,
+                      sections: data.entries.map((entry) {
+                        Color color;
+                        switch (entry.key) {
+                          case 'Received':
+                            color = AppColors.primary;
+                            break;
+                          case 'Processing':
+                            color = AppColors.warning;
+                            break;
+                          case 'Completed':
+                            color = AppColors.success;
+                            break;
+                          case 'Cancelled':
+                            color = AppColors.error;
+                            break;
+                          default:
+                            color = Colors.grey;
+                        }
+                        return PieChartSectionData(
+                          color: color,
+                          value: entry.value.toDouble(),
+                          title: '',
+                          radius: 12,
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
               ),
-            const SizedBox(height: 8),
-            ...data.entries.map((entry) {
-              Color color;
-              switch (entry.key) {
-                case 'Received':
-                  color = Colors.blue;
-                  break;
-                case 'Processing':
-                  color = Colors.orange;
-                  break;
-                case 'Completed':
-                  color = Colors.green;
-                  break;
-                case 'Cancelled':
-                  color = Colors.red;
-                  break;
-                default:
-                  color = Colors.grey;
-              }
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(2),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 6,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: data.entries.map((entry) {
+                    Color color;
+                    String statusLabel;
+                    switch (entry.key) {
+                      case 'Received':
+                        color = AppColors.primary;
+                        statusLabel = 'Tiếp nhận';
+                        break;
+                      case 'Processing':
+                        color = AppColors.warning;
+                        statusLabel = 'Đang xử lý';
+                        break;
+                      case 'Completed':
+                        color = AppColors.success;
+                        statusLabel = 'Đã hoàn thành';
+                        break;
+                      case 'Cancelled':
+                        color = AppColors.error;
+                        statusLabel = 'Đã hủy';
+                        break;
+                      default:
+                        color = Colors.grey;
+                        statusLabel = entry.key;
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              statusLabel,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${entry.value}',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            total > 0
+                                ? '${(entry.value / total * 100).toStringAsFixed(0)}%'
+                                : '0%',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        entry.key,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${entry.value}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      total > 0
-                          ? '(${(entry.value / total * 100).toStringAsFixed(1)}%)'
-                          : '',
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
-              );
-            }),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1244,15 +1560,26 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cardWidth = (constraints.maxWidth - 16) / 3;
-        final isCompact = cardWidth < 140;
-        return Row(
-          children: kpiData.map((kpi) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _buildKPI(kpi: kpi, width: cardWidth, compact: isCompact),
-            );
-          }).toList(),
+        final cardWidth = max(constraints.maxWidth / 3 - 16, 140.0);
+        final List<Widget> kpiChildren = [];
+        for (int i = 0; i < kpiData.length; i++) {
+          final kpi = kpiData[i];
+          final isLast = i == kpiData.length - 1;
+          kpiChildren.add(
+            Padding(
+              padding: EdgeInsets.only(right: isLast ? 0 : 16),
+              child: _buildKPI(kpi: kpi, width: cardWidth, compact: true),
+            ),
+          );
+        }
+
+        // Always show KPI cards in one horizontal row with scroll if needed
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(children: kpiChildren),
+          ),
         );
       },
     );
@@ -1271,9 +1598,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     final iconBox = compact ? 26.0 : 32.0;
     return SizedBox(
       width: width ?? 170,
-      height: compact ? 110 : 130,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
+        constraints: BoxConstraints(minHeight: compact ? 110 : 130),
         padding: EdgeInsets.all(vPad),
         decoration: BoxDecoration(
           color: AppColors.surfaceBackground,
@@ -1283,6 +1609,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Icon row
             Row(
@@ -1315,7 +1642,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
               ],
             ),
-            const Spacer(),
+            // Use a fixed gap instead of Spacer to avoid pushing content
+            // into an undersized container which can cause overflow.
+            SizedBox(height: compact ? 8.0 : 12.0),
             // Value
             Text(
               kpi.value,
@@ -1326,6 +1655,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 letterSpacing: -0.5,
                 height: 1.0,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             // Label
@@ -1340,7 +1671,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
-            if (kpi.sublabel != null && kpi.sublabel!.isNotEmpty)
+            if (kpi.sublabel != null && kpi.sublabel!.isNotEmpty) ...[
+              const SizedBox(height: 2),
               Text(
                 kpi.sublabel!,
                 style: TextStyle(
@@ -1352,6 +1684,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
+            ],
           ],
         ),
       ),
