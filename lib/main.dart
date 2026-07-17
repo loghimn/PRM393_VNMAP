@@ -12,12 +12,16 @@ import 'package:vietnam_geo_dashboard/models/household_model.dart';
 import 'package:vietnam_geo_dashboard/models/incident_model.dart';
 import 'package:vietnam_geo_dashboard/providers/khu_pho_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/dai_dien_provider.dart';
+import 'package:vietnam_geo_dashboard/providers/household_request_provider.dart';
 import 'package:vietnam_geo_dashboard/screens/dashboard/dashboard_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/login_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_detail_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_form_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/household/household_request_list_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/household/household_request_form_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/household/household_request_detail_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_detail_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_form_screen.dart';
@@ -41,6 +45,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => DiaDiemLichSuProvider()),
         ChangeNotifierProvider(create: (_) => KhuPhoProvider()),
         ChangeNotifierProvider(create: (_) => DaiDienProvider()),
+        ChangeNotifierProvider(create: (_) => HouseholdRequestProvider()),
       ],
       child: const MyApp(),
     ),
@@ -117,6 +122,22 @@ class MyApp extends StatelessWidget {
         final household = settings.arguments as Household;
         return MaterialPageRoute(
           builder: (_) => HouseholdFormScreen(household: household),
+          settings: settings,
+        );
+      case '/household-request-list':
+        return MaterialPageRoute(
+          builder: (_) => const HouseholdRequestListScreen(),
+          settings: settings,
+        );
+      case '/household-request-create':
+        return MaterialPageRoute(
+          builder: (_) => const HouseholdRequestFormScreen(),
+          settings: settings,
+        );
+      case '/household-request-detail':
+        final requestId = settings.arguments as int;
+        return MaterialPageRoute(
+          builder: (_) => HouseholdRequestDetailScreen(requestId: requestId),
           settings: settings,
         );
       case '/incident-list':

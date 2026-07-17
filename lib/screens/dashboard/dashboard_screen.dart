@@ -16,6 +16,7 @@ import 'package:vietnam_geo_dashboard/widgets/analytics/province_comparison.dart
 import 'package:vietnam_geo_dashboard/widgets/analytics/overview_statistics_tab.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_list_panel.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
+import 'package:vietnam_geo_dashboard/screens/household/household_request_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/incident/incident_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/khu_pho/khu_pho_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
@@ -142,7 +143,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   icon: Icons.dashboard_rounded,
                                   label: 'Tổng quan',
                                   isSelected: _selectedView == 0,
-                                  onTap: () => setState(() => _selectedView = 0),
+                                  onTap: () =>
+                                      setState(() => _selectedView = 0),
                                 ),
                                 const SizedBox(height: 6),
                               ],
@@ -180,8 +182,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                                   onTap: () =>
                                       setState(() => _selectedView = 4),
                                 ),
+                                const SizedBox(height: 6),
+                                _buildSidebarItem(
+                                  index: 7,
+                                  icon: Icons.assignment_rounded,
+                                  label: 'Yêu cầu',
+                                  isSelected: _selectedView == 7,
+                                  onTap: () =>
+                                      setState(() => _selectedView = 7),
+                                ),
                               ],
-                              const SizedBox(height: 6),
                               _buildSidebarItem(
                                 index: 5,
                                 icon: Icons.history_edu_rounded,
@@ -427,6 +437,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         return const DiaDiemLichSuListScreen();
       case 6:
         return const ProfileScreen();
+      case 7:
+        return const HouseholdRequestListScreen();
       default:
         return _buildDashboardView();
     }
@@ -991,7 +1003,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     final double maxVal = data.values.isNotEmpty
         ? data.values.reduce((a, b) => a > b ? a : b).toDouble()
         : 10;
-    final double maxY = maxVal + (maxVal * 0.15).ceilToDouble(); // give some headroom
+    final double maxY =
+        maxVal + (maxVal * 0.15).ceilToDouble(); // give some headroom
     final double interval = maxY > 10 ? (maxY / 5).ceilToDouble() : 2;
 
     return Container(
@@ -1023,7 +1036,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.border.withAlpha(30),
                   borderRadius: BorderRadius.circular(8),
@@ -1032,8 +1048,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: DropdownButton<int>(
                     value: provider.selectedYear,
                     dropdownColor: AppColors.surfaceSubtleDark,
-                    icon: const Icon(Icons.arrow_drop_down, color: AppColors.primaryLight, size: 18),
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    icon: const Icon(
+                      Icons.arrow_drop_down,
+                      color: AppColors.primaryLight,
+                      size: 18,
+                    ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                     items: List.generate(
                       5,
                       (i) => DropdownMenuItem(
@@ -1061,9 +1085,16 @@ class _DashboardScreenState extends State<DashboardScreen>
                 maxY: maxY <= 0 ? 10 : maxY,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (group) => AppColors.surfaceSubtleDark.withAlpha(240),
-                    tooltipBorder: BorderSide(color: AppColors.primary.withAlpha(100), width: 1),
-                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    getTooltipColor: (group) =>
+                        AppColors.surfaceSubtleDark.withAlpha(240),
+                    tooltipBorder: BorderSide(
+                      color: AppColors.primary.withAlpha(100),
+                      width: 1,
+                    ),
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     tooltipMargin: 8,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       return BarTooltipItem(
@@ -1224,7 +1255,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           const SizedBox(height: 16),
           ...entries.map((entry) {
             final currentRank = rank++;
-            
+
             List<Color> gradientColors;
             if (currentRank == 1) {
               gradientColors = const [Color(0xFFF59E0B), Color(0xFFD97706)];
@@ -1260,8 +1291,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                             Text(
                               '${entry.value} sự vụ',
                               style: TextStyle(
-                                color: currentRank <= 3 
-                                    ? gradientColors[0] 
+                                color: currentRank <= 3
+                                    ? gradientColors[0]
                                     : AppColors.textSecondary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
@@ -1272,7 +1303,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                         const SizedBox(height: 6),
                         LayoutBuilder(
                           builder: (context, constraints) {
-                            final double pct = maxValue > 0 ? entry.value / maxValue : 0;
+                            final double pct = maxValue > 0
+                                ? entry.value / maxValue
+                                : 0;
                             return Stack(
                               children: [
                                 Container(

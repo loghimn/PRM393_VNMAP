@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/household_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/household_request_provider.dart';
 import '../../models/household_model.dart';
+import '../../models/household_request_model.dart';
 import '../../utils/app_theme.dart';
 import 'household_detail_screen.dart';
 import 'household_form_screen.dart';
+import 'household_request_form_screen.dart';
 
 class HouseholdListScreen extends StatefulWidget {
   const HouseholdListScreen({super.key});
@@ -20,6 +23,8 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
   bool _isSearching = false;
   Household? _userHousehold;
   bool _isLoadingPhone = false;
+  HouseholdRequest? _pendingRequest;
+  bool _isCheckingRequest = false;
 
   @override
   void initState() {
@@ -45,8 +50,8 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
   Future<void> _loadUserHouseholdByPhone() async {
     final auth = context.read<AuthProvider>();
     final userPhone = auth.currentUser?.phone;
+    final userId = auth.currentUser?.id;
     if (userPhone == null || userPhone.isEmpty) {
-      setState(() => _isLoadingPhone = false);
       return;
     }
 
@@ -65,10 +70,23 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
           setState(() => _userHousehold = null);
         }
       }
+
+      // Check if user has any pending request
+      if (userId != null && _userHousehold == null) {
+        setState(() => _isCheckingRequest = true);
+        final reqProvider = context.read<HouseholdRequestProvider>();
+        final pending = await reqProvider.getUserPendingRequest(userId);
+        setState(() => _pendingRequest = pending);
+      } else {
+        setState(() => _pendingRequest = null);
+      }
     } catch (e) {
       setState(() => _userHousehold = null);
     } finally {
-      setState(() => _isLoadingPhone = false);
+      setState(() {
+        _isLoadingPhone = false;
+        _isCheckingRequest = false;
+      });
     }
   }
 
@@ -550,6 +568,123 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
 
     final household = _userHousehold;
     if (household == null) {
+      // Show pending request status
+      if (_isCheckingRequest) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (_pendingRequest != null) {
+        final req = _pendingRequest!;
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withAlpha(20),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.hourglass_bottom_rounded,
+                    size: 72,
+                    color: Color(0xFFF59E0B),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Đã gửi yêu cầu tạo hộ gia đình',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Yêu cầu của bạn đang chờ admin phê duyệt.\nThông tin đã gửi:',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Request info card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withAlpha(10),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withAlpha(40),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildMiniInfoRow(
+                        Icons.person_rounded,
+                        'Chủ hộ',
+                        req.headOfHousehold,
+                      ),
+                      const SizedBox(height: 8),
+                      _buildMiniInfoRow(
+                        Icons.phone_rounded,
+                        'Số ĐT',
+                        req.phone,
+                      ),
+                      if (req.fullAddress.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildMiniInfoRow(
+                          Icons.location_on_rounded,
+                          'Địa chỉ',
+                          req.fullAddress,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withAlpha(15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        size: 16,
+                        color: Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Trạng thái: Đang chờ duyệt',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFF59E0B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // No household and no pending request → show create request button
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -585,6 +720,37 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                   fontSize: 14,
                   color: AppColors.textSecondary,
                   height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HouseholdRequestFormScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.send_rounded, color: Colors.white),
+                  label: const Text(
+                    'Gửi yêu cầu tạo hộ gia đình',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 2,
+                  ),
                 ),
               ),
             ],
@@ -826,6 +992,41 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
             ...children,
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMiniInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFFF59E0B)),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 50,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFF59E0B),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

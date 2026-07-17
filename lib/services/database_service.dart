@@ -9,6 +9,7 @@ import '../models/dia_diem_lich_su_model.dart';
 import '../models/khu_pho_model.dart';
 import '../models/dai_dien_model.dart';
 import '../models/user_model.dart';
+import '../models/household_request_model.dart';
 
 class DatabaseService {
   static const String _host =
@@ -124,6 +125,28 @@ class DatabaseService {
           ghi_chu TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS household_requests (
+          id SERIAL PRIMARY KEY,
+          head_of_household TEXT NOT NULL,
+          phone TEXT NOT NULL,
+          email TEXT,
+          population INT,
+          house_number TEXT,
+          street TEXT,
+          neighborhood TEXT,
+          ward TEXT,
+          district TEXT,
+          city TEXT,
+          notes TEXT,
+          user_id INT NOT NULL REFERENCES users(id),
+          status VARCHAR(20) DEFAULT 'pending',
+          approved_by INT REFERENCES users(id),
+          admin_note TEXT,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
         )
       ''');
       _tablesCreated = true;
@@ -1607,6 +1630,128 @@ class DatabaseService {
 
       final res = await conn.execute(sql, parameters: params);
       return res.map((row) => UserModel.fromJson(row.toColumnMap())).toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  // ===================================================================
+  // HOUSEHOLD REQUESTS CRUD
+  // ===================================================================
+
+  Future<void> _ensureHouseholdRequestsTable(Connection conn) async {
+    try {
+      await conn.execute('''
+        CREATE TABLE IF NOT EXISTS household_requests (
+          id SERIAL PRIMARY KEY,
+          head_of_household TEXT NOT NULL,
+          phone TEXT NOT NULL,
+          email TEXT,
+          population INT,
+          house_number TEXT,
+          street TEXT,
+          neighborhood TEXT,
+          ward TEXT,
+          district TEXT,
+          city TEXT,
+          notes TEXT,
+          user_id INT NOT NULL REFERENCES users(id),
+          status VARCHAR(20) DEFAULT 'pending',
+          approved_by INT REFERENCES users(id),
+          admin_note TEXT,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      ''');
+    } catch (_) {}
+  }
+
+  Future<HouseholdRequest> createHouseholdRequest(
+    HouseholdRequest request,
+  ) async {
+    final conn = await _connect();
+    try {
+      await _ensureHouseholdRequestsTable(conn);
+      final res = await conn.execute(
+        'INSERT INTO household_requests (head_of_household, phone, email, population, house_number, street, neighborhood, ward, district, city, notes, user_id, status) '
+        'VALUES (\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13) RETURNING *',
+        parameters: [
+          request.headOfHousehold,
+          request.phone,
+          request.email,
+          request.population,
+          request.houseNumber,
+          request.street,
+          request.neighborhood,
+          request.ward,
+          request.district,
+          request.city,
+          request.notes,
+          request.userId,
+          request.status,
+        ],
+      );
+      return HouseholdRequest.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<List<HouseholdRequest>> fetchHouseholdRequests({
+    String? status,
+    int? userId,
+  }) async {
+    final conn = await _connect();
+    try {
+      String sql = 'SELECT * FROM household_requests WHERE 1=1';
+      final params = <dynamic>[];
+
+      if (status != null && status.isNotEmpty) {
+        params.add(status.trim());
+        sql += ' AND status = \$${params.length}';
+      }
+      if (userId != null) {
+        params.add(userId);
+        sql += ' AND user_id = \$${params.length}';
+      }
+
+      sql += ' ORDER BY created_at DESC';
+      final res = await conn.execute(sql, parameters: params);
+      return res
+          .map((row) => HouseholdRequest.fromJson(row.toColumnMap()))
+          .toList();
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<HouseholdRequest?> fetchHouseholdRequestById(int id) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM household_requests WHERE id = \$1',
+        parameters: [id],
+      );
+      if (res.isEmpty) return null;
+      return HouseholdRequest.fromJson(res.first.toColumnMap());
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<HouseholdRequest> updateHouseholdRequestStatus(
+    int id,
+    String status, {
+    int? approvedBy,
+    String? adminNote,
+  }) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'UPDATE household_requests SET status = \$1, approved_by = \$2, admin_note = \$3, updated_at = NOW() WHERE id = \$4 RETURNING *',
+        parameters: [status, approvedBy, adminNote, id],
+      );
+      return HouseholdRequest.fromJson(res.first.toColumnMap());
     } finally {
       await conn.close();
     }
