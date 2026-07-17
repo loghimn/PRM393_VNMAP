@@ -135,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 20),
         const Text(
-          'PRM VNMAP',
+          'VNMAP',
           style: TextStyle(
             color: Colors.white,
             fontSize: 24,
@@ -360,16 +360,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          // Help text
-          Center(
-            child: Text(
-              'Tài khoản mặc định: admin / admin123',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 12,
-              ),
-            ),
-          ),
         ],
       ),
     );
