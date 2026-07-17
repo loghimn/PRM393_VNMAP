@@ -11,14 +11,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -30,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.login(
-      _usernameController.text.trim(),
+      _phoneController.text.trim(),
       _passwordController.text,
     );
 
@@ -53,11 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0F172A),
-              Color(0xFF1E293B),
-              Color(0xFF0F172A),
-            ],
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)],
           ),
         ),
         child: Center(
@@ -65,9 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: isDesktop
-                  ? _buildDesktopLogin()
-                  : _buildMobileLogin(),
+              child: isDesktop ? _buildDesktopLogin() : _buildMobileLogin(),
             ),
           ),
         ),
@@ -95,7 +89,9 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 32),
         Card(
           elevation: 12,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           color: const Color(0xFF1E293B),
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -168,16 +164,19 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _buildLogo(),
           const SizedBox(height: 36),
-          // Username field
+          // Phone field
           TextFormField(
-            controller: _usernameController,
+            controller: _phoneController,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              labelText: 'Tên đăng nhập',
+              labelText: 'Số điện thoại',
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-              hintText: 'Nhập tên đăng nhập',
+              hintText: 'Nhập số điện thoại',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.person_outline, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.phone_outlined,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               filled: true,
               fillColor: const Color(0xFF334155),
               border: OutlineInputBorder(
@@ -186,16 +185,20 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Colors.red, width: 1),
               ),
             ),
+            keyboardType: TextInputType.phone,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Vui lòng nhập tên đăng nhập';
+                return 'Vui lòng nhập số điện thoại';
               }
               return null;
             },
@@ -212,13 +215,17 @@ class _LoginScreenState extends State<LoginScreen> {
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Nhập mật khẩu',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
                   color: Colors.white.withValues(alpha: 0.6),
                 ),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
               filled: true,
               fillColor: const Color(0xFF334155),
@@ -228,7 +235,10 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -255,21 +265,34 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             auth.error!,
-                            style: const TextStyle(color: Colors.red, fontSize: 13),
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                         GestureDetector(
                           onTap: () => auth.clearError(),
-                          child: const Icon(Icons.close, color: Colors.red, size: 16),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 16,
+                          ),
                         ),
                       ],
                     ),
@@ -291,7 +314,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
-                disabledBackgroundColor: const Color(0xFF3B82F6).withValues(alpha: 0.5),
+                disabledBackgroundColor: const Color(
+                  0xFF3B82F6,
+                ).withValues(alpha: 0.5),
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -319,32 +344,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
             ),
           ),
-           const SizedBox(height: 16),
-           // Register button
-           TextButton(
-             onPressed: () {
-               Navigator.of(context).pushNamed('/register');
-             },
-             child: const Text(
-               'Chưa có tài khoản? Đăng ký ngay',
-               style: TextStyle(
-                 color: Color(0xFF3B82F6),
-                 fontSize: 14,
-                 fontWeight: FontWeight.w500,
-               ),
-             ),
-           ),
-           const SizedBox(height: 8),
-           // Help text
-           Center(
-             child: Text(
-               'Tài khoản mặc định: admin / admin123',
-               style: TextStyle(
-                 color: Colors.white.withValues(alpha: 0.4),
-                 fontSize: 12,
-               ),
-             ),
-           ),
+          const SizedBox(height: 16),
+          // Register button
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pushNamed('/register');
+            },
+            child: const Text(
+              'Chưa có tài khoản? Đăng ký ngay',
+              style: TextStyle(
+                color: Color(0xFF3B82F6),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Help text
+          Center(
+            child: Text(
+              'Tài khoản mặc định: admin / admin123',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.4),
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );

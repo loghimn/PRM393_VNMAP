@@ -38,15 +38,17 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String phone, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      print('AuthProvider.login: username="$username", password length=${password.length}');
-      
-      final user = await _dbService.login(username, password);
+      print(
+        'AuthProvider.login: phone="$phone", password length=${password.length}',
+      );
+
+      final user = await _dbService.login(phone, password);
       if (user != null) {
         _currentUser = user;
         final prefs = await SharedPreferences.getInstance();
@@ -55,7 +57,7 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        _error = 'Tên đăng nhập hoặc mật khẩu không chính xác';
+        _error = 'Số điện thoại hoặc mật khẩu không chính xác';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -117,10 +119,17 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Check if username already exists
-      final existingUser = await _dbService.getUserByUsername(username);
+      // Check if phone already exists
+      if (phone == null || phone.trim().isEmpty) {
+        _error = 'Vui lòng nhập số điện thoại';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final existingUser = await _dbService.getUserByPhone(phone);
       if (existingUser != null) {
-        _error = 'Tên đăng nhập đã tồn tại';
+        _error = 'Số điện thoại đã được đăng ký';
         _isLoading = false;
         notifyListeners();
         return false;

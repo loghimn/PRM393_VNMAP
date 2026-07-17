@@ -17,7 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  
+
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
@@ -40,9 +40,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final success = await authProvider.register(
       _usernameController.text.trim(),
       _passwordController.text,
-      email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-      fullName: _fullNameController.text.trim().isEmpty ? null : _fullNameController.text.trim(),
-      phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+      email: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
+      fullName: _fullNameController.text.trim().isEmpty
+          ? null
+          : _fullNameController.text.trim(),
+      phone: _phoneController.text.trim(),
     );
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -68,11 +72,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0F172A),
-              Color(0xFF1E293B),
-              Color(0xFF0F172A),
-            ],
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)],
           ),
         ),
         child: Center(
@@ -110,7 +110,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 32),
         Card(
           elevation: 12,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           color: const Color(0xFF1E293B),
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -183,7 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         children: [
           _buildLogo(),
           const SizedBox(height: 36),
-          
+
           // Username field
           TextFormField(
             controller: _usernameController,
@@ -193,7 +195,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Nhập tên đăng nhập (bắt buộc)',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.person_outline, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.person_outline,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               filled: true,
               fillColor: const Color(0xFF334155),
               border: OutlineInputBorder(
@@ -202,7 +207,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -221,7 +229,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 20),
-          
+
           // Password field
           TextFormField(
             controller: _passwordController,
@@ -232,13 +240,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Nhập mật khẩu (bắt buộc, ít nhất 6 ký tự)',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
                   color: Colors.white.withValues(alpha: 0.6),
                 ),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
               filled: true,
               fillColor: const Color(0xFF334155),
@@ -248,7 +260,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
             ),
             validator: (value) {
@@ -263,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 20),
-          
+
           // Confirm Password field
           TextFormField(
             controller: _confirmPasswordController,
@@ -274,13 +289,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Xác nhận mật khẩu',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.lock_outline, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.lock_outline,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                  _obscureConfirmPassword
+                      ? Icons.visibility_off
+                      : Icons.visibility,
                   color: Colors.white.withValues(alpha: 0.6),
                 ),
-                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                onPressed: () => setState(
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                ),
               ),
               filled: true,
               fillColor: const Color(0xFF334155),
@@ -290,7 +312,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
             ),
             validator: (value) {
@@ -305,7 +330,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 20),
-          
+
           // Email field
           TextFormField(
             controller: _emailController,
@@ -315,7 +340,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Nhập email',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.email_outlined, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               filled: true,
               fillColor: const Color(0xFF334155),
               border: OutlineInputBorder(
@@ -324,14 +352,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
             ),
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 20),
-          
+
           // Full Name field
           TextFormField(
             controller: _fullNameController,
@@ -341,7 +372,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Nhập họ tên',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.badge_outlined, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.badge_outlined,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               filled: true,
               fillColor: const Color(0xFF334155),
               border: OutlineInputBorder(
@@ -350,23 +384,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
             ),
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 20),
-          
+
           // Phone field
           TextFormField(
             controller: _phoneController,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              labelText: 'Số điện thoại (tùy chọn)',
+              labelText: 'Số điện thoại (bắt buộc)',
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Nhập số điện thoại',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
-              prefixIcon: Icon(Icons.phone_outlined, color: Colors.white.withValues(alpha: 0.6)),
+              prefixIcon: Icon(
+                Icons.phone_outlined,
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
               filled: true,
               fillColor: const Color(0xFF334155),
               border: OutlineInputBorder(
@@ -375,15 +415,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Color(0xFF3B82F6), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3B82F6),
+                  width: 2,
+                ),
               ),
             ),
             keyboardType: TextInputType.phone,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Vui lòng nhập số điện thoại';
+              }
+              return null;
+            },
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _handleRegister(),
           ),
           const SizedBox(height: 12),
-          
+
           // Error message
           Consumer<AuthProvider>(
             builder: (context, auth, child) {
@@ -395,21 +444,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     decoration: BoxDecoration(
                       color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.red.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             auth.error!,
-                            style: const TextStyle(color: Colors.red, fontSize: 13),
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                         GestureDetector(
                           onTap: () => auth.clearError(),
-                          child: const Icon(Icons.close, color: Colors.red, size: 16),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.red,
+                            size: 16,
+                          ),
                         ),
                       ],
                     ),
@@ -419,7 +481,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               return const SizedBox.shrink();
             },
           ),
-          
+
           // Register button
           SizedBox(
             height: 50,
@@ -432,7 +494,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 elevation: 0,
-                disabledBackgroundColor: const Color(0xFF10B981).withValues(alpha: 0.5),
+                disabledBackgroundColor: const Color(
+                  0xFF10B981,
+                ).withValues(alpha: 0.5),
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -461,11 +525,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Back to login
           Center(
             child: TextButton(
-              onPressed: () => Navigator.of(context).pushReplacementNamed('/login'),
+              onPressed: () =>
+                  Navigator.of(context).pushReplacementNamed('/login'),
               child: const Text(
                 'Đã có tài khoản? Đăng nhập ngay',
                 style: TextStyle(

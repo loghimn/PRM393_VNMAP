@@ -1368,33 +1368,33 @@ class DatabaseService {
     } catch (_) {}
   }
 
-  Future<UserModel?> login(String username, String password) async {
+  Future<UserModel?> login(String phone, String password) async {
     print('=== LOGIN ATTEMPT ===');
-    print('Username input: "$username"');
+    print('Phone input: "$phone"');
     print('Password length: ${password.length}');
 
     final conn = await _connect();
     try {
       await _ensureUsersTable(conn);
 
-      final trimmedUsername = username.trim();
-      print('Querying DB for username: "$trimmedUsername"');
+      final trimmedPhone = phone.trim();
+      print('Querying DB for phone: "$trimmedPhone"');
 
       final res = await conn.execute(
-        'SELECT * FROM users WHERE username = \$1 AND is_active = TRUE',
-        parameters: [trimmedUsername],
+        'SELECT * FROM users WHERE phone = \$1 AND is_active = TRUE',
+        parameters: [trimmedPhone],
       );
 
       print('DB returned ${res.length} row(s)');
 
       if (res.isEmpty) {
-        print('ERROR: No user found in database');
+        print('ERROR: No user found with this phone number');
         return null;
       }
 
       final userMap = res.first.toColumnMap();
       print(
-        'User data from DB: id=${userMap['id']}, username=${userMap['username']}, role=${userMap['role']}',
+        'User data from DB: id=${userMap['id']}, username=${userMap['username']}, phone=${userMap['phone']}, role=${userMap['role']}',
       );
 
       final user = UserModel.fromJson(userMap);
@@ -1423,6 +1423,20 @@ class DatabaseService {
     } catch (e) {
       print('LOGIN EXCEPTION: $e');
       return null;
+    } finally {
+      await conn.close();
+    }
+  }
+
+  Future<UserModel?> getUserByPhone(String phone) async {
+    final conn = await _connect();
+    try {
+      final res = await conn.execute(
+        'SELECT * FROM users WHERE phone = \$1',
+        parameters: [phone.trim()],
+      );
+      if (res.isEmpty) return null;
+      return UserModel.fromJson(res.first.toColumnMap());
     } finally {
       await conn.close();
     }
