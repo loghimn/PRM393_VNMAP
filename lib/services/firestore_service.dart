@@ -277,66 +277,216 @@ class FirestoreService {
     return results;
   }
 
+  /// Strip tất cả prefix tỉnh/thành phổ biến để so sánh
+  String _stripProvincePrefix(String name) {
+    String s = name.trim();
+    for (final prefix in [
+      'Tỉnh ',
+      'Thành phố ',
+      'Thành Phố ',
+      'Đặc khu ',
+      'TP. ',
+      'Tp. ',
+      'tp. ',
+    ]) {
+      if (s.startsWith(prefix)) {
+        s = s.substring(prefix.length).trim();
+        break;
+      }
+    }
+    return s;
+  }
+
   Future<List<HighSchool>> fetchHighSchoolsByCommuneName(
-    String communeName,
-  ) async {
-    final snap = await _db
-        .collection('truong_thpt')
+    String communeName, {
+    String? provinceName,
+  }) async {
+    debugPrint(
+      '🏫 [HS] communeName="$communeName", provinceName="$provinceName"',
+    );
+
+    // Chuẩn hóa tên tỉnh (strip prefix)
+    final shortProvince = provinceName != null && provinceName.isNotEmpty
+        ? _stripProvincePrefix(provinceName)
+        : '';
+
+    // Query 1: khớp chính xác tên phường/xã
+    var snap = await _db
+        .collection('high_schools')
         .where('ten_xa_phuong', isEqualTo: communeName)
         .get();
-    final results = snap.docs
+    debugPrint('🏫 [Q1 exact] "$communeName" → ${snap.docs.length} docs');
+    for (final doc in snap.docs) {
+      final d = doc.data();
+      debugPrint(
+        '  Q1: ten_tinh_tp="${d['ten_tinh_tp']}", ten_truong="${d['ten_truong']}"',
+      );
+    }
+
+    // Query 2 (fallback): strip prefix Phường/Xã/Thị trấn nếu Q1 rỗng
+    if (snap.docs.isEmpty) {
+      String shortName = communeName;
+      for (final prefix in ['Phường ', 'Xã ', 'Thị trấn ', 'Thị Trấn ']) {
+        if (shortName.startsWith(prefix)) {
+          shortName = shortName.substring(prefix.length);
+          break;
+        }
+      }
+      if (shortName != communeName) {
+        snap = await _db
+            .collection('high_schools')
+            .where('ten_xa_phuong', isEqualTo: shortName)
+            .get();
+        debugPrint('🏫 [Q2 stripped] "$shortName" → ${snap.docs.length} docs');
+      }
+    }
+
+    var results = snap.docs
         .map((doc) => HighSchool.fromJson(doc.data() as Map<String, dynamic>))
         .toList();
+
+    // Lọc theo tỉnh: normalize CẢ HAI phía để tránh mismatch "TP. Đồng Nai" vs "Đồng Nai"
+    if (shortProvince.isNotEmpty) {
+      final before = results.length;
+      results = results.where((s) {
+        if (s.tenTinhTp == null) return true;
+        final dbProvince = _stripProvincePrefix(s.tenTinhTp!);
+        return dbProvince.toLowerCase() == shortProvince.toLowerCase();
+      }).toList();
+      debugPrint(
+        '🏫 [province filter] "$shortProvince": $before → ${results.length}',
+      );
+    }
+
+    debugPrint(
+      '🏫 [FINAL] ${results.length} schools for "$communeName" in "$provinceName"',
+    );
     results.sort((a, b) => (a.tenTruong ?? '').compareTo(b.tenTruong ?? ''));
+
     return results;
+  }
+
+  /// Chuẩn hóa chuỗi: bỏ dấu tiếng Việt, chuyển lowercase để so sánh không phân biệt dấu
+  String _normalizeVietnamese(String s) {
+    var str = s.toLowerCase();
+    const accentMap = {
+      'á': 'a',
+      'à': 'a',
+      'ả': 'a',
+      'ã': 'a',
+      'ạ': 'a',
+      'â': 'a',
+      'ấ': 'a',
+      'ầ': 'a',
+      'ẩ': 'a',
+      'ẫ': 'a',
+      'ậ': 'a',
+      'ă': 'a',
+      'ắ': 'a',
+      'ằ': 'a',
+      'ẳ': 'a',
+      'ẵ': 'a',
+      'ặ': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ẻ': 'e',
+      'ẽ': 'e',
+      'ẹ': 'e',
+      'ê': 'e',
+      'ế': 'e',
+      'ề': 'e',
+      'ể': 'e',
+      'ễ': 'e',
+      'ệ': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'ỉ': 'i',
+      'ĩ': 'i',
+      'ị': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ỏ': 'o',
+      'õ': 'o',
+      'ọ': 'o',
+      'ô': 'o',
+      'ố': 'o',
+      'ồ': 'o',
+      'ổ': 'o',
+      'ỗ': 'o',
+      'ộ': 'o',
+      'ơ': 'o',
+      'ớ': 'o',
+      'ờ': 'o',
+      'ở': 'o',
+      'ỡ': 'o',
+      'ợ': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'ủ': 'u',
+      'ũ': 'u',
+      'ụ': 'u',
+      'ư': 'u',
+      'ứ': 'u',
+      'ừ': 'u',
+      'ử': 'u',
+      'ữ': 'u',
+      'ự': 'u',
+      'ý': 'y',
+      'ỳ': 'y',
+      'ỷ': 'y',
+      'ỹ': 'y',
+      'ỵ': 'y',
+      'đ': 'd',
+    };
+    accentMap.forEach((k, v) => str = str.replaceAll(k, v));
+    return str;
   }
 
   Future<List<SearchResult>> searchLocations(String query) async {
     if (query.trim().isEmpty) return [];
+    final q = _normalizeVietnamese(query.trim());
     final results = <SearchResult>[];
-    final q = query.trim();
 
-    final provSnap = await _db
-        .collection('provinces')
-        .where('name', isGreaterThanOrEqualTo: q)
-        .where('name', isLessThanOrEqualTo: '$q\uf8ff')
-        .limit(5)
-        .get();
+    // Provinces: chỉ 63 doc — fetch hết và filter client-side
+    final provSnap = await _db.collection('provinces').get();
     for (final doc in provSnap.docs) {
       final model = _mapDocToProvince(doc.data() as Map<String, dynamic>);
-      results.add(
-        SearchResult(name: model.name, type: 'province', model: model),
-      );
+      if (_normalizeVietnamese(model.name).contains(q)) {
+        results.add(
+          SearchResult(name: model.name, type: 'province', model: model),
+        );
+        if (results.where((r) => r.type == 'province').length >= 5) break;
+      }
     }
 
-    final zoneSnap = await _db
-        .collection('special_zones')
-        .where('name', isGreaterThanOrEqualTo: q)
-        .where('name', isLessThanOrEqualTo: '$q\uf8ff')
-        .limit(5)
-        .get();
+    // Special zones
+    final zoneSnap = await _db.collection('special_zones').get();
     for (final doc in zoneSnap.docs) {
       final model = _mapDocToProvince(doc.data() as Map<String, dynamic>);
-      results.add(
-        SearchResult(name: model.name, type: 'special_zone', model: model),
-      );
+      if (_normalizeVietnamese(model.name).contains(q)) {
+        results.add(
+          SearchResult(name: model.name, type: 'special_zone', model: model),
+        );
+        if (results.where((r) => r.type == 'special_zone').length >= 3) break;
+      }
     }
 
-    final comSnap = await _db
-        .collection('communes')
-        .where('name', isGreaterThanOrEqualTo: q)
-        .where('name', isLessThanOrEqualTo: '$q\uf8ff')
-        .limit(10)
-        .get();
+    // Communes: giới hạn 300 doc để tránh đọc toàn bộ collection
+    final comSnap = await _db.collection('communes').limit(300).get();
+    int comCount = 0;
     for (final doc in comSnap.docs) {
       final model = _mapDocToProvince(doc.data() as Map<String, dynamic>);
-      results.add(
-        SearchResult(
-          name: '${model.name} (${model.parentTen ?? ''})',
-          type: 'commune',
-          model: model,
-        ),
-      );
+      if (_normalizeVietnamese(model.name).contains(q)) {
+        results.add(
+          SearchResult(
+            name: '${model.name} (${model.parentTen ?? ''})',
+            type: 'commune',
+            model: model,
+          ),
+        );
+        comCount++;
+        if (comCount >= 8) break;
+      }
     }
 
     return results;
@@ -370,8 +520,8 @@ class FirestoreService {
   }
 
   Future<List<String>> fetchCommunesForProvinceName(String provinceName) async {
-    // Strip common Vietnamese prefixes to match parent_name stored in communes collection
-    String queryName = provinceName;
+    // Build candidates list: exact name first, then stripped prefix
+    final candidates = <String>{provinceName};
     for (final prefix in [
       'Tỉnh ',
       'Thành phố ',
@@ -380,43 +530,40 @@ class FirestoreService {
       'Quận ',
       'Huyện ',
     ]) {
-      if (queryName.startsWith(prefix)) {
-        queryName = queryName.substring(prefix.length);
+      if (provinceName.startsWith(prefix)) {
+        candidates.add(provinceName.substring(prefix.length));
         break;
       }
     }
 
-    // Debug: check what parent_name values exist
-    final debugSnap = await _db.collection('communes').limit(10).get();
-    if (debugSnap.docs.isNotEmpty) {
-      debugPrint('DEBUG: Sample commune parent_name values:');
-      final names = debugSnap.docs
-          .map((d) => d.data()['parent_name']?.toString() ?? 'null')
-          .toSet()
-          .toList();
-      for (final n in names) {
-        debugPrint('  - "$n"');
-      }
-    } else {
-      debugPrint('DEBUG: communes collection is EMPTY');
-    }
-    debugPrint(
-      'DEBUG: Searching communes with parent_name == "$queryName" (original: "$provinceName")',
-    );
-
-    final snap = await _db
+    // Try querying exact name first
+    QuerySnapshot snap = await _db
         .collection('communes')
-        .where('parent_name', isEqualTo: queryName)
+        .where('parent_name', isEqualTo: provinceName)
         .get();
-    debugPrint('DEBUG: Found ${snap.docs.length} commune docs');
-    if (snap.docs.isNotEmpty) {
-      debugPrint(
-        'DEBUG: First commune doc parent_name: ${snap.docs.first.data()["parent_name"]}',
-      );
+
+    // If exact name returns no results, try other candidates (like stripped name)
+    if (snap.docs.isEmpty) {
+      for (final candidate in candidates) {
+        if (candidate == provinceName) continue;
+        snap = await _db
+            .collection('communes')
+            .where('parent_name', isEqualTo: candidate)
+            .get();
+        if (snap.docs.isNotEmpty) {
+          debugPrint(
+            'DEBUG (dropdown): Matched parent_name == "$candidate" for "$provinceName"',
+          );
+          break;
+        }
+      }
     }
 
     final results = snap.docs
-        .map((doc) => doc.data()['name']?.toString() ?? '')
+        .map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['name']?.toString() ?? '';
+        })
         .where((s) => s.isNotEmpty && s != 'nan')
         .toList();
     results.sort();
@@ -450,12 +597,13 @@ class FirestoreService {
     final snap = await _db
         .collection('communes')
         .where('parent_code', isEqualTo: parentCode)
-        .orderBy('name')
         .get();
-    return snap.docs
+    final results = snap.docs
         .map((doc) => doc.data()['name']?.toString() ?? '')
         .where((s) => s.isNotEmpty && s != 'nan')
         .toList();
+    results.sort();
+    return results;
   }
 
   Future<List<String>> fetchNeighborhoodList() async {
@@ -465,6 +613,18 @@ class FirestoreService {
   // ===================================================================
   // HOUSEHOLD CRUD
   // ===================================================================
+
+  /// Tìm household theo số điện thoại (dùng indexed query, nhanh hơn fetchHouseholdList)
+  Future<Household?> fetchHouseholdByPhone(String phone) async {
+    if (phone.trim().isEmpty) return null;
+    final snap = await _db
+        .collection('households')
+        .where('phone', isEqualTo: phone.trim())
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return Household.fromJson(snap.docs.first.data() as Map<String, dynamic>);
+  }
 
   Future<String> generateIncidentCode() async {
     final snap = await _db
@@ -506,33 +666,43 @@ class FirestoreService {
     int limit = 50,
     int offset = 0,
   }) async {
-    Query query = _db
-        .collection('households')
-        .orderBy('created_at', descending: true);
-
-    if (neighborhood != null && neighborhood.isNotEmpty) {
-      query = query.where('neighborhood', isEqualTo: neighborhood);
-    }
-    if (ward != null && ward.isNotEmpty) {
-      query = query.where('ward', isEqualTo: ward);
-    }
-    if (createdBy != null) {
-      query = query.where('created_by', isEqualTo: createdBy);
-    }
-
-    final snap = await query.get();
+    // Tải toàn bộ households để thực hiện lọc và sắp xếp in-memory nhằm tránh lỗi yêu cầu Composite Index của Firestore
+    final snap = await _db.collection('households').get();
     var households = snap.docs
         .map((doc) => Household.fromJson(doc.data() as Map<String, dynamic>))
         .toList();
 
+    // Lọc theo neighborhood
+    if (neighborhood != null && neighborhood.isNotEmpty) {
+      households = households
+          .where((h) => h.neighborhood == neighborhood)
+          .toList();
+    }
+    // Lọc theo ward
+    if (ward != null && ward.isNotEmpty) {
+      households = households.where((h) => h.ward == ward).toList();
+    }
+    // Lọc theo created_by
+    if (createdBy != null) {
+      households = households.where((h) => h.createdBy == createdBy).toList();
+    }
+
+    // Lọc theo searchQuery
     if (searchQuery != null && searchQuery.isNotEmpty) {
       final q = searchQuery.trim().toLowerCase();
       households = households.where((h) {
-        return (h.headOfHousehold?.toLowerCase().contains(q) ?? false) ||
-            (h.householdCode?.toLowerCase().contains(q) ?? false) ||
+        return (h.headOfHousehold.toLowerCase().contains(q)) ||
+            (h.householdCode.toLowerCase().contains(q)) ||
             (h.phone?.toLowerCase().contains(q) ?? false);
       }).toList();
     }
+
+    // Sắp xếp theo created_at giảm dần
+    households.sort((a, b) {
+      final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
 
     final total = households.length;
     if (offset >= total) return [];
@@ -613,39 +783,51 @@ class FirestoreService {
     int limit = 50,
     int offset = 0,
   }) async {
-    Query query = _db
-        .collection('incidents')
-        .orderBy('created_at', descending: true);
-
-    if (status != null && status.isNotEmpty) {
-      query = query.where('status', isEqualTo: status);
-    }
-    if (neighborhood != null && neighborhood.isNotEmpty) {
-      query = query.where('neighborhood', isEqualTo: neighborhood);
-    }
-    if (ward != null && ward.isNotEmpty) {
-      query = query.where('ward', isEqualTo: ward);
-    }
-    if (householdId != null) {
-      query = query.where('household_id', isEqualTo: householdId);
-    }
-    if (createdBy != null) {
-      query = query.where('created_by', isEqualTo: createdBy);
-    }
-
-    final snap = await query.get();
+    // Tải toàn bộ incidents để thực hiện lọc và sắp xếp in-memory nhằm tránh lỗi yêu cầu Composite Index của Firestore
+    final snap = await _db.collection('incidents').get();
     var incidents = snap.docs
         .map((doc) => Incident.fromJson(doc.data() as Map<String, dynamic>))
         .toList();
 
+    // Lọc theo status
+    if (status != null && status.isNotEmpty) {
+      incidents = incidents.where((i) => i.status.dbValue == status).toList();
+    }
+    // Lọc theo neighborhood
+    if (neighborhood != null && neighborhood.isNotEmpty) {
+      incidents = incidents
+          .where((i) => i.neighborhood == neighborhood)
+          .toList();
+    }
+    // Lọc theo ward
+    if (ward != null && ward.isNotEmpty) {
+      incidents = incidents.where((i) => i.ward == ward).toList();
+    }
+    // Lọc theo household_id
+    if (householdId != null) {
+      incidents = incidents.where((i) => i.householdId == householdId).toList();
+    }
+    // Lọc theo created_by (người tạo)
+    if (createdBy != null) {
+      incidents = incidents.where((i) => i.createdBy == createdBy).toList();
+    }
+
+    // Lọc theo searchQuery
     if (searchQuery != null && searchQuery.isNotEmpty) {
       final q = searchQuery.trim().toLowerCase();
       incidents = incidents.where((inc) {
-        return (inc.title?.toLowerCase().contains(q) ?? false) ||
-            (inc.incidentCode?.toLowerCase().contains(q) ?? false) ||
+        return (inc.title.toLowerCase().contains(q)) ||
+            (inc.incidentCode.toLowerCase().contains(q)) ||
             (inc.headOfHousehold?.toLowerCase().contains(q) ?? false);
       }).toList();
     }
+
+    // Sắp xếp theo created_at giảm dần
+    incidents.sort((a, b) {
+      final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
 
     final total = incidents.length;
     if (offset >= total) return [];
@@ -1013,22 +1195,32 @@ class FirestoreService {
     String? status,
     int? userId,
   }) async {
-    Query query = _db
-        .collection('household_requests')
-        .orderBy('created_at', descending: true);
-    if (status != null && status.isNotEmpty) {
-      query = query.where('status', isEqualTo: status);
-    }
-    if (userId != null) {
-      query = query.where('user_id', isEqualTo: userId);
-    }
-    final snap = await query.get();
-    return snap.docs
+    // Tải toàn bộ household_requests để thực hiện lọc và sắp xếp in-memory nhằm tránh lỗi yêu cầu Composite Index của Firestore
+    final snap = await _db.collection('household_requests').get();
+    var requests = snap.docs
         .map(
           (doc) =>
               HouseholdRequest.fromJson(doc.data() as Map<String, dynamic>),
         )
         .toList();
+
+    // Lọc theo status
+    if (status != null && status.isNotEmpty) {
+      requests = requests.where((r) => r.status == status).toList();
+    }
+    // Lọc theo user_id
+    if (userId != null) {
+      requests = requests.where((r) => r.userId == userId).toList();
+    }
+
+    // Sắp xếp theo created_at giảm dần
+    requests.sort((a, b) {
+      final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+
+    return requests;
   }
 
   Future<HouseholdRequest?> fetchHouseholdRequestById(int id) async {

@@ -34,8 +34,13 @@ class DatabaseService {
   Future<List<Map<String, dynamic>>> fetchCalculatedDensities() =>
       _firestore.fetchCalculatedDensities();
 
-  Future<List<HighSchool>> fetchHighSchoolsByCommuneName(String communeName) =>
-      _firestore.fetchHighSchoolsByCommuneName(communeName);
+  Future<List<HighSchool>> fetchHighSchoolsByCommuneName(
+    String communeName, {
+    String? provinceName,
+  }) => _firestore.fetchHighSchoolsByCommuneName(
+    communeName,
+    provinceName: provinceName,
+  );
 
   Future<List<SearchResult>> searchLocations(String query) =>
       _firestore.searchLocations(query);
@@ -100,6 +105,9 @@ class DatabaseService {
   Future<String> generateIncidentCode() => _firestore.generateIncidentCode();
 
   Future<String> generateHouseholdCode() => _firestore.generateHouseholdCode();
+
+  Future<Household?> fetchHouseholdByPhone(String phone) =>
+      _firestore.fetchHouseholdByPhone(phone);
 
   Future<List<Household>> fetchHouseholdList({
     String? searchQuery,

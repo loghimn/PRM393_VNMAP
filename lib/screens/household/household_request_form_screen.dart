@@ -105,13 +105,7 @@ class _HouseholdRequestFormScreenState
     List<String> wards = [];
     final selectedCity = _cityCtrl.text.trim();
     if (selectedCity.isNotEmpty) {
-      final match = cities.firstWhere(
-        (c) => c['name'] == selectedCity,
-        orElse: () => {},
-      );
-      if (match.isNotEmpty) {
-        wards = await _db.fetchCommunesForParentCode(match['code']!);
-      }
+      wards = await _db.fetchCommunesForProvinceName(selectedCity);
     }
     if (mounted) {
       setState(() {
@@ -123,12 +117,9 @@ class _HouseholdRequestFormScreenState
 
   Future<void> _onCityChanged(String name) async {
     if (name.isEmpty) return;
-    final match = _cities.firstWhere(
-      (c) => c['name'] == name,
-      orElse: () => {},
-    );
-    if (match.isEmpty) return;
-    final wards = await _db.fetchCommunesForParentCode(match['code']!);
+    debugPrint('Dropdown: Selected city "$name", fetching wards...');
+    final wards = await _db.fetchCommunesForProvinceName(name);
+    debugPrint('Dropdown: Fetched ${wards.length} wards for "$name". Sample: ${wards.take(5).toList()}');
     if (mounted) {
       setState(() {
         _wards = wards;
@@ -345,6 +336,7 @@ class _HouseholdRequestFormScreenState
     void Function(String)? onChanged,
   }) {
     return Autocomplete<String>(
+      key: ValueKey('${ctrl.text}_${items.hashCode}_${items.length}'),
       initialValue: TextEditingValue(text: ctrl.text),
       optionsBuilder: (t) => t.text.isEmpty
           ? items

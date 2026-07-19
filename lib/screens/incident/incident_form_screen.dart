@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/incident_model.dart';
@@ -18,6 +19,7 @@ class IncidentFormScreen extends StatefulWidget {
 class _IncidentFormScreenState extends State<IncidentFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _db = DatabaseService();
+  Timer? _phoneDebounce;
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _addressController;
@@ -113,6 +115,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
 
   @override
   void dispose() {
+    _phoneDebounce?.cancel();
     _titleController.dispose();
     _descriptionController.dispose();
     _addressController.dispose();
@@ -145,39 +148,20 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
     if (!mounted) return;
 
     if (h != null) {
+      // Load cities list if needed
       if (_cities.isEmpty) {
         _cities = await _db.fetchDistinctCities();
       }
 
+      // Tìm thành phố từ hộ gia đình và load danh sách phường/xã
+      List<String> wards = _wards;
       if (h.city != null && h.city!.isNotEmpty) {
-        setState(() {
-          _cityController.text = h.city!;
-        });
         final matchedCity = _cities.firstWhere(
           (c) => c['name'] == h.city,
           orElse: () => {},
         );
         if (matchedCity.isNotEmpty) {
-          final wards = await _db.fetchCommunesForParentCode(
-            matchedCity['code']!,
-          );
-          if (mounted) {
-            setState(() {
-              _wards = wards;
-              _wardController.text = h.ward ?? '';
-              _neighborhoodController.text = h.neighborhood ?? '';
-              _districtController.text = h.district ?? '';
-              _headOfHouseholdController.text = h.headOfHousehold ?? '';
-              _addressController.text = h.fullAddress;
-              _householdId = h.id;
-              _isPhoneSearching = false;
-              _phoneSearchResult =
-                  '✓ Đã tìm thấy: ${h.headOfHousehold} - ${h.fullAddress}';
-              _cityFieldKey = ValueKey('city_${h.city}');
-              _wardFieldKey = ValueKey('ward_${h.ward}');
-            });
-          }
-          return;
+          wards = await _db.fetchCommunesForParentCode(matchedCity['code']!);
         }
       }
 
@@ -185,10 +169,13 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
         setState(() {
           _householdId = h.id;
           _headOfHouseholdController.text = h.headOfHousehold ?? '';
+          _phoneController.text = h.phone ?? '';
+          _cityController.text = h.city ?? '';
+          _wardController.text = h.ward ?? '';
           _neighborhoodController.text = h.neighborhood ?? '';
           _districtController.text = h.district ?? '';
           _addressController.text = h.fullAddress;
-          _wardController.text = h.ward ?? '';
+          _wards = wards;
           _isPhoneSearching = false;
           _phoneSearchResult =
               '✓ Đã tìm thấy: ${h.headOfHousehold} - ${h.fullAddress}';
@@ -396,9 +383,19 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
                           isRequired: true,
                           isDark: isDark,
                           onChanged: (value) {
-                            if (value.length >= 10) {
-                              _lookupByPhone(value.trim());
+                            // Hủy debounce trước đó và chỉ gọi API khi người dùng ngừng gõ 500ms
+                            _phoneDebounce?.cancel();
+                            if (value.length < 10) {
+                              setState(() {
+                                _phoneSearchResult = null;
+                                _householdId = null;
+                              });
+                              return;
                             }
+                            _phoneDebounce = Timer(
+                              const Duration(milliseconds: 500),
+                              () => _lookupByPhone(value.trim()),
+                            );
                           },
                           suffixIcon: _isPhoneSearching
                               ? const Padding(
