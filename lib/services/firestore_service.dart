@@ -1,0 +1,1170 @@
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
+import '../models/province_model.dart';
+import '../models/high_school_model.dart';
+import '../models/household_model.dart';
+import '../models/incident_model.dart';
+import '../models/dia_diem_lich_su_model.dart';
+import '../models/khu_pho_model.dart';
+import '../models/dai_dien_model.dart';
+import '../models/user_model.dart';
+import '../models/household_request_model.dart';
+
+/// Service thay thế DatabaseService (PostgreSQL) bằng Firebase Firestore.
+///
+/// - Dùng Firestore collections thay cho bảng SQL
+/// - Dùng FirebaseAuth thay cho password hash tự quản
+/// - Dùng auto-increment ID qua document counters
+class FirestoreService {
+  // Singleton
+  FirestoreService._internal();
+  static final FirestoreService instance = FirestoreService._internal();
+
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  // ===================================================================
+  // HELPERS - ID generation (thay thế SERIAL trong PostgreSQL)
+  // ===================================================================
+
+  /// Lấy ID tiếp theo từ counter collection
+  Future<int> _nextId(String collection) async {
+    final docRef = _db.collection('counters').doc(collection);
+    return _db.runTransaction((transaction) async {
+      final doc = await transaction.get(docRef);
+      if (!doc.exists) {
+        transaction.set(docRef, {'current_id': 1});
+        return 1;
+      }
+      final currentId = (doc.data()?['current_id'] as num?)?.toInt() ?? 0;
+      final nextId = currentId + 1;
+      transaction.update(docRef, {'current_id': nextId});
+      return nextId;
+    });
+  }
+
+  /// Đồng bộ hoá tài liệu với Firestore, thêm id dạng số
+  Future<void> _setWithId(
+    String collection,
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    await _db.collection(collection).doc(id.toString()).set(data);
+  }
+
+  // ===================================================================
+  // USERS & AUTH
+  // ===================================================================
+
+  Future<UserModel?> login(String phone, String password) async {
+    try {
+      // Tìm user theo username (phone có thể là username) hoặc phone
+      UserModel? user = await getUserByUsername(phone);
+      if (user == null) {
+        user = await getUserByPhone(phone);
+      }
+      if (user == null) return null;
+
+      // Lấy dữ liệu đầy đủ từ Firestore (bao gồm password_hash)
+      final doc = await _db.collection('users').doc(user.id.toString()).get();
+      if (!doc.exists) return null;
+      final data = doc.data() as Map<String, dynamic>;
+      final storedHash = data['password_hash']?.toString();
+      if (storedHash == null || storedHash.isEmpty) return null;
+
+      // Hash password nhập vào và so sánh
+      final inputHash = sha256.convert(utf8.encode(password)).toString();
+      if (inputHash != storedHash) return null;
+
+      return UserModel.fromJson(data);
+    } catch (e) {
+      print('FirestoreService.login error: $e');
+      return null;
+    }
+  }
+
+  Future<UserModel?> getUserByPhone(String phone) async {
+    final snap = await _db
+        .collection('users')
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return UserModel.fromJson(snap.docs.first.data() as Map<String, dynamic>);
+  }
+
+  Future<UserModel?> getUserById(int id) async {
+    final doc = await _db.collection('users').doc(id.toString()).get();
+    if (!doc.exists) return null;
+    return UserModel.fromJson(doc.data() as Map<String, dynamic>);
+  }
+
+  Future<UserModel?> getUserByUsername(String username) async {
+    final snap = await _db
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return UserModel.fromJson(snap.docs.first.data() as Map<String, dynamic>);
+  }
+
+  Future<UserModel> createUser(UserModel user, String password) async {
+    final id = await _nextId('users');
+    final data = user.toJson();
+    data['id'] = id;
+    data['password_hash'] = sha256.convert(utf8.encode(password)).toString();
+    data['created_at'] = DateTime.now().toIso8601String();
+    data['updated_at'] = DateTime.now().toIso8601String();
+    await _setWithId('users', id, data);
+    return UserModel.fromJson(data);
+  }
+
+  Future<UserModel> updateUser(UserModel user) async {
+    final data = user.toJson();
+    data['updated_at'] = DateTime.now().toIso8601String();
+    await _db.collection('users').doc(user.id.toString()).update(data);
+    return user;
+  }
+
+  Future<bool> changePassword(
+    int userId,
+    String oldPassword,
+    String newPassword,
+  ) async {
+    try {
+      final doc = await _db.collection('users').doc(userId.toString()).get();
+      if (!doc.exists) return false;
+      final data = doc.data() as Map<String, dynamic>;
+      final storedHash = data['password_hash']?.toString();
+      if (storedHash == null) return false;
+
+      // Kiểm tra mật khẩu cũ
+      final oldHash = sha256.convert(utf8.encode(oldPassword)).toString();
+      if (oldHash != storedHash) return false;
+
+      // Cập nhật mật khẩu mới
+      final newHash = sha256.convert(utf8.encode(newPassword)).toString();
+      await _db.collection('users').doc(userId.toString()).update({
+        'password_hash': newHash,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<List<UserModel>> getAllUsers({String? searchQuery}) async {
+    Query query = _db
+        .collection('users')
+        .orderBy('created_at', descending: true);
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      query = _db
+          .collection('users')
+          .where('username', isGreaterThanOrEqualTo: searchQuery)
+          .where('username', isLessThanOrEqualTo: '$searchQuery\uf8ff')
+          .orderBy('created_at', descending: true);
+    }
+    final snap = await query.get();
+    return snap.docs
+        .map((doc) => UserModel.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  // ===================================================================
+  // PROVINCES / GEOGRAPHY
+  // ===================================================================
+
+  Future<List<ProvinceModel>> fetchProvinces() async {
+    final snap = await _db.collection('provinces').orderBy('name').get();
+    return snap.docs
+        .map((doc) => _mapDocToProvince(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<ProvinceModel>> fetchSpecialZones() async {
+    final snap = await _db.collection('special_zones').orderBy('name').get();
+    return snap.docs
+        .map((doc) => _mapDocToProvince(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<ProvinceModel>> fetchCommunesForProvince(
+    String provinceName,
+  ) async {
+    // Build a list of candidate names to try: exact name first, then stripped prefix
+    final candidates = <String>{provinceName};
+    for (final prefix in [
+      'Tỉnh ',
+      'Thành phố ',
+      'Thành Phố ',
+      'Đặc khu ',
+      'Quận ',
+      'Huyện ',
+    ]) {
+      if (provinceName.startsWith(prefix)) {
+        candidates.add(provinceName.substring(prefix.length));
+        break;
+      }
+    }
+
+    // Try each candidate until we find results
+    QuerySnapshot snap = await _db
+        .collection('communes')
+        .where('parent_name', isEqualTo: provinceName)
+        .limit(1)
+        .get();
+    String matchedName = provinceName;
+    for (final candidate in candidates) {
+      snap = await _db
+          .collection('communes')
+          .where('parent_name', isEqualTo: candidate)
+          .get();
+      if (snap.docs.isNotEmpty) {
+        matchedName = candidate;
+        debugPrint(
+          'DEBUG: Matched parent_name == "$candidate" for "$provinceName"',
+        );
+        break;
+      }
+    }
+
+    // If all candidates failed, use the original name (snap will be empty)
+    if (snap.docs.isEmpty) {
+      debugPrint(
+        'DEBUG: No communes found for any candidate for "$provinceName" (tried: ${candidates.join(", ")})',
+      );
+    }
+
+    final results = snap.docs
+        .map((doc) => _mapDocToProvince(doc.data() as Map<String, dynamic>))
+        .toList();
+    results.sort((a, b) => a.name.compareTo(b.name));
+    return results;
+  }
+
+  Future<List<Map<String, dynamic>>> fetchCalculatedDensities() async {
+    final snap = await _db.collection('communes').get();
+    final Map<String, Map<String, double>> grouped = {};
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final parentName = data['parent_name']?.toString() ?? '';
+      if (parentName.isEmpty || parentName == 'nan') continue;
+      final pop = (data['population'] as num?)?.toDouble() ?? 0;
+      final area = (data['area_km2'] as num?)?.toDouble() ?? 0;
+      grouped.putIfAbsent(parentName, () => {'population': 0, 'area': 0});
+      grouped[parentName]!['population'] =
+          (grouped[parentName]!['population'] ?? 0) + pop;
+      grouped[parentName]!['area'] = (grouped[parentName]!['area'] ?? 0) + area;
+    }
+    final results = <Map<String, dynamic>>[];
+    for (final entry in grouped.entries) {
+      final pop = entry.value['population'] ?? 0;
+      final area = entry.value['area'] ?? 0;
+      results.add({
+        'name': entry.key,
+        'population': pop,
+        'area': area,
+        'density': area > 0 ? pop / area : 0,
+        'key': getProvinceKey(entry.key),
+      });
+    }
+    results.sort(
+      (a, b) => (b['density'] as double).compareTo(a['density'] as double),
+    );
+    return results;
+  }
+
+  Future<List<HighSchool>> fetchHighSchoolsByCommuneName(
+    String communeName,
+  ) async {
+    final snap = await _db
+        .collection('truong_thpt')
+        .where('ten_xa_phuong', isEqualTo: communeName)
+        .get();
+    final results = snap.docs
+        .map((doc) => HighSchool.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+    results.sort((a, b) => (a.tenTruong ?? '').compareTo(b.tenTruong ?? ''));
+    return results;
+  }
+
+  Future<List<SearchResult>> searchLocations(String query) async {
+    if (query.trim().isEmpty) return [];
+    final results = <SearchResult>[];
+    final q = query.trim();
+
+    final provSnap = await _db
+        .collection('provinces')
+        .where('name', isGreaterThanOrEqualTo: q)
+        .where('name', isLessThanOrEqualTo: '$q\uf8ff')
+        .limit(5)
+        .get();
+    for (final doc in provSnap.docs) {
+      final model = _mapDocToProvince(doc.data() as Map<String, dynamic>);
+      results.add(
+        SearchResult(name: model.name, type: 'province', model: model),
+      );
+    }
+
+    final zoneSnap = await _db
+        .collection('special_zones')
+        .where('name', isGreaterThanOrEqualTo: q)
+        .where('name', isLessThanOrEqualTo: '$q\uf8ff')
+        .limit(5)
+        .get();
+    for (final doc in zoneSnap.docs) {
+      final model = _mapDocToProvince(doc.data() as Map<String, dynamic>);
+      results.add(
+        SearchResult(name: model.name, type: 'special_zone', model: model),
+      );
+    }
+
+    final comSnap = await _db
+        .collection('communes')
+        .where('name', isGreaterThanOrEqualTo: q)
+        .where('name', isLessThanOrEqualTo: '$q\uf8ff')
+        .limit(10)
+        .get();
+    for (final doc in comSnap.docs) {
+      final model = _mapDocToProvince(doc.data() as Map<String, dynamic>);
+      results.add(
+        SearchResult(
+          name: '${model.name} (${model.parentTen ?? ''})',
+          type: 'commune',
+          model: model,
+        ),
+      );
+    }
+
+    return results;
+  }
+
+  // ===================================================================
+  // ADDRESS DROPDOWN DATA
+  // ===================================================================
+
+  Future<List<String>> fetchDistinctNeighborhoods() async {
+    final snap = await _db.collection('households').get();
+    final set = <String>{};
+    for (final doc in snap.docs) {
+      final n = doc.data()['neighborhood']?.toString() ?? '';
+      if (n.isNotEmpty) set.add(n);
+    }
+    final list = set.toList()..sort();
+    return list;
+  }
+
+  Future<List<String>> fetchDistinctWards() async {
+    final snap = await _db
+        .collection('communes')
+        .where('name', isNotEqualTo: 'nan')
+        .orderBy('name')
+        .get();
+    return snap.docs
+        .map((doc) => doc.data()['name']?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  Future<List<String>> fetchCommunesForProvinceName(String provinceName) async {
+    // Strip common Vietnamese prefixes to match parent_name stored in communes collection
+    String queryName = provinceName;
+    for (final prefix in [
+      'Tỉnh ',
+      'Thành phố ',
+      'Thành Phố ',
+      'Đặc khu ',
+      'Quận ',
+      'Huyện ',
+    ]) {
+      if (queryName.startsWith(prefix)) {
+        queryName = queryName.substring(prefix.length);
+        break;
+      }
+    }
+
+    // Debug: check what parent_name values exist
+    final debugSnap = await _db.collection('communes').limit(10).get();
+    if (debugSnap.docs.isNotEmpty) {
+      debugPrint('DEBUG: Sample commune parent_name values:');
+      final names = debugSnap.docs
+          .map((d) => d.data()['parent_name']?.toString() ?? 'null')
+          .toSet()
+          .toList();
+      for (final n in names) {
+        debugPrint('  - "$n"');
+      }
+    } else {
+      debugPrint('DEBUG: communes collection is EMPTY');
+    }
+    debugPrint(
+      'DEBUG: Searching communes with parent_name == "$queryName" (original: "$provinceName")',
+    );
+
+    final snap = await _db
+        .collection('communes')
+        .where('parent_name', isEqualTo: queryName)
+        .get();
+    debugPrint('DEBUG: Found ${snap.docs.length} commune docs');
+    if (snap.docs.isNotEmpty) {
+      debugPrint(
+        'DEBUG: First commune doc parent_name: ${snap.docs.first.data()["parent_name"]}',
+      );
+    }
+
+    final results = snap.docs
+        .map((doc) => doc.data()['name']?.toString() ?? '')
+        .where((s) => s.isNotEmpty && s != 'nan')
+        .toList();
+    results.sort();
+    return results;
+  }
+
+  Future<List<String>> fetchDistinctDistricts() async {
+    final snap = await _db.collection('households').get();
+    final set = <String>{};
+    for (final doc in snap.docs) {
+      final d = doc.data()['district']?.toString() ?? '';
+      if (d.isNotEmpty) set.add(d);
+    }
+    final list = set.toList()..sort();
+    return list;
+  }
+
+  Future<List<Map<String, String>>> fetchDistinctCities() async {
+    final snap = await _db.collection('provinces').orderBy('name').get();
+    return snap.docs
+        .map(
+          (doc) => {
+            'code': doc.data()['code']?.toString() ?? '',
+            'name': doc.data()['name']?.toString() ?? '',
+          },
+        )
+        .toList();
+  }
+
+  Future<List<String>> fetchCommunesForParentCode(String parentCode) async {
+    final snap = await _db
+        .collection('communes')
+        .where('parent_code', isEqualTo: parentCode)
+        .orderBy('name')
+        .get();
+    return snap.docs
+        .map((doc) => doc.data()['name']?.toString() ?? '')
+        .where((s) => s.isNotEmpty && s != 'nan')
+        .toList();
+  }
+
+  Future<List<String>> fetchNeighborhoodList() async {
+    return fetchDistinctNeighborhoods();
+  }
+
+  // ===================================================================
+  // HOUSEHOLD CRUD
+  // ===================================================================
+
+  Future<String> generateIncidentCode() async {
+    final snap = await _db
+        .collection('incidents')
+        .orderBy('incident_code', descending: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return 'SV-0001';
+    final lastCode =
+        snap.docs.first.data()['incident_code']?.toString() ?? 'SV-0000';
+    final match = RegExp(r'^SV-(\d+)$').firstMatch(lastCode);
+    if (match == null) return 'SV-0001';
+    final lastNumber = int.parse(match.group(1)!);
+    return 'SV-${(lastNumber + 1).toString().padLeft(4, '0')}';
+  }
+
+  Future<String> generateHouseholdCode() async {
+    final snap = await _db
+        .collection('households')
+        .where('household_code', isGreaterThanOrEqualTo: 'HGD-')
+        .where('household_code', isLessThanOrEqualTo: 'HGD-\uf8ff')
+        .orderBy('household_code', descending: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return 'HGD-0001';
+    final lastCode =
+        snap.docs.first.data()['household_code']?.toString() ?? 'HGD-0000';
+    final match = RegExp(r'^HGD-(\d+)$').firstMatch(lastCode);
+    if (match == null) return 'HGD-0001';
+    final lastNumber = int.parse(match.group(1)!);
+    return 'HGD-${(lastNumber + 1).toString().padLeft(4, '0')}';
+  }
+
+  Future<List<Household>> fetchHouseholdList({
+    String? searchQuery,
+    String? neighborhood,
+    String? ward,
+    int? createdBy,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    Query query = _db
+        .collection('households')
+        .orderBy('created_at', descending: true);
+
+    if (neighborhood != null && neighborhood.isNotEmpty) {
+      query = query.where('neighborhood', isEqualTo: neighborhood);
+    }
+    if (ward != null && ward.isNotEmpty) {
+      query = query.where('ward', isEqualTo: ward);
+    }
+    if (createdBy != null) {
+      query = query.where('created_by', isEqualTo: createdBy);
+    }
+
+    final snap = await query.get();
+    var households = snap.docs
+        .map((doc) => Household.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      final q = searchQuery.trim().toLowerCase();
+      households = households.where((h) {
+        return (h.headOfHousehold?.toLowerCase().contains(q) ?? false) ||
+            (h.householdCode?.toLowerCase().contains(q) ?? false) ||
+            (h.phone?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    }
+
+    final total = households.length;
+    if (offset >= total) return [];
+    final end = (offset + limit > total) ? total : offset + limit;
+    return households.sublist(offset, end);
+  }
+
+  Future<Household?> fetchHouseholdById(int id) async {
+    final doc = await _db.collection('households').doc(id.toString()).get();
+    if (!doc.exists) return null;
+    return Household.fromJson(doc.data() as Map<String, dynamic>);
+  }
+
+  Future<Household> createHousehold(Household household) async {
+    final id = await _nextId('households');
+    final code = await generateHouseholdCode();
+    final map = household.toDbMap();
+    map['id'] = id;
+    map['household_code'] = code;
+    map['created_at'] = DateTime.now().toIso8601String();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _setWithId('households', id, map);
+    return Household.fromJson(map);
+  }
+
+  Future<Household> updateHousehold(Household household) async {
+    final map = household.toDbMap();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _db.collection('households').doc(household.id.toString()).update(map);
+    return household;
+  }
+
+  Future<void> deleteHousehold(int id) async {
+    await _db.collection('households').doc(id.toString()).delete();
+  }
+
+  Future<List<Household>> fetchHouseholdsByCommuneName(
+    String communeName,
+  ) async {
+    final snap = await _db
+        .collection('households')
+        .where('ward', isEqualTo: communeName)
+        .get();
+    final results = snap.docs
+        .map((doc) => Household.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+    results.sort(
+      (a, b) => (a.householdCode ?? '').compareTo(b.householdCode ?? ''),
+    );
+    return results;
+  }
+
+  Future<List<Household>> fetchHouseholdsByWard(String ward) async {
+    return fetchHouseholdsByCommuneName(ward);
+  }
+
+  Future<int> countHouseholds({
+    String? searchQuery,
+    String? neighborhood,
+    String? ward,
+    int? createdBy,
+  }) async {
+    final snap = await _db.collection('households').count().get();
+    return snap.count ?? 0;
+  }
+
+  // ===================================================================
+  // INCIDENT CRUD
+  // ===================================================================
+
+  Future<List<Incident>> fetchIncidentList({
+    String? searchQuery,
+    String? status,
+    String? neighborhood,
+    String? ward,
+    int? householdId,
+    int? createdBy,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    Query query = _db
+        .collection('incidents')
+        .orderBy('created_at', descending: true);
+
+    if (status != null && status.isNotEmpty) {
+      query = query.where('status', isEqualTo: status);
+    }
+    if (neighborhood != null && neighborhood.isNotEmpty) {
+      query = query.where('neighborhood', isEqualTo: neighborhood);
+    }
+    if (ward != null && ward.isNotEmpty) {
+      query = query.where('ward', isEqualTo: ward);
+    }
+    if (householdId != null) {
+      query = query.where('household_id', isEqualTo: householdId);
+    }
+    if (createdBy != null) {
+      query = query.where('created_by', isEqualTo: createdBy);
+    }
+
+    final snap = await query.get();
+    var incidents = snap.docs
+        .map((doc) => Incident.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      final q = searchQuery.trim().toLowerCase();
+      incidents = incidents.where((inc) {
+        return (inc.title?.toLowerCase().contains(q) ?? false) ||
+            (inc.incidentCode?.toLowerCase().contains(q) ?? false) ||
+            (inc.headOfHousehold?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    }
+
+    final total = incidents.length;
+    if (offset >= total) return [];
+    final end = (offset + limit > total) ? total : offset + limit;
+    return incidents.sublist(offset, end);
+  }
+
+  Future<Incident?> fetchIncidentById(int id) async {
+    final doc = await _db.collection('incidents').doc(id.toString()).get();
+    if (!doc.exists) return null;
+    final data = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
+    final hhId = data['household_id'] as int?;
+    if (hhId != null) {
+      final hhDoc = await _db
+          .collection('households')
+          .doc(hhId.toString())
+          .get();
+      if (hhDoc.exists) {
+        final hhData = hhDoc.data() as Map<String, dynamic>;
+        data['household_name'] = hhData['head_of_household'];
+        data['household_phone'] = hhData['phone'];
+      }
+    }
+    return Incident.fromJson(data);
+  }
+
+  Future<Incident> createIncident(Incident incident) async {
+    final id = await _nextId('incidents');
+    final map = incident.toDbMap();
+    map['id'] = id;
+    map['incident_code'] =
+        incident.incidentCode ?? await generateIncidentCode();
+    map['created_at'] = DateTime.now().toIso8601String();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _setWithId('incidents', id, map);
+    return Incident.fromJson(map);
+  }
+
+  Future<Incident> updateIncident(Incident incident) async {
+    final map = Map<String, dynamic>.from(incident.toDbMap());
+    map.remove('id');
+    map.remove('incident_code');
+    map.remove('created_by');
+    map.remove('created_at');
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _db.collection('incidents').doc(incident.id.toString()).update(map);
+    return incident;
+  }
+
+  Future<void> deleteIncident(int id) async {
+    await _db.collection('incidents').doc(id.toString()).delete();
+  }
+
+  Future<int> countIncidents({
+    String? searchQuery,
+    String? status,
+    String? neighborhood,
+    String? ward,
+    int? householdId,
+    int? createdBy,
+  }) async {
+    final snap = await _db.collection('incidents').count().get();
+    return snap.count ?? 0;
+  }
+
+  // ===================================================================
+  // DIA DIEM LICH SU CRUD
+  // ===================================================================
+
+  Future<List<DiaDiemLichSu>> fetchDiaDiemLichSuList({
+    String? searchQuery,
+  }) async {
+    Query query = _db
+        .collection('dia_diem_lich_su')
+        .orderBy('created_at', descending: true);
+    final snap = await query.get();
+    var items = snap.docs
+        .map(
+          (doc) => DiaDiemLichSu.fromJson(doc.data() as Map<String, dynamic>),
+        )
+        .toList();
+
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final q = searchQuery.trim().toLowerCase();
+      items = items.where((item) {
+        return (item.ten?.toLowerCase().contains(q) ?? false) ||
+            (item.loaiDiTich?.toLowerCase().contains(q) ?? false) ||
+            (item.diaChi?.toLowerCase().contains(q) ?? false) ||
+            (item.thoiKy?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    }
+    return items;
+  }
+
+  Future<DiaDiemLichSu?> fetchDiaDiemLichSuById(int id) async {
+    final doc = await _db
+        .collection('dia_diem_lich_su')
+        .doc(id.toString())
+        .get();
+    if (!doc.exists) return null;
+    return DiaDiemLichSu.fromJson(doc.data() as Map<String, dynamic>);
+  }
+
+  Future<DiaDiemLichSu> createDiaDiemLichSu(DiaDiemLichSu item) async {
+    final id = await _nextId('dia_diem_lich_su');
+    final map = item.toJson();
+    map['id'] = id;
+    map['created_at'] = DateTime.now().toIso8601String();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _setWithId('dia_diem_lich_su', id, map);
+    return DiaDiemLichSu.fromJson(map);
+  }
+
+  Future<DiaDiemLichSu> updateDiaDiemLichSu(DiaDiemLichSu item) async {
+    final map = Map<String, dynamic>.from(item.toJson());
+    map.remove('id');
+    map.remove('created_at');
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _db
+        .collection('dia_diem_lich_su')
+        .doc(item.id.toString())
+        .update(map);
+    return item;
+  }
+
+  Future<void> deleteDiaDiemLichSu(int id) async {
+    await _db.collection('dia_diem_lich_su').doc(id.toString()).delete();
+  }
+
+  // ===================================================================
+  // STATISTICS
+  // ===================================================================
+
+  Future<Map<String, int>> statisticsIncidentsByMonth(int year) async {
+    final snap = await _db.collection('incidents').get();
+    final Map<String, int> result = {};
+    for (int i = 1; i <= 12; i++) {
+      result['Month $i'] = 0;
+    }
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final createdAtStr = data['created_at']?.toString();
+      if (createdAtStr == null) continue;
+      final dt = DateTime.tryParse(createdAtStr);
+      if (dt == null || dt.year != year) continue;
+      result['Month ${dt.month}'] = (result['Month ${dt.month}'] ?? 0) + 1;
+    }
+    return result;
+  }
+
+  Future<Map<String, int>> statisticsIncidentsByNeighborhood() async {
+    final snap = await _db.collection('incidents').get();
+    final Map<String, int> result = {};
+    for (final doc in snap.docs) {
+      final neighborhood = doc.data()['neighborhood']?.toString() ?? 'Unknown';
+      result[neighborhood] = (result[neighborhood] ?? 0) + 1;
+    }
+    return result;
+  }
+
+  Future<Map<String, int>> statisticsIncidentsByStatus() async {
+    final snap = await _db.collection('incidents').get();
+    final Map<String, int> result = {};
+    for (final doc in snap.docs) {
+      final status = doc.data()['status']?.toString() ?? 'received';
+      final statusName = IncidentStatus.fromString(status).displayName;
+      result[statusName] = (result[statusName] ?? 0) + 1;
+    }
+    return result;
+  }
+
+  // ===================================================================
+  // KHU PHO CRUD
+  // ===================================================================
+
+  Future<List<KhuPhoModel>> fetchKhuPhos() async {
+    final snap = await _db.collection('khu_pho').orderBy('ten_khu_pho').get();
+    return snap.docs
+        .map((doc) => KhuPhoModel.fromJson(doc.data() as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<KhuPhoModel?> fetchKhuPhoById(int id) async {
+    final doc = await _db.collection('khu_pho').doc(id.toString()).get();
+    if (!doc.exists) return null;
+    return KhuPhoModel.fromJson(doc.data() as Map<String, dynamic>);
+  }
+
+  Future<KhuPhoModel> createKhuPho(KhuPhoModel model) async {
+    final id = await _nextId('khu_pho');
+    final map = model.toJson();
+    map['id'] = id;
+    map['created_at'] = DateTime.now().toIso8601String();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _setWithId('khu_pho', id, map);
+    return KhuPhoModel.fromJson(map);
+  }
+
+  Future<KhuPhoModel> updateKhuPho(KhuPhoModel model) async {
+    final map = model.toJson();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _db.collection('khu_pho').doc(model.id.toString()).update(map);
+    return model;
+  }
+
+  Future<void> deleteKhuPho(int id) async {
+    final daiDiens = await _db
+        .collection('dai_dien_khu_pho')
+        .where('khu_pho_id', isEqualTo: id)
+        .get();
+    for (final doc in daiDiens.docs) {
+      await doc.reference.delete();
+    }
+    await _db.collection('khu_pho').doc(id.toString()).delete();
+  }
+
+  // ===================================================================
+  // DAI DIEN KHU PHO CRUD
+  // ===================================================================
+
+  Future<List<DaiDienModel>> fetchDaiDiens() async {
+    final snap = await _db
+        .collection('dai_dien_khu_pho')
+        .orderBy('ho_ten')
+        .get();
+    final list = <DaiDienModel>[];
+    for (final doc in snap.docs) {
+      final data = Map<String, dynamic>.from(
+        doc.data() as Map<String, dynamic>,
+      );
+      final khuPhoId = data['khu_pho_id'] as int?;
+      if (khuPhoId != null) {
+        final kpDoc = await _db
+            .collection('khu_pho')
+            .doc(khuPhoId.toString())
+            .get();
+        if (kpDoc.exists) {
+          data['ten_khu_pho'] =
+              (kpDoc.data() as Map<String, dynamic>)['ten_khu_pho'];
+        }
+      }
+      list.add(DaiDienModel.fromJson(data));
+    }
+    return list;
+  }
+
+  Future<List<DaiDienModel>> fetchDaiDiensByKhuPho(int khuPhoId) async {
+    final snap = await _db
+        .collection('dai_dien_khu_pho')
+        .where('khu_pho_id', isEqualTo: khuPhoId)
+        .orderBy('ho_ten')
+        .get();
+    final list = <DaiDienModel>[];
+    for (final doc in snap.docs) {
+      final data = Map<String, dynamic>.from(
+        doc.data() as Map<String, dynamic>,
+      );
+      final kpDoc = await _db
+          .collection('khu_pho')
+          .doc(khuPhoId.toString())
+          .get();
+      if (kpDoc.exists) {
+        data['ten_khu_pho'] =
+            (kpDoc.data() as Map<String, dynamic>)['ten_khu_pho'];
+      }
+      list.add(DaiDienModel.fromJson(data));
+    }
+    return list;
+  }
+
+  Future<DaiDienModel?> fetchDaiDienById(int id) async {
+    final doc = await _db
+        .collection('dai_dien_khu_pho')
+        .doc(id.toString())
+        .get();
+    if (!doc.exists) return null;
+    final data = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
+    final khuPhoId = data['khu_pho_id'] as int?;
+    if (khuPhoId != null) {
+      final kpDoc = await _db
+          .collection('khu_pho')
+          .doc(khuPhoId.toString())
+          .get();
+      if (kpDoc.exists) {
+        data['ten_khu_pho'] =
+            (kpDoc.data() as Map<String, dynamic>)['ten_khu_pho'];
+      }
+    }
+    return DaiDienModel.fromJson(data);
+  }
+
+  Future<DaiDienModel> createDaiDien(DaiDienModel model) async {
+    final id = await _nextId('dai_dien_khu_pho');
+    final map = model.toJson();
+    map['id'] = id;
+    map['created_at'] = DateTime.now().toIso8601String();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _setWithId('dai_dien_khu_pho', id, map);
+    return (await fetchDaiDienById(id))!;
+  }
+
+  Future<DaiDienModel> updateDaiDien(DaiDienModel model) async {
+    final map = model.toJson();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _db
+        .collection('dai_dien_khu_pho')
+        .doc(model.id.toString())
+        .update(map);
+    return (await fetchDaiDienById(model.id!))!;
+  }
+
+  Future<void> deleteDaiDien(int id) async {
+    await _db.collection('dai_dien_khu_pho').doc(id.toString()).delete();
+  }
+
+  Future<List<DaiDienModel>> searchDaiDiens(String query) async {
+    if (query.trim().isEmpty) return [];
+    final q = query.trim().toLowerCase();
+    final snap = await _db.collection('dai_dien_khu_pho').get();
+    final filtered = <DaiDienModel>[];
+    for (final doc in snap.docs) {
+      final data = Map<String, dynamic>.from(
+        doc.data() as Map<String, dynamic>,
+      );
+      final hoTen = (data['ho_ten']?.toString() ?? '').toLowerCase();
+      final soDienThoai = (data['so_dien_thoai']?.toString() ?? '')
+          .toLowerCase();
+      final email = (data['email']?.toString() ?? '').toLowerCase();
+      if (hoTen.contains(q) || soDienThoai.contains(q) || email.contains(q)) {
+        final khuPhoId = data['khu_pho_id'] as int?;
+        if (khuPhoId != null) {
+          final kpDoc = await _db
+              .collection('khu_pho')
+              .doc(khuPhoId.toString())
+              .get();
+          if (kpDoc.exists) {
+            data['ten_khu_pho'] =
+                (kpDoc.data() as Map<String, dynamic>)['ten_khu_pho'];
+          }
+        }
+        filtered.add(DaiDienModel.fromJson(data));
+      }
+    }
+    filtered.sort((a, b) => a.hoTen.compareTo(b.hoTen));
+    return filtered;
+  }
+
+  // ===================================================================
+  // HOUSEHOLD REQUESTS CRUD
+  // ===================================================================
+
+  Future<HouseholdRequest> createHouseholdRequest(
+    HouseholdRequest request,
+  ) async {
+    final id = await _nextId('household_requests');
+    final map = request.toJson();
+    map['id'] = id;
+    map['created_at'] = DateTime.now().toIso8601String();
+    map['updated_at'] = DateTime.now().toIso8601String();
+    await _setWithId('household_requests', id, map);
+    return HouseholdRequest.fromJson(map);
+  }
+
+  Future<List<HouseholdRequest>> fetchHouseholdRequests({
+    String? status,
+    int? userId,
+  }) async {
+    Query query = _db
+        .collection('household_requests')
+        .orderBy('created_at', descending: true);
+    if (status != null && status.isNotEmpty) {
+      query = query.where('status', isEqualTo: status);
+    }
+    if (userId != null) {
+      query = query.where('user_id', isEqualTo: userId);
+    }
+    final snap = await query.get();
+    return snap.docs
+        .map(
+          (doc) =>
+              HouseholdRequest.fromJson(doc.data() as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  Future<HouseholdRequest?> fetchHouseholdRequestById(int id) async {
+    final doc = await _db
+        .collection('household_requests')
+        .doc(id.toString())
+        .get();
+    if (!doc.exists) return null;
+    return HouseholdRequest.fromJson(doc.data() as Map<String, dynamic>);
+  }
+
+  Future<HouseholdRequest> updateHouseholdRequestStatus(
+    int id,
+    String status, {
+    int? approvedBy,
+    String? adminNote,
+  }) async {
+    final data = <String, dynamic>{
+      'status': status,
+      'admin_note': adminNote,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (approvedBy != null) data['approved_by'] = approvedBy;
+    await _db.collection('household_requests').doc(id.toString()).update(data);
+    return (await fetchHouseholdRequestById(id))!;
+  }
+
+  // ===================================================================
+  // UTILITY
+  // ===================================================================
+
+  ProvinceModel _mapDocToProvince(Map<String, dynamic> data) {
+    final properties = <String, dynamic>{
+      'ten': data['name']?.toString(),
+      'ma': data['code']?.toString(),
+      'type': data['type']?.toString(),
+      'area_km2': (data['area_km2'] as num?)?.toDouble(),
+      'population': (data['population'] as num?)?.toInt(),
+      'density': (data['density'] as num?)?.toDouble(),
+      'capital': data['capital']?.toString(),
+      'decree': data['decree']?.toString(),
+      'macro_region': data['macro_region']?.toString(),
+      'predecessors': data['predecessors']?.toString(),
+      'parent_ma': data['parent_code']?.toString(),
+      'parent_ten': data['parent_name']?.toString(),
+    };
+    // Pass raw data directly so ProvinceModel.fromJson can handle
+    // both 'geometry' and 'geometry_json' keys as originally designed.
+    return ProvinceModel.fromJson({...data, 'properties': properties});
+  }
+
+  String getProvinceKey(String name) {
+    var str = name.toLowerCase();
+    const accentMap = {
+      'á': 'a',
+      'à': 'a',
+      'ả': 'a',
+      'ã': 'a',
+      'ạ': 'a',
+      'â': 'a',
+      'ấ': 'a',
+      'ầ': 'a',
+      'ẩ': 'a',
+      'ẫ': 'a',
+      'ậ': 'a',
+      'ă': 'a',
+      'ắ': 'a',
+      'ằ': 'a',
+      'ẳ': 'a',
+      'ẵ': 'a',
+      'ặ': 'a',
+      'é': 'e',
+      'è': 'e',
+      'ẻ': 'e',
+      'ẽ': 'e',
+      'ẹ': 'e',
+      'ê': 'e',
+      'ế': 'e',
+      'ề': 'e',
+      'ể': 'e',
+      'ễ': 'e',
+      'ệ': 'e',
+      'í': 'i',
+      'ì': 'i',
+      'ỉ': 'i',
+      'ĩ': 'i',
+      'ị': 'i',
+      'ó': 'o',
+      'ò': 'o',
+      'ỏ': 'o',
+      'õ': 'o',
+      'ọ': 'o',
+      'ô': 'o',
+      'ố': 'o',
+      'ồ': 'o',
+      'ổ': 'o',
+      'ỗ': 'o',
+      'ộ': 'o',
+      'ơ': 'o',
+      'ớ': 'o',
+      'ờ': 'o',
+      'ở': 'o',
+      'ỡ': 'o',
+      'ợ': 'o',
+      'ú': 'u',
+      'ù': 'u',
+      'ủ': 'u',
+      'ũ': 'u',
+      'ụ': 'u',
+      'ư': 'u',
+      'ứ': 'u',
+      'ừ': 'u',
+      'ử': 'u',
+      'ữ': 'u',
+      'ự': 'u',
+      'ý': 'y',
+      'ỳ': 'y',
+      'ỷ': 'y',
+      'ỹ': 'y',
+      'ỵ': 'y',
+      'đ': 'd',
+    };
+    accentMap.forEach((key, value) {
+      str = str.replaceAll(key, value);
+    });
+    str = str.replaceAll(RegExp(r'\s+'), '_');
+    str = str.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+    return str;
+  }
+}
+
+/// Lớp SearchResult (giữ nguyên tương thích với code cũ)
+class SearchResult {
+  final String name;
+  final String type;
+  final ProvinceModel model;
+
+  SearchResult({required this.name, required this.type, required this.model});
+}

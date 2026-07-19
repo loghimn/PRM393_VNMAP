@@ -1,4 +1,4 @@
-
+import 'dart:convert';
 
 class ProvinceModel {
   final String name;
@@ -38,35 +38,31 @@ class ProvinceModel {
   });
 
   factory ProvinceModel.fromJson(Map<String, dynamic> json) {
-    final props = json['properties'];
+    final props = Map<String, dynamic>.from(
+      json['properties'] ?? <String, dynamic>{},
+    );
+
+    final geometryData = json['geometry'] ?? json['geometry_json'];
+    final geometry = geometryData is Map<String, dynamic>
+        ? Map<String, dynamic>.from(geometryData)
+        : geometryData is String
+        ? Map<String, dynamic>.from(jsonDecode(geometryData))
+        : <String, dynamic>{};
 
     return ProvinceModel(
-      name: props['ten'] ?? '',
-
-      ma: props['ma'],
-
-      areaKm2: (props['area_km2'] as num?)?.toDouble(),
-
-      population: (props['population'] as num?)?.toInt(),
-
-      density: (props['density'] as num?)?.toDouble(),
-
-      capital: props['capital'],
-
-      decree: props['decree'],
-
-      macroRegion: props['macro_region'],
-
-      type: props['type'],
-
-      predecessors: props['predecessors'],
-
-      parentMa: props['parent_ma'],
-
-      parentTen: props['parent_ten'],
-
-      geometry: json['geometry'],
-
+      name: json['name'] ?? props['ten'] ?? '',
+      ma: json['code']?.toString() ?? props['ma']?.toString(),
+      areaKm2: (json['area_km2'] as num?)?.toDouble(),
+      population: (json['population'] as num?)?.toInt(),
+      density: (json['density'] as num?)?.toDouble(),
+      capital: json['capital'] ?? props['capital'],
+      decree: json['decree'] ?? props['decree'],
+      macroRegion: json['macro_region'] ?? props['macro_region'],
+      type: json['type'] ?? props['type'],
+      predecessors: json['predecessors'] ?? props['predecessors'],
+      parentMa: json['parent_ma'] ?? props['parent_ma'],
+      parentTen: json['parent_ten'] ?? props['parent_ten'],
+      geometry: geometry,
       properties: props,
     );
   }

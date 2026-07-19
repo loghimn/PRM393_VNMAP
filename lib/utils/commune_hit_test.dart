@@ -20,8 +20,7 @@ ProvinceModel? getCommuneFromPositionRaw(
 
   for (final commune in communes) {
     try {
-      if (commune.parentTen != focusedProvince.name) continue;
-
+      // communes are already pre-filtered by Firestore query
       checkedCount++;
 
       final geometry = commune.geometry;
@@ -100,7 +99,9 @@ ProvinceModel? getCommuneFromPositionRaw(
     } catch (e) {
       // Log and skip problematic communes
       if (isAnGiang) {
-        debugPrint('[An Giang Debug] Error checking commune ${commune.name}: $e');
+        debugPrint(
+          '[An Giang Debug] Error checking commune ${commune.name}: $e',
+        );
       } else {
         debugPrint('Error checking commune ${commune.name}: $e');
       }

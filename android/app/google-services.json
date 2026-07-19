@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "359212312492",
+    "firebase_url": "https://vietnam-map-prm393-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "vietnam-map-prm393",
+    "storage_bucket": "vietnam-map-prm393.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:359212312492:android:1bce7375872b9f9894fc09",
+        "android_client_info": {
+          "package_name": "com.example.vietnam_geo_dashboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4eybSrSt2rzV4nF-WtHSHXrIPzJuGnaY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

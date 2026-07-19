@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'package:vietnam_geo_dashboard/providers/auth_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/province_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/theme_provider.dart';
@@ -30,8 +32,9 @@ import 'package:vietnam_geo_dashboard/screens/gis_map_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/register_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/user_management_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(
     MultiProvider(
       providers: [
