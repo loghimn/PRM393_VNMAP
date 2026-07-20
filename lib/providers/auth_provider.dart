@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 
 class AuthProvider extends ChangeNotifier {
   final DatabaseService _dbService = DatabaseService();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -21,14 +23,43 @@ class AuthProvider extends ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return;
     try {
+      // Lắng nghe auth state thay đổi từ Firebase Auth
+      _firebaseAuth.authStateChanges().listen((firebaseUser) async {
+        if (firebaseUser != null) {
+          final user = await _dbService.getUserByUid(firebaseUser.uid);
+          if (user != null) {
+            _currentUser = user;
+          } else {
+            _currentUser = null;
+          }
+        } else {
+          _currentUser = null;
+        }
+        _isInitialized = true;
+        notifyListeners();
+      });
+
+      // Nếu đã có session, load luôn user
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser != null) {
+        final user = await _dbService.getUserByUid(firebaseUser.uid);
+        if (user != null) {
+          _currentUser = user;
+          _isInitialized = true;
+          notifyListeners();
+          return;
+        }
+      }
+
+      // Fallback: kiểm tra SharedPreferences (hỗ trợ người dùng cũ)
       final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('userId');
-      if (userId != null) {
-        final user = await _dbService.getUserById(userId);
+      final uid = prefs.getString('uid');
+      if (uid != null) {
+        final user = await _dbService.getUserByUid(uid);
         if (user != null) {
           _currentUser = user;
         } else {
-          await prefs.remove('userId');
+          await prefs.remove('uid');
         }
       }
     } catch (e) {
@@ -38,32 +69,32 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String phone, String password) async {
+  Future<bool> login(String email, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
       print(
-        'AuthProvider.login: phone="$phone", password length=${password.length}',
+        'AuthProvider.login: email="$email", password length=${password.length}',
       );
 
-      final user = await _dbService.login(phone, password);
+      final user = await _dbService.signInWithEmail(email, password);
       if (user != null) {
         _currentUser = user;
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('userId', user.id!);
+        await prefs.setString('uid', user.uid ?? '');
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        _error = 'Số điện thoại hoặc mật khẩu không chính xác';
+        _error = 'Email hoặc mật khẩu không chính xác';
         _isLoading = false;
         notifyListeners();
         return false;
       }
     } catch (e) {
-      _error = 'Lỗi kết nối: ${e.toString()}';
+      _error = 'Lỗi đăng nhập: ${e.toString()}';
       _isLoading = false;
       notifyListeners();
       return false;
@@ -71,20 +102,17 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    // Sign out khỏi Firebase Auth
+    await _firebaseAuth.signOut();
     _currentUser = null;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('userId');
+    await prefs.remove('uid');
     notifyListeners();
   }
 
-  Future<bool> changePassword(String oldPassword, String newPassword) async {
-    if (_currentUser?.id == null) return false;
+  Future<bool> changePassword(String newPassword) async {
     try {
-      final success = await _dbService.changePassword(
-        _currentUser!.id!,
-        oldPassword,
-        newPassword,
-      );
+      final success = await _dbService.changePasswordFirebase(newPassword);
       return success;
     } catch (e) {
       return false;
@@ -94,7 +122,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> register(
     String username,
     String password, {
-    String? email,
+    required String email,
     String? fullName,
     String? phone,
   }) async {
@@ -119,26 +147,17 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Check if phone already exists
-      if (phone == null || phone.trim().isEmpty) {
-        _error = 'Vui lòng nhập số điện thoại';
+      // Validate email
+      if (email.isEmpty) {
+        _error = 'Vui lòng nhập email';
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      final existingUser = await _dbService.getUserByPhone(phone);
-      if (existingUser != null) {
-        _error = 'Số điện thoại đã được đăng ký';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      // Create user with default role 'user'
+      // Create user model
       final user = UserModel(
         username: username,
-        passwordHash: null, // Will be set by database service
         email: email,
         fullName: fullName,
         phone: phone,
@@ -146,7 +165,19 @@ class AuthProvider extends ChangeNotifier {
         isActive: true,
       );
 
-      await _dbService.createUser(user, password);
+      // Firebase Auth sẽ tạo user và lưu profile vào Firestore
+      await _dbService.createUserWithAuth(email, password, user);
+
+      // Đăng nhập luôn user vừa tạo (FirebaseAuth tự động login,
+      // nhưng authStateChanges listener chạy bất đồng bộ, nên cần set trực tiếp)
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser != null) {
+        final newUser = await _dbService.getUserByUid(firebaseUser.uid);
+        if (newUser != null) {
+          _currentUser = newUser;
+        }
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;

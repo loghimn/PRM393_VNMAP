@@ -11,14 +11,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -30,7 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.login(
-      _phoneController.text.trim(),
+      _emailController.text.trim(),
       _passwordController.text,
     );
 
@@ -164,17 +164,17 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           _buildLogo(),
           const SizedBox(height: 36),
-          // Phone field
+          // Email field
           TextFormField(
-            controller: _phoneController,
+            controller: _emailController,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              labelText: 'Số điện thoại',
+              labelText: 'Email',
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
-              hintText: 'Nhập số điện thoại',
+              hintText: 'Nhập email',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
               prefixIcon: Icon(
-                Icons.phone_outlined,
+                Icons.email_outlined,
                 color: Colors.white.withValues(alpha: 0.6),
               ),
               filled: true,
@@ -195,10 +195,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderSide: const BorderSide(color: Colors.red, width: 1),
               ),
             ),
-            keyboardType: TextInputType.phone,
+            keyboardType: TextInputType.emailAddress,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Vui lòng nhập số điện thoại';
+                return 'Vui lòng nhập email';
+              }
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value.trim())) {
+                return 'Email không hợp lệ';
               }
               return null;
             },

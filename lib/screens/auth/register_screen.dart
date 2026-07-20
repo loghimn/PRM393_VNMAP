@@ -40,9 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final success = await authProvider.register(
       _usernameController.text.trim(),
       _passwordController.text,
-      email: _emailController.text.trim().isEmpty
-          ? null
-          : _emailController.text.trim(),
+      email: _emailController.text.trim(),
       fullName: _fullNameController.text.trim().isEmpty
           ? null
           : _fullNameController.text.trim(),
@@ -336,7 +334,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: _emailController,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              labelText: 'Email (tùy chọn)',
+              labelText: 'Email (bắt buộc)',
               labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
               hintText: 'Nhập email',
               hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
@@ -359,6 +357,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
             keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Vui lòng nhập email';
+              }
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value.trim())) {
+                return 'Email không hợp lệ';
+              }
+              return null;
+            },
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 20),

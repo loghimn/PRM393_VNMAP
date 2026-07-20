@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 import '../models/province_model.dart';
 import '../models/high_school_model.dart';
 import '../models/household_model.dart';
@@ -54,45 +55,112 @@ class FirestoreService {
   }
 
   // ===================================================================
-  // USERS & AUTH
+  // AUTH — Firebase Auth
   // ===================================================================
 
-  Future<UserModel?> login(String phone, String password) async {
+  final auth.FirebaseAuth _firebaseAuth = auth.FirebaseAuth.instance;
+
+  /// Đăng nhập bằng email + password qua Firebase Auth
+  Future<UserModel?> signInWithEmail(String email, String password) async {
     try {
-      // Tìm user theo username (phone có thể là username) hoặc phone
-      UserModel? user = await getUserByUsername(phone);
-      if (user == null) {
-        user = await getUserByPhone(phone);
-      }
-      if (user == null) return null;
-
-      // Lấy dữ liệu đầy đủ từ Firestore (bao gồm password_hash)
-      final doc = await _db.collection('users').doc(user.id.toString()).get();
-      if (!doc.exists) return null;
-      final data = doc.data() as Map<String, dynamic>;
-      final storedHash = data['password_hash']?.toString();
-      if (storedHash == null || storedHash.isEmpty) return null;
-
-      // Hash password nhập vào và so sánh
-      final inputHash = sha256.convert(utf8.encode(password)).toString();
-      if (inputHash != storedHash) return null;
-
-      return UserModel.fromJson(data);
+      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final uid = userCredential.user?.uid;
+      if (uid == null) return null;
+      return await getUserByUid(uid);
+    } on auth.FirebaseAuthException catch (e) {
+      print('FirestoreService.signInWithEmail error: ${e.code}');
+      return null;
     } catch (e) {
-      print('FirestoreService.login error: $e');
+      print('FirestoreService.signInWithEmail error: $e');
       return null;
     }
   }
 
-  Future<UserModel?> getUserByPhone(String phone) async {
-    final snap = await _db
-        .collection('users')
-        .where('phone', isEqualTo: phone)
-        .limit(1)
-        .get();
-    if (snap.docs.isEmpty) return null;
-    return UserModel.fromJson(snap.docs.first.data() as Map<String, dynamic>);
+  /// Tạo user với Firebase Auth + lưu profile vào Firestore
+  Future<UserModel> createUserWithAuth(
+    String email,
+    String password,
+    UserModel user,
+  ) async {
+    final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    final uid = userCredential.user!.uid;
+
+    // Tạo id số nguyên cho user mới
+    final newId = await _nextId('users');
+
+    // Gửi email xác thực (tuỳ chọn)
+    await userCredential.user?.sendEmailVerification();
+
+    // Lưu profile vào Firestore với document ID = uid
+    final data = user.toJson();
+    data['id'] = newId;
+    data['uid'] = uid;
+    data['email'] = email;
+    data['created_at'] = DateTime.now().toIso8601String();
+    data['updated_at'] = DateTime.now().toIso8601String();
+
+    await _db.collection('users').doc(uid).set(data);
+
+    return UserModel.fromJson(data);
   }
+
+  /// Đổi mật khẩu dùng Firebase Auth của user hiện tại
+  Future<bool> changePasswordFirebase(String newPassword) async {
+    try {
+      final currentUser = _firebaseAuth.currentUser;
+      if (currentUser == null) return false;
+      await currentUser.updatePassword(newPassword);
+      return true;
+    } on auth.FirebaseAuthException catch (e) {
+      print('FirestoreService.changePasswordFirebase error: ${e.code}');
+      return false;
+    } catch (e) {
+      print('FirestoreService.changePasswordFirebase error: $e');
+      return false;
+    }
+  }
+
+  /// Gửi email reset mật khẩu
+  Future<bool> sendPasswordResetEmail(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+      return true;
+    } catch (e) {
+      print('FirestoreService.sendPasswordResetEmail error: $e');
+      return false;
+    }
+  }
+
+  /// Lấy user profile từ Firestore theo Firebase UID
+  Future<UserModel?> getUserByUid(String uid) async {
+    try {
+      final doc = await _db.collection('users').doc(uid).get();
+      if (!doc.exists) return null;
+      final data = doc.data() as Map<String, dynamic>;
+
+      // Nếu user chưa có id (số nguyên), tự động sinh id mới
+      if (data['id'] == null) {
+        final newId = await _nextId('users');
+        data['id'] = newId;
+        await _db.collection('users').doc(uid).update({'id': newId});
+      }
+
+      return UserModel.fromJson(data);
+    } catch (e) {
+      print('FirestoreService.getUserByUid error: $e');
+      return null;
+    }
+  }
+
+  // ===================================================================
+  // USERS — Firestore CRUD (giữ nguyên cho admin)
+  // ===================================================================
 
   Future<UserModel?> getUserById(int id) async {
     final doc = await _db.collection('users').doc(id.toString()).get();
@@ -110,50 +178,11 @@ class FirestoreService {
     return UserModel.fromJson(snap.docs.first.data() as Map<String, dynamic>);
   }
 
-  Future<UserModel> createUser(UserModel user, String password) async {
-    final id = await _nextId('users');
-    final data = user.toJson();
-    data['id'] = id;
-    data['password_hash'] = sha256.convert(utf8.encode(password)).toString();
-    data['created_at'] = DateTime.now().toIso8601String();
-    data['updated_at'] = DateTime.now().toIso8601String();
-    await _setWithId('users', id, data);
-    return UserModel.fromJson(data);
-  }
-
   Future<UserModel> updateUser(UserModel user) async {
     final data = user.toJson();
     data['updated_at'] = DateTime.now().toIso8601String();
     await _db.collection('users').doc(user.id.toString()).update(data);
     return user;
-  }
-
-  Future<bool> changePassword(
-    int userId,
-    String oldPassword,
-    String newPassword,
-  ) async {
-    try {
-      final doc = await _db.collection('users').doc(userId.toString()).get();
-      if (!doc.exists) return false;
-      final data = doc.data() as Map<String, dynamic>;
-      final storedHash = data['password_hash']?.toString();
-      if (storedHash == null) return false;
-
-      // Kiểm tra mật khẩu cũ
-      final oldHash = sha256.convert(utf8.encode(oldPassword)).toString();
-      if (oldHash != storedHash) return false;
-
-      // Cập nhật mật khẩu mới
-      final newHash = sha256.convert(utf8.encode(newPassword)).toString();
-      await _db.collection('users').doc(userId.toString()).update({
-        'password_hash': newHash,
-        'updated_at': DateTime.now().toIso8601String(),
-      });
-      return true;
-    } catch (e) {
-      return false;
-    }
   }
 
   Future<List<UserModel>> getAllUsers({String? searchQuery}) async {

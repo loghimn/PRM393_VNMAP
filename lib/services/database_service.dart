@@ -46,30 +46,36 @@ class DatabaseService {
       _firestore.searchLocations(query);
 
   // ===================================================================
-  // USERS & AUTH
+  // AUTH — Firebase Auth
   // ===================================================================
 
-  Future<UserModel?> login(String phone, String password) =>
-      _firestore.login(phone, password);
+  Future<UserModel?> signInWithEmail(String email, String password) =>
+      _firestore.signInWithEmail(email, password);
 
-  Future<UserModel?> getUserByPhone(String phone) =>
-      _firestore.getUserByPhone(phone);
+  Future<UserModel> createUserWithAuth(
+    String email,
+    String password,
+    UserModel user,
+  ) => _firestore.createUserWithAuth(email, password, user);
+
+  Future<bool> changePasswordFirebase(String newPassword) =>
+      _firestore.changePasswordFirebase(newPassword);
+
+  Future<bool> sendPasswordResetEmail(String email) =>
+      _firestore.sendPasswordResetEmail(email);
+
+  Future<UserModel?> getUserByUid(String uid) => _firestore.getUserByUid(uid);
+
+  // ===================================================================
+  // USERS — Firestore CRUD (cho admin)
+  // ===================================================================
 
   Future<UserModel?> getUserById(int id) => _firestore.getUserById(id);
 
   Future<UserModel?> getUserByUsername(String username) =>
       _firestore.getUserByUsername(username);
 
-  Future<UserModel> createUser(UserModel user, String password) =>
-      _firestore.createUser(user, password);
-
   Future<UserModel> updateUser(UserModel user) => _firestore.updateUser(user);
-
-  Future<bool> changePassword(
-    int userId,
-    String oldPassword,
-    String newPassword,
-  ) => _firestore.changePassword(userId, oldPassword, newPassword);
 
   Future<List<UserModel>> getAllUsers({String? searchQuery}) =>
       _firestore.getAllUsers(searchQuery: searchQuery);
