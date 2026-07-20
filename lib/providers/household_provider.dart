@@ -143,23 +143,10 @@ class HouseholdProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Tìm kiếm hộ gia đình theo số điện thoại (không filter theo createdBy)
+  /// Tìm kiếm hộ gia đình theo số điện thoại (dùng indexed query, nhanh hơn nhiều)
   Future<Household?> searchByPhone(String phone) async {
     try {
-      final results = await _db.fetchHouseholdList(
-        searchQuery: phone,
-        createdBy: null, // Không filter theo createdBy để tìm được tất cả
-        limit: 10,
-      );
-      if (results.isNotEmpty) {
-        // Chỉ trả về nếu phone khớp chính xác (do ILIKE có thể match head_of_household hoặc household_code)
-        try {
-          return results.firstWhere((h) => h.phone == phone);
-        } catch (_) {
-          return null;
-        }
-      }
-      return null;
+      return await _db.fetchHouseholdByPhone(phone);
     } catch (e) {
       return null;
     }

@@ -154,6 +154,11 @@ class VietnamMapPainter extends CustomPainter {
       final type = geometry['type'];
       final coordinates = geometry['coordinates'];
 
+      // Skip if coordinates are null or empty
+      if (coordinates == null || coordinates.isEmpty) {
+        continue;
+      }
+
       final islandPaint = Paint()
         ..color = Colors.orangeAccent
         ..style = PaintingStyle.fill;
@@ -176,7 +181,10 @@ class VietnamMapPainter extends CustomPainter {
       }
 
       // Draw a label for each special zone (Hoàng Sa / Trường Sa)
-      final ring = type == 'Polygon' ? coordinates[0] : GeoUtils.findLargestRing(coordinates)[0];
+      if (coordinates.isEmpty) continue;
+      final ring = type == 'Polygon'
+          ? coordinates[0]
+          : GeoUtils.findLargestRing(coordinates)[0];
       if (ring.isNotEmpty) {
         final anchor = GeoUtils.getAnchorPoint(ring);
 
@@ -206,15 +214,16 @@ class VietnamMapPainter extends CustomPainter {
           textDirection: TextDirection.ltr,
         );
         textPainter.layout();
-        textPainter.paint(canvas, Offset(anchor.dx - textPainter.width / 2, anchor.dy - 15));
+        textPainter.paint(
+          canvas,
+          Offset(anchor.dx - textPainter.width / 2, anchor.dy - 15),
+        );
       }
     }
 
     // =========================
     // DRAW DOTS
     // =========================
-
-
 
     canvas.restore();
 
@@ -224,16 +233,16 @@ class VietnamMapPainter extends CustomPainter {
     }
   }
 
-
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
   }
 
   Color getProvinceColor(ProvinceModel province, bool hovered) {
-    final isSelected = selectedProvince != null &&
-        (selectedProvince!.name == province.name || selectedProvince!.ma == province.ma);
+    final isSelected =
+        selectedProvince != null &&
+        (selectedProvince!.name == province.name ||
+            selectedProvince!.ma == province.ma);
     if (hovered || isSelected) {
       return Colors.orange;
     }
@@ -263,11 +272,12 @@ class VietnamMapPainter extends CustomPainter {
 
     try {
       // Include both province AND communes in transform calculation
-      final regionsForTransform = [
-        province,
-        ...communes.where((c) => c.parentTen == province.name),
-      ];
-      final transform = calculateMapTransform(viewportSize, regionsForTransform);
+      // communes are already pre-filtered by Firestore query
+      final regionsForTransform = [province, ...communes];
+      final transform = calculateMapTransform(
+        viewportSize,
+        regionsForTransform,
+      );
 
       canvas.save();
       canvas.translate(transform.offsetX, transform.offsetY);
@@ -320,23 +330,20 @@ class VietnamMapPainter extends CustomPainter {
 
       // ===== DRAW COMMUNES =====
       // Skip commune rendering for provinces with known data issues
+      // communes are already pre-filtered by Firestore query
       if (!ProvinceSpecialHandler.shouldSkipCommuneRender(province)) {
-        final relatedCommunes = communes
-            .where((c) => c.parentTen == province.name)
-            .toList();
-
         debugPrint(
-          'Drawing communes for ${province.name}: ${relatedCommunes.length} communes',
+          'Drawing communes for ${province.name}: ${communes.length} communes',
         );
 
-        if (relatedCommunes.isEmpty) {
+        if (communes.isEmpty) {
           debugPrint('No communes found for ${province.name}');
         }
 
         int drawnCount = 0;
         int skippedCount = 0;
 
-        for (final commune in relatedCommunes) {
+        for (final commune in communes) {
           try {
             final communeGeometry = commune.geometry;
             // if (communeGeometry == null) {
@@ -351,8 +358,10 @@ class VietnamMapPainter extends CustomPainter {
             }
 
             // Highlight hovered or selected commune
-            final isCommuneSelected = selectedCommune != null &&
-                (selectedCommune!.name == commune.name || selectedCommune!.ma == commune.ma);
+            final isCommuneSelected =
+                selectedCommune != null &&
+                (selectedCommune!.name == commune.name ||
+                    selectedCommune!.ma == commune.ma);
             final isCommuneHovered = hoveredProvince?.name == commune.name;
             final isCommuneHighlighted = isCommuneHovered || isCommuneSelected;
 
@@ -400,7 +409,9 @@ class VietnamMapPainter extends CustomPainter {
 
         debugPrint('Communes drawn: $drawnCount, skipped: $skippedCount');
       } else {
-        debugPrint('Skipping commune rendering for ${province.name} (known issue)');
+        debugPrint(
+          'Skipping commune rendering for ${province.name} (known issue)',
+        );
       }
 
       canvas.restore();
@@ -413,7 +424,9 @@ class VietnamMapPainter extends CustomPainter {
   void _drawOffshoreIslandInsets(Canvas canvas, Size size) {
     // 1. Draw Hoàng Sa
     try {
-      final hoangSaZone = specialZones.firstWhere((z) => z.name.contains('Hoàng Sa'));
+      final hoangSaZone = specialZones.firstWhere(
+        (z) => z.name.contains('Hoàng Sa'),
+      );
       final hoangSaRect = getHoangSaInsetRect(size);
       _drawIslandInset(canvas, hoangSaRect, hoangSaZone, 'QĐ. Hoàng Sa');
     } catch (e) {
@@ -422,7 +435,9 @@ class VietnamMapPainter extends CustomPainter {
 
     // 2. Draw Trường Sa
     try {
-      final truongSaZone = specialZones.firstWhere((z) => z.name.contains('Trường Sa'));
+      final truongSaZone = specialZones.firstWhere(
+        (z) => z.name.contains('Trường Sa'),
+      );
       final truongSaRect = getTruongSaInsetRect(size);
       _drawIslandInset(canvas, truongSaRect, truongSaZone, 'QĐ. Trường Sa');
     } catch (e) {
@@ -430,7 +445,12 @@ class VietnamMapPainter extends CustomPainter {
     }
   }
 
-  void _drawIslandInset(Canvas canvas, Rect rect, ProvinceModel zone, String label) {
+  void _drawIslandInset(
+    Canvas canvas,
+    Rect rect,
+    ProvinceModel zone,
+    String label,
+  ) {
     final isHovered = hoveredProvince?.name == zone.name;
 
     // --- DRAW BACKGROUND CARD (Glassmorphic look) ---
@@ -447,7 +467,7 @@ class VietnamMapPainter extends CustomPainter {
     final shadowPaint = Paint()
       ..color = Colors.black.withOpacity(0.3)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
-    
+
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8.0));
     canvas.drawRRect(rrect, shadowPaint);
     canvas.drawRRect(rrect, bgPaint);
@@ -557,11 +577,7 @@ class VietnamMapPainter extends CustomPainter {
           fontSize: 9,
           fontWeight: FontWeight.bold,
           shadows: const [
-            Shadow(
-              color: Colors.black,
-              offset: Offset(1, 1),
-              blurRadius: 1,
-            ),
+            Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 1),
           ],
         ),
       ),

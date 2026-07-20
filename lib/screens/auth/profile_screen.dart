@@ -106,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     final auth = context.read<AuthProvider>();
-    final success = await auth.changePassword(oldPass, newPass);
+    final success = await auth.changePassword(newPass);
 
     if (!mounted) return;
     setState(() => _isSaving = false);

@@ -1,5 +1,6 @@
 class UserModel {
   final int? id;
+  final String? uid; // Firebase Auth UID
   final String username;
   final String? passwordHash;
   final String? email;
@@ -14,6 +15,7 @@ class UserModel {
 
   UserModel({
     this.id,
+    this.uid,
     required this.username,
     this.passwordHash,
     this.email,
@@ -30,6 +32,7 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}'),
+      uid: json['uid']?.toString(),
       username: json['username']?.toString() ?? '',
       passwordHash: json['password_hash']?.toString(),
       email: json['email']?.toString(),
@@ -37,7 +40,8 @@ class UserModel {
       phone: json['phone']?.toString(),
       role: json['role']?.toString() ?? 'user',
       avatarUrl: json['avatar_url']?.toString(),
-      isActive: json['is_active'] == true || json['is_active']?.toString() == 'true',
+      isActive:
+          json['is_active'] == true || json['is_active']?.toString() == 'true',
       lastLogin: json['last_login'] != null
           ? DateTime.tryParse(json['last_login'].toString())
           : null,
@@ -53,6 +57,7 @@ class UserModel {
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,
+      if (uid != null) 'uid': uid,
       'username': username,
       'password_hash': passwordHash,
       'email': email,

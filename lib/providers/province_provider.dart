@@ -38,14 +38,20 @@ class ProvinceProvider extends ChangeNotifier {
   bool isLoadingHighSchools = false;
   bool isLoadingHouseholds = false;
 
-  Future<void> loadHighSchoolsForCommune(ProvinceModel commune) async {
+  Future<void> loadHighSchoolsForCommune(ProvinceModel commune, {String? provinceName}) async {
     if (commune.name.isEmpty) return;
     isLoadingHighSchools = true;
     selectedCommuneHighSchools = [];
     notifyListeners();
+    // Ưu tiên parentTen của commune, fallback sang focusedProvince
+    final resolvedProvince = provinceName ??
+        commune.parentTen ??
+        focusedProvince?.name;
+    debugPrint('🏫 loadHighSchoolsForCommune: commune="${commune.name}", province="$resolvedProvince"');
     try {
       selectedCommuneHighSchools = await _service.fetchHighSchoolsByCommuneName(
         commune.name,
+        provinceName: resolvedProvince,
       );
     } catch (e) {
       debugPrint("Error loading high schools for commune ${commune.name}: $e");

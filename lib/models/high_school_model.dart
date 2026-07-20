@@ -30,7 +30,7 @@ class HighSchool {
       tenXaPhuong: json['ten_xa_phuong']?.toString(),
       maTruong: json['ma_truong']?.toString(),
       tenTruong: json['ten_truong']?.toString(),
-      address: json['address']?.toString(),
+      address: json['dia_chi']?.toString(),
       khuVuc: json['khu_vuc']?.toString(),
     );
   }

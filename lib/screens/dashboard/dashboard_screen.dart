@@ -315,41 +315,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  int _getVisibleIndex(int selectedView, bool isAdmin) {
-    if (isAdmin) return selectedView;
-    switch (selectedView) {
-      case 1:
-        return 0;
-      case 2:
-        return 1;
-      case 3:
-        return 2;
-      case 5:
-        return 3;
-      case 6:
-        return 4;
-      default:
-        return 0;
-    }
-  }
 
-  int _getSelectionForVisibleIndex(int visibleIndex, bool isAdmin) {
-    if (isAdmin) return visibleIndex;
-    switch (visibleIndex) {
-      case 0:
-        return 1;
-      case 1:
-        return 2;
-      case 2:
-        return 3;
-      case 3:
-        return 5;
-      case 4:
-        return 6;
-      default:
-        return 1;
-    }
-  }
 
   Widget _buildSidebarItem({
     required int index,
@@ -445,8 +411,22 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildBottomNavigation(bool isAdmin) {
-    final navItems = _buildNavItems(isAdmin);
+    final List<_NavItemData> items = [];
+    if (isAdmin) {
+      items.add(const _NavItemData(icon: Icons.dashboard_rounded, label: 'Tổng quan', viewIndex: 0));
+    }
+    items.add(const _NavItemData(icon: Icons.map_rounded, label: 'Bản đồ', viewIndex: 1));
+    items.add(const _NavItemData(icon: Icons.home_work_rounded, label: 'Hộ gia đình', viewIndex: 2));
+    items.add(const _NavItemData(icon: Icons.warning_amber_rounded, label: 'Sự vụ', viewIndex: 3));
+    if (isAdmin) {
+      items.add(const _NavItemData(icon: Icons.apartment_rounded, label: 'Khu phố', viewIndex: 4));
+      items.add(const _NavItemData(icon: Icons.assignment_rounded, label: 'Yêu cầu', viewIndex: 7));
+    }
+    items.add(const _NavItemData(icon: Icons.history_edu_rounded, label: 'Di tích', viewIndex: 5));
+    items.add(const _NavItemData(icon: Icons.person_rounded, label: 'Tài khoản', viewIndex: 6));
+
     final navHeight = isAdmin ? 80.0 : 72.0;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -458,81 +438,89 @@ class _DashboardScreenState extends State<DashboardScreen>
         top: false,
         child: SizedBox(
           height: navHeight,
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              navigationBarTheme: NavigationBarThemeData(
-                backgroundColor: Colors.transparent,
-                indicatorColor: AppColors.primary.withAlpha(25),
-                labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                  // Same TextStyle for both states to prevent text shift
-                  return TextStyle(
-                    color: states.contains(WidgetState.selected)
-                        ? AppColors.primary
-                        : AppColors.textMuted.withValues(alpha: 0.6),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    height: 1.0,
-                  );
-                }),
-                iconTheme: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return const IconThemeData(
-                      color: AppColors.primary,
-                      size: 22,
-                    );
-                  }
-                  return IconThemeData(
-                    color: AppColors.textMuted.withValues(alpha: 0.6),
-                    size: 20,
-                  );
-                }),
-                elevation: 0,
-                overlayColor: WidgetStateProperty.all(Colors.transparent),
-                height: navHeight,
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              ),
-            ),
-            child: NavigationBar(
-              key: ValueKey(isAdmin),
-              selectedIndex: _getVisibleIndex(_selectedView, isAdmin),
-              onDestinationSelected: (index) {
-                setState(() {
-                  _selectedView = _getSelectionForVisibleIndex(index, isAdmin);
-                });
-              },
-              animationDuration: Duration.zero,
-              destinations: navItems,
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const double minItemWidth = 78.0;
+              final double totalMinWidth = items.length * minItemWidth;
+              final bool shouldScroll = constraints.maxWidth < totalMinWidth;
+
+              Widget buildItem(_NavItemData item, double width) {
+                final isSelected = _selectedView == item.viewIndex;
+                return SizedBox(
+                  width: width,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedView = item.viewIndex;
+                      });
+                    },
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary.withValues(alpha: 0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          child: Icon(
+                            item.icon,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                            size: isSelected ? 22 : 20,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textMuted.withValues(alpha: 0.8),
+                            fontSize: 10,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            height: 1.0,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              if (shouldScroll) {
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    return buildItem(items[index], minItemWidth);
+                  },
+                );
+              } else {
+                final double itemWidth = constraints.maxWidth / items.length;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: items.map((item) => buildItem(item, itemWidth)).toList(),
+                );
+              }
+            },
           ),
         ),
       ),
     );
-  }
-
-  List<NavigationDestination> _buildNavItems(bool isAdmin) {
-    final items = <NavigationDestination>[];
-    void addItem(IconData icon, String label) {
-      items.add(
-        NavigationDestination(
-          icon: Icon(icon, size: 20),
-          selectedIcon: Icon(icon, size: 22),
-          label: label,
-        ),
-      );
-    }
-
-    if (isAdmin) {
-      addItem(Icons.dashboard_rounded, 'Tổng quan');
-    }
-    addItem(Icons.map_rounded, 'Bản đồ');
-    addItem(Icons.home_work_rounded, 'Hộ gia đình');
-    addItem(Icons.warning_amber_rounded, 'Sự vụ');
-    if (isAdmin) {
-      addItem(Icons.apartment_rounded, 'Khu phố');
-    }
-    addItem(Icons.history_edu_rounded, 'Di tích');
-    addItem(Icons.person_rounded, 'Tài khoản');
-    return items;
   }
 
   Widget _buildDashboardView() {
@@ -1926,5 +1914,17 @@ class _KpiData {
     required this.gradientColors,
     this.sublabel,
     this.badge,
+  });
+}
+
+class _NavItemData {
+  final IconData icon;
+  final String label;
+  final int viewIndex;
+
+  const _NavItemData({
+    required this.icon,
+    required this.label,
+    required this.viewIndex,
   });
 }
