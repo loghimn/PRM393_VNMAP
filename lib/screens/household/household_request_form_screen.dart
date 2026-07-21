@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/household_request_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/household_request_provider.dart';
 import '../../services/database_service.dart';
+import '../../services/storage_service.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/popup_notification.dart';
 import '../household/household_request_detail_screen.dart';
@@ -34,6 +37,10 @@ class _HouseholdRequestFormScreenState
   final _emailCtrl = TextEditingController();
   final _popCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+
+  final _picker = ImagePicker();
+  List<File> _selectedImages = [];
+  bool _isUploadingImages = false;
 
   bool _isSaving = false;
   bool _isCheckingPending = true;
@@ -115,11 +122,31 @@ class _HouseholdRequestFormScreenState
     }
   }
 
+  Future<void> _pickImages() async {
+    final picked = await _picker.pickMultiImage(
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (picked.isNotEmpty && mounted) {
+      setState(() {
+        _selectedImages.addAll(picked.map((e) => File(e.path)));
+      });
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+    });
+  }
+
   Future<void> _onCityChanged(String name) async {
     if (name.isEmpty) return;
     debugPrint('Dropdown: Selected city "$name", fetching wards...');
     final wards = await _db.fetchCommunesForProvinceName(name);
-    debugPrint('Dropdown: Fetched ${wards.length} wards for "$name". Sample: ${wards.take(5).toList()}');
+    debugPrint(
+      'Dropdown: Fetched ${wards.length} wards for "$name". Sample: ${wards.take(5).toList()}',
+    );
     if (mounted) {
       setState(() {
         _wards = wards;
@@ -180,6 +207,19 @@ class _HouseholdRequestFormScreenState
         }
       }
 
+      // Upload images first if any
+      List<String> imageUrls = [];
+      if (_selectedImages.isNotEmpty) {
+        setState(() => _isUploadingImages = true);
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        imageUrls = await StorageService.instance.uploadMultipleFiles(
+          path: 'household_requests/$timestamp',
+          files: _selectedImages,
+          onProgress: null,
+        );
+        setState(() => _isUploadingImages = false);
+      }
+
       final request = HouseholdRequest(
         userId: userId,
         headOfHousehold: _headCtrl.text.trim(),
@@ -196,6 +236,7 @@ class _HouseholdRequestFormScreenState
         population: int.tryParse(_popCtrl.text.trim()),
         notes: _notesCtrl.text.trim(),
         status: 'pending',
+        imageUrls: imageUrls,
       );
 
       final provider = context.read<HouseholdRequestProvider>();
@@ -663,6 +704,100 @@ class _HouseholdRequestFormScreenState
                                 filled: true,
                                 fillColor: AppColors.searchBg,
                               ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          // ── Section: Hình ảnh ──
+                          _buildSectionHeader(
+                            icon: Icons.image_rounded,
+                            title: 'Hình ảnh hộ gia đình',
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Thêm ảnh chụp nhà cửa, sổ hộ khẩu (nếu có)',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                if (_selectedImages.isNotEmpty)
+                                  SizedBox(
+                                    height: 100,
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: _selectedImages.length,
+                                      separatorBuilder: (_, __) =>
+                                          const SizedBox(width: 8),
+                                      itemBuilder: (context, index) {
+                                        return Stack(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: Image.file(
+                                                _selectedImages[index],
+                                                width: 100,
+                                                height: 100,
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                            Positioned(
+                                              top: 4,
+                                              right: 4,
+                                              child: GestureDetector(
+                                                onTap: () =>
+                                                    _removeImage(index),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(
+                                                    4,
+                                                  ),
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                        color: Colors.black54,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                  child: const Icon(
+                                                    Icons.close,
+                                                    size: 16,
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                if (_selectedImages.isNotEmpty)
+                                  const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 44,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _pickImages,
+                                    icon: const Icon(
+                                      Icons.add_photo_alternate_rounded,
+                                    ),
+                                    label: Text(
+                                      _selectedImages.isEmpty
+                                          ? 'Chọn ảnh'
+                                          : 'Thêm ảnh',
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 32),

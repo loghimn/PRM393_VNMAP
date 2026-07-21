@@ -5,6 +5,7 @@ import '../../providers/incident_provider.dart';
 import '../../models/incident_model.dart';
 import '../../utils/app_theme.dart';
 import 'incident_form_screen.dart';
+import 'incident_image_viewer.dart';
 
 class IncidentDetailScreen extends StatefulWidget {
   final int incidentId;
@@ -412,6 +413,39 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                 if (Provider.of<AuthProvider>(context, listen: false).isAdmin)
                   const SizedBox(height: 16),
 
+                // ── Địa chỉ sự việc ──
+                if (incident.incidentAddress != null &&
+                    incident.incidentAddress!.isNotEmpty) ...[
+                  _buildSection(
+                    icon: Icons.my_location_rounded,
+                    title: 'Địa chỉ sự việc',
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_rounded,
+                            size: 18,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              incident.incidentAddress!,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textPrimary,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
                 // ── Description ──
                 _buildSection(
                   icon: Icons.description_rounded,
@@ -483,6 +517,81 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
                     ),
                   ],
                 ),
+
+                // ── Images Gallery ──
+                if (incident.imageUrls.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildSection(
+                    icon: Icons.camera_alt_rounded,
+                    title: 'Hình ảnh hiện trường',
+                    children: [
+                      SizedBox(
+                        height: 120,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: incident.imageUrls.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, i) {
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => IncidentImageViewer(
+                                      imageUrls: incident.imageUrls,
+                                      initialIndex: i,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(11),
+                                  child: Image.network(
+                                    incident.imageUrls[i],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: AppColors.surfaceSubtleLight,
+                                      child: Icon(
+                                        Icons.broken_image_rounded,
+                                        color: AppColors.textMuted,
+                                      ),
+                                    ),
+                                    loadingBuilder: (_, child, progress) {
+                                      if (progress == null) return child;
+                                      return Center(
+                                        child: SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            value:
+                                                progress.expectedTotalBytes !=
+                                                    null
+                                                ? progress.cumulativeBytesLoaded /
+                                                      progress
+                                                          .expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
 
                 // ── Related Household ──
                 if (incident.householdId != null) ...[

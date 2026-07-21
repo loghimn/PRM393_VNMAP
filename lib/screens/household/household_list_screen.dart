@@ -243,14 +243,6 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Nhấn nút + để thêm hộ gia đình mới',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
                 ],
               ),
             );
@@ -282,18 +274,6 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const HouseholdFormScreen()),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        child: const Icon(Icons.add_rounded),
       ),
     );
   }

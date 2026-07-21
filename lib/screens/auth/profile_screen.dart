@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../models/user_model.dart';
@@ -26,6 +28,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _obscureOldPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
+
+  // Avatar
+  File? _avatarFile;
+  bool _isUploading = false;
+  double _uploadProgress = 0;
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -61,29 +70,121 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Theme.of(context).colorScheme.onSurfaceVariant;
   Color get _filledInputColor =>
       Theme.of(context).inputDecorationTheme.fillColor ??
-      Theme.of(context).colorScheme.surfaceVariant ??
+      Theme.of(context).colorScheme.surfaceContainerHighest ??
       _cardColor;
-  Color get _iconSecondaryColor =>
-      Theme.of(context).iconTheme.color?.withOpacity(0.7) ?? _mutedTextColor;
+
+  /// Chọn ảnh từ Gallery hoặc Camera
+  Future<void> _pickAvatar(ImageSource source) async {
+    final xFile = await _picker.pickImage(
+      source: source,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (xFile != null) {
+      setState(() {
+        _avatarFile = File(xFile.path);
+      });
+    }
+  }
+
+  /// Hiển thị bottom sheet chọn nguồn ảnh
+  void _showImagePickerOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Chọn ảnh đại diện',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Chụp ảnh'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAvatar(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Chọn từ thư viện'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAvatar(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _saveProfile() async {
+    final fullName = _fullNameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _phoneController.text.trim();
+
+    // Validate
+    if (fullName.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Vui lòng nhập họ và tên')));
+      return;
+    }
+
     setState(() => _isSaving = true);
-    // Simulate saving (in a real app, you'd call the API)
-    await Future.delayed(const Duration(milliseconds: 500));
+
+    final auth = context.read<AuthProvider>();
+    final success = await auth.updateProfile(
+      fullName: fullName.isNotEmpty ? fullName : null,
+      email: email.isNotEmpty ? email : null,
+      phone: phone.isNotEmpty ? phone : null,
+      avatarFile: _avatarFile,
+      onUploadProgress: (progress) {
+        if (mounted) {
+          setState(() {
+            _isUploading = true;
+            _uploadProgress = progress;
+          });
+        }
+      },
+    );
+
     if (!mounted) return;
     setState(() {
-      _isEditing = false;
       _isSaving = false;
+      _isUploading = false;
+      _avatarFile = null;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Cập nhật thông tin thành công')),
-    );
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cập nhật thông tin thành công')),
+      );
+      setState(() => _isEditing = false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error ?? 'Lỗi cập nhật thông tin'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 
   Future<void> _changePassword() async {
     final newPass = _newPasswordController.text;
     final confirmPass = _confirmPasswordController.text;
-    final oldPass = _oldPasswordController.text;
 
     if (newPass.length < 6) {
       setState(() {
@@ -196,6 +297,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Avatar section
                 _buildAvatarSection(user),
                 const SizedBox(height: 24),
+                // Upload progress indicator
+                if (_isUploading) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      children: [
+                        LinearProgressIndicator(value: _uploadProgress),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Đang tải ảnh lên... ${(_uploadProgress * 100).toInt()}%',
+                          style: TextStyle(
+                            color: _mutedTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Profile info card
                 _buildInfoCard(user),
                 const SizedBox(height: 16),
@@ -300,36 +421,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ? user.fullName![0].toUpperCase()
         : user.username[0].toUpperCase();
 
+    // Xác định ảnh hiển thị: ưu tiên ảnh vừa chọn, rồi URL từ server, rồi initials
+    final bool hasNewAvatar = _avatarFile != null;
+    final bool hasServerAvatar =
+        user.avatarUrl != null && user.avatarUrl!.isNotEmpty;
+
     return Column(
       children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).colorScheme.primary.withOpacity(0.9),
-                Theme.of(context).colorScheme.primaryContainer.withOpacity(0.9),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
+        GestureDetector(
+          onTap: _isEditing ? _showImagePickerOptions : null,
+          child: Stack(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _primaryColor.withValues(alpha: 0.25),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: _buildAvatarContent(
+                    hasNewAvatar,
+                    hasServerAvatar,
+                    user,
+                    initials,
+                  ),
+                ),
               ),
+              // Badge edit khi đang ở chế độ edit
+              if (_isEditing)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: _primaryColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
             ],
-          ),
-          child: Center(
-            child: Text(
-              initials,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 40,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -347,6 +496,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(color: _mutedTextColor, fontSize: 14),
         ),
       ],
+    );
+  }
+
+  Widget _buildAvatarContent(
+    bool hasNewAvatar,
+    bool hasServerAvatar,
+    UserModel user,
+    String initials,
+  ) {
+    if (hasNewAvatar) {
+      // Ảnh vừa chọn từ gallery/camera
+      return Image.file(
+        _avatarFile!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildInitialsAvatar(initials),
+      );
+    }
+
+    if (hasServerAvatar) {
+      // Ảnh từ server
+      return Image.network(
+        user.avatarUrl!,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return _buildInitialsAvatar(initials);
+        },
+        errorBuilder: (context, error, stackTrace) =>
+            _buildInitialsAvatar(initials),
+      );
+    }
+
+    // Fallback: initials
+    return _buildInitialsAvatar(initials);
+  }
+
+  Widget _buildInitialsAvatar(String initials) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _primaryColor.withValues(alpha: 0.9),
+            Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.9),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onPrimary,
+            fontSize: 40,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 
@@ -395,7 +603,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: double.infinity,
               height: 44,
               child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveProfile,
+                onPressed: (_isSaving || _isUploading) ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -448,7 +656,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Icon(
                   Icons.lock_outline,
-                  color: _mutedTextColor.withOpacity(0.9),
+                  color: _mutedTextColor.withValues(alpha: 0.9),
                   size: 20,
                 ),
                 const SizedBox(width: 12),
@@ -463,7 +671,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Spacer(),
                 Icon(
                   _showChangePassword ? Icons.expand_less : Icons.expand_more,
-                  color: _mutedTextColor.withOpacity(0.9),
+                  color: _mutedTextColor.withValues(alpha: 0.9),
                 ),
               ],
             ),
