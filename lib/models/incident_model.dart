@@ -63,6 +63,7 @@ class Incident {
   final String title;
   final String? description;
   final String? address;
+  final String? incidentAddress;
   final String? neighborhood;
   final String? ward;
   final String? district;
@@ -76,6 +77,7 @@ class Incident {
   final String? handler;
   final String? notes;
   final int? createdBy;
+  final List<String> imageUrls;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? completedDate;
@@ -86,6 +88,7 @@ class Incident {
     required this.title,
     this.description,
     this.address,
+    this.incidentAddress,
     this.neighborhood,
     this.ward,
     this.district,
@@ -99,6 +102,7 @@ class Incident {
     this.handler,
     this.notes,
     this.createdBy,
+    this.imageUrls = const [],
     this.createdAt,
     this.updatedAt,
     this.completedDate,
@@ -122,6 +126,7 @@ class Incident {
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString(),
       address: json['address']?.toString(),
+      incidentAddress: json['incident_address']?.toString(),
       neighborhood: json['neighborhood']?.toString(),
       ward: json['ward']?.toString(),
       district: json['district']?.toString(),
@@ -143,6 +148,11 @@ class Incident {
       createdBy: json['created_by'] is int
           ? json['created_by']
           : int.tryParse('${json['created_by']}'),
+      imageUrls:
+          (json['image_urls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
@@ -162,6 +172,7 @@ class Incident {
       'title': title,
       'description': description,
       'address': address,
+      'incident_address': incidentAddress,
       'neighborhood': neighborhood,
       'ward': ward,
       'district': district,
@@ -175,6 +186,7 @@ class Incident {
       'handler': handler,
       'notes': notes,
       'created_by': createdBy,
+      if (imageUrls.isNotEmpty) 'image_urls': imageUrls,
       if (completedDate != null)
         'completed_date': completedDate!.toIso8601String(),
     };

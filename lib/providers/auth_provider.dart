@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../services/database_service.dart';
+import '../services/storage_service.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 
 class AuthProvider extends ChangeNotifier {
   final DatabaseService _dbService = DatabaseService();
+  final StorageService _storageService = StorageService.instance;
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   UserModel? _currentUser;
@@ -115,6 +118,65 @@ class AuthProvider extends ChangeNotifier {
       final success = await _dbService.changePasswordFirebase(newPassword);
       return success;
     } catch (e) {
+      return false;
+    }
+  }
+
+  /// Cập nhật profile người dùng (fullName, email, phone, avatar).
+  ///
+  /// [avatarFile] nếu truyền vào sẽ upload lên Storage trước,
+  /// sau đó mới lưu URL vào Firestore.
+  Future<bool> updateProfile({
+    String? fullName,
+    String? email,
+    String? phone,
+    File? avatarFile,
+    void Function(double progress)? onUploadProgress,
+  }) async {
+    if (_currentUser == null) return false;
+
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      String? avatarUrl = _currentUser!.avatarUrl;
+
+      // Upload avatar mới nếu có
+      if (avatarFile != null && _currentUser!.uid != null) {
+        avatarUrl = await _storageService.uploadAvatar(
+          uid: _currentUser!.uid!,
+          image: avatarFile,
+          onProgress: onUploadProgress,
+        );
+      }
+
+      // Tạo user model mới với thông tin đã cập nhật
+      final updatedUser = UserModel(
+        id: _currentUser!.id,
+        uid: _currentUser!.uid,
+        username: _currentUser!.username,
+        email: email ?? _currentUser!.email,
+        fullName: fullName ?? _currentUser!.fullName,
+        phone: phone ?? _currentUser!.phone,
+        role: _currentUser!.role,
+        avatarUrl: avatarUrl,
+        isActive: _currentUser!.isActive,
+        lastLogin: _currentUser!.lastLogin,
+        createdAt: _currentUser!.createdAt,
+      );
+
+      // Lưu lên Firestore
+      await _dbService.updateUser(updatedUser);
+
+      _currentUser = updatedUser;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Lỗi cập nhật profile: ${e.toString()}';
+      _isLoading = false;
+      notifyListeners();
       return false;
     }
   }

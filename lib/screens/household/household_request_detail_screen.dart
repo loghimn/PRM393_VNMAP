@@ -124,6 +124,16 @@ class _HouseholdRequestDetailScreenState
     }
   }
 
+  void _showImagePreview(List<String> imageUrls, int initialIndex) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            _ImagePreviewScreen(images: imageUrls, initialIndex: initialIndex),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -210,6 +220,69 @@ class _HouseholdRequestDetailScreenState
                     _buildInfoRow('Tỉnh/Thành phố', _request!.city),
                   ]),
                   const SizedBox(height: 16),
+                  // Images
+                  if (_request!.imageUrls.isNotEmpty)
+                    _buildSection('Hình ảnh', [
+                      SizedBox(
+                        height: 120,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _request!.imageUrls.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: GestureDetector(
+                                onTap: () => _showImagePreview(
+                                  _request!.imageUrls,
+                                  index,
+                                ),
+                                child: Image.network(
+                                  _request!.imageUrls[index],
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 120,
+                                    height: 120,
+                                    color: Colors.grey[200],
+                                    child: Icon(
+                                      Icons.broken_image_rounded,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                  loadingBuilder: (_, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      width: 120,
+                                      height: 120,
+                                      color: Colors.grey[100],
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            value:
+                                                progress.expectedTotalBytes !=
+                                                    null
+                                                ? progress.cumulativeBytesLoaded /
+                                                      progress
+                                                          .expectedTotalBytes!
+                                                : null,
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ]),
+                  const SizedBox(height: 16),
                   // Notes
                   if (_request!.notes != null && _request!.notes!.isNotEmpty)
                     _buildSection('Ghi chú', [
@@ -240,7 +313,7 @@ class _HouseholdRequestDetailScreenState
                         ),
                       ),
                     ]),
-                  // Admin actions
+                  // Admin actions (only for pending requests)
                   if (isAdmin && isPending) ...[
                     const SizedBox(height: 24),
                     Text(
@@ -436,5 +509,85 @@ class _HouseholdRequestDetailScreenState
       default:
         return 'Không xác định';
     }
+  }
+}
+
+// Image preview screen
+class _ImagePreviewScreen extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+
+  const _ImagePreviewScreen({required this.images, required this.initialIndex});
+
+  @override
+  State<_ImagePreviewScreen> createState() => _ImagePreviewScreenState();
+}
+
+class _ImagePreviewScreenState extends State<_ImagePreviewScreen> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text('${_currentIndex + 1} / ${widget.images.length}'),
+        centerTitle: true,
+      ),
+      body: GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: PageView.builder(
+          controller: _pageController,
+          itemCount: widget.images.length,
+          onPageChanged: (index) {
+            setState(() => _currentIndex = index);
+          },
+          itemBuilder: (context, index) {
+            return InteractiveViewer(
+              maxScale: 5,
+              child: Center(
+                child: Image.network(
+                  widget.images[index],
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.broken_image_rounded,
+                    color: Colors.white54,
+                    size: 64,
+                  ),
+                  loadingBuilder: (_, child, progress) {
+                    if (progress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: progress.expectedTotalBytes != null
+                            ? progress.cumulativeBytesLoaded /
+                                  progress.expectedTotalBytes!
+                            : null,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }

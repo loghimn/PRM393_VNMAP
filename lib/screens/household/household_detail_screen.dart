@@ -406,7 +406,92 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                       ),
                     ],
                   ),
-                const SizedBox(height: 16),
+                // Documents Section
+                if (household.documentUrls.isNotEmpty) ...[
+                  _buildInfoSection(
+                    context,
+                    'Giấy tờ hộ gia đình',
+                    Icons.description_rounded,
+                    const Color(0xFF8B5CF6),
+                    isDark,
+                    [
+                      SizedBox(
+                        height: 100,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: household.documentUrls.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            final url = household.documentUrls[index];
+                            return ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: GestureDetector(
+                                onTap: () =>
+                                    _showDocumentPreview(context, url, index),
+                                child: Image.network(
+                                  url,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (_, child, loadingProgress) {
+                                    if (loadingProgress == null) {
+                                      return child;
+                                    }
+                                    return Container(
+                                      width: 100,
+                                      height: 100,
+                                      color: AppColors.border.withAlpha(40),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          value:
+                                              loadingProgress
+                                                      .expectedTotalBytes !=
+                                                  null
+                                              ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                              : null,
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 100,
+                                    height: 100,
+                                    color: AppColors.border.withAlpha(40),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.broken_image_rounded,
+                                          size: 28,
+                                          color: AppColors.error,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Lỗi tải',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.error,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Related Incidents Button
                 SizedBox(
                   width: double.infinity,
@@ -438,6 +523,81 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showDocumentPreview(BuildContext context, String url, int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          children: [
+            InteractiveViewer(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (_, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                  errorBuilder: (_, __, ___) => Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceBackground,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.broken_image_rounded,
+                          size: 64,
+                          color: AppColors.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Không thể tải ảnh',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(ctx),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

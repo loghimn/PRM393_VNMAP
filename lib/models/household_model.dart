@@ -17,6 +17,7 @@ class Household {
   final int? createdBy;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<String> documentUrls;
 
   Household({
     this.id,
@@ -37,6 +38,7 @@ class Household {
     this.createdBy,
     this.createdAt,
     this.updatedAt,
+    this.documentUrls = const [],
   });
 
   String get fullAddress {
@@ -83,6 +85,9 @@ class Household {
       createdBy: json['created_by'] is int
           ? json['created_by']
           : int.tryParse('${json['created_by']}'),
+      documentUrls: json['document_urls'] is List
+          ? (json['document_urls'] as List).map((e) => e.toString()).toList()
+          : [],
     );
   }
 
@@ -104,6 +109,7 @@ class Household {
       'longitude': longitude,
       'latitude': latitude,
       'created_by': createdBy,
+      'document_urls': documentUrls,
     };
   }
 
@@ -125,6 +131,7 @@ class Household {
       'longitude': longitude,
       'latitude': latitude,
       'created_by': createdBy,
+      'document_urls': documentUrls,
     };
   }
 }

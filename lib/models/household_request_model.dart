@@ -16,6 +16,7 @@ class HouseholdRequest {
   final String? adminNote;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final List<String> imageUrls;
 
   HouseholdRequest({
     this.id,
@@ -35,6 +36,7 @@ class HouseholdRequest {
     this.adminNote,
     this.createdAt,
     this.updatedAt,
+    this.imageUrls = const [],
   });
 
   factory HouseholdRequest.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,9 @@ class HouseholdRequest {
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
+      imageUrls: json['image_urls'] is List
+          ? (json['image_urls'] as List).map((e) => e.toString()).toList()
+          : [],
     );
   }
 
@@ -93,6 +98,7 @@ class HouseholdRequest {
       'notes': notes,
       'status': status,
       'admin_note': adminNote,
+      'image_urls': imageUrls,
     };
   }
 
@@ -113,6 +119,7 @@ class HouseholdRequest {
       'notes': notes,
       'status': status,
       'admin_note': adminNote,
+      'image_urls': imageUrls,
     };
   }
 }

@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/incident_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/incident_provider.dart';
 import '../../providers/household_provider.dart';
 import '../../services/database_service.dart';
+import '../../services/storage_service.dart';
 import '../../utils/app_theme.dart';
 
 class IncidentFormScreen extends StatefulWidget {
@@ -19,10 +22,13 @@ class IncidentFormScreen extends StatefulWidget {
 class _IncidentFormScreenState extends State<IncidentFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _db = DatabaseService();
+  final _storage = StorageService.instance;
+  final _picker = ImagePicker();
   Timer? _phoneDebounce;
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _addressController;
+  late final TextEditingController _incidentAddressController;
   late final TextEditingController _neighborhoodController;
   late final TextEditingController _wardController;
   late final TextEditingController _districtController;
@@ -38,6 +44,10 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
   List<Map<String, String>> _cities = [];
   bool _isPhoneSearching = false;
   String? _phoneSearchResult;
+  List<File> _selectedImages = [];
+  List<String> _existingImageUrls = [];
+  double _uploadProgress = 0;
+  bool _isUploading = false;
   // Keys to force rebuild Autocomplete when values change programmatically
   ValueKey<String> _cityFieldKey = const ValueKey('city_init');
   ValueKey<String> _wardFieldKey = const ValueKey('ward_init');
@@ -52,6 +62,9 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
       text: inc?.description ?? '',
     );
     _addressController = TextEditingController(text: inc?.address ?? '');
+    _incidentAddressController = TextEditingController(
+      text: inc?.incidentAddress ?? '',
+    );
     _neighborhoodController = TextEditingController(
       text: inc?.neighborhood ?? '',
     );
@@ -64,6 +77,9 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
       text: inc?.headOfHousehold ?? '',
     );
     _phoneController = TextEditingController(text: inc?.phone ?? '');
+    if (inc != null) {
+      _existingImageUrls = List.from(inc.imageUrls);
+    }
     _loadDropdownData();
 
     // When householdId is provided (from household detail), auto-load info
@@ -119,6 +135,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _addressController.dispose();
+    _incidentAddressController.dispose();
     _neighborhoodController.dispose();
     _wardController.dispose();
     _districtController.dispose();
@@ -196,16 +213,48 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
+      final auth = context.read<AuthProvider>();
       final code = _isEditing
           ? widget.incident!.incidentCode
           : await _db.generateIncidentCode();
-      final auth = context.read<AuthProvider>();
+      final userId = auth.currentUser?.id;
+
+      // ===== 1. Upload new images to Storage =====
+      List<String> allImageUrls = List.from(_existingImageUrls);
+
+      if (_selectedImages.isNotEmpty) {
+        setState(() => _isUploading = true);
+        final newUrls = await _storage.uploadIncidentImages(
+          incidentCode: code,
+          images: _selectedImages,
+          onProgress: (progress) {
+            if (mounted) {
+              setState(() => _uploadProgress = progress);
+            }
+          },
+        );
+        allImageUrls.addAll(newUrls);
+        setState(() => _isUploading = false);
+      }
+
+      // ===== 2. Xoá ảnh đã bị xoá khỏi _existingImageUrls =====
+      if (_isEditing) {
+        final removedUrls = widget.incident!.imageUrls
+            .where((url) => !_existingImageUrls.contains(url))
+            .toList();
+        if (removedUrls.isNotEmpty) {
+          await _storage.deleteFiles(removedUrls);
+        }
+      }
+
+      // ===== 3. Save Incident record =====
       final inc = Incident(
         id: widget.incident?.id,
         incidentCode: code,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         address: _addressController.text.trim(),
+        incidentAddress: _incidentAddressController.text.trim(),
         neighborhood: _neighborhoodController.text.trim(),
         ward: _wardController.text.trim(),
         district: _districtController.text.trim(),
@@ -215,11 +264,12 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
         headOfHousehold: _headOfHouseholdController.text.trim(),
         phone: _phoneController.text.trim(),
         householdId: _householdId,
-        createdBy: auth.currentUser?.id,
+        imageUrls: allImageUrls,
+        createdBy: userId,
       );
       final provider = context.read<IncidentProvider>();
       final ok = _isEditing
-          ? await provider.update(inc, updatedBy: auth.currentUser?.id)
+          ? await provider.update(inc, updatedBy: userId)
           : await provider.create(inc);
       if (mounted) {
         setState(() => _isSaving = false);
@@ -238,7 +288,10 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isSaving = false);
+        setState(() {
+          _isSaving = false;
+          _isUploading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
         );
@@ -566,6 +619,23 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
 
             const SizedBox(height: 24),
 
+            // ===== SECTION: ĐỊA CHỈ SỰ VIỆC =====
+            _buildSectionHeader(
+              icon: Icons.location_on_rounded,
+              title: 'Địa chỉ sự việc',
+              isDark: isDark,
+              subtitle: 'Nơi xảy ra sự cố (có thể khác địa chỉ nhà)',
+            ),
+            const SizedBox(height: 12),
+            _buildTextField(
+              controller: _incidentAddressController,
+              label: 'Địa chỉ sự việc',
+              icon: Icons.my_location_rounded,
+              isDark: isDark,
+            ),
+
+            const SizedBox(height: 24),
+
             // ===== SECTION: THÔNG TIN SỰ CỐ =====
             _buildSectionHeader(
               icon: Icons.info_outline_rounded,
@@ -623,6 +693,17 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
               maxLines: 3,
               isDark: isDark,
             ),
+
+            const SizedBox(height: 24),
+
+            // ===== SECTION: HÌNH ẢNH HIỆN TRƯỜNG =====
+            _buildSectionHeader(
+              icon: Icons.camera_alt_rounded,
+              title: 'Hình ảnh hiện trường',
+              isDark: isDark,
+            ),
+            const SizedBox(height: 12),
+            _buildImagePickerSection(isDark: isDark),
             const SizedBox(height: 32),
           ],
         ),
@@ -794,6 +875,262 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
       isDark: isDark,
       onChanged: onChanged,
     );
+  }
+
+  // ===================================================================
+  // IMAGE PICKER / UPLOAD
+  // ===================================================================
+
+  Widget _buildImagePickerSection({required bool isDark}) {
+    return Column(
+      children: [
+        // Existing images (from edit mode)
+        if (_existingImageUrls.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(
+                Icons.cloud_done_rounded,
+                size: 14,
+                color: AppColors.success,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${_existingImageUrls.length} ảnh đã lưu',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _existingImageUrls.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                return Stack(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Image.network(
+                          _existingImageUrls[i],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.surfaceSubtleLight,
+                            child: Icon(
+                              Icons.broken_image_rounded,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                          loadingBuilder: (_, child, progress) {
+                            if (progress == null) return child;
+                            return Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  value: progress.expectedTotalBytes != null
+                                      ? progress.cumulativeBytesLoaded /
+                                            progress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _existingImageUrls.removeAt(i);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Newly selected images (to upload)
+        if (_selectedImages.isNotEmpty) ...[
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _selectedImages.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                return Stack(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(9),
+                        child: Image.file(
+                          _selectedImages[i],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedImages.removeAt(i);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Upload progress bar
+        if (_isUploading) ...[
+          LinearProgressIndicator(
+            value: _uploadProgress > 0 ? _uploadProgress : null,
+            backgroundColor: AppColors.primary.withAlpha(20),
+            color: AppColors.primary,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(3),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _uploadProgress > 0
+                ? 'Đang upload ${(_uploadProgress * 100).toInt()}%'
+                : 'Đang xử lý...',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Add image buttons
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isUploading
+                    ? null
+                    : () => _pickImage(ImageSource.camera),
+                icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                label: const Text('Chụp ảnh'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary.withAlpha(80)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isUploading
+                    ? null
+                    : () => _pickImage(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library_rounded, size: 18),
+                label: const Text('Thư viện'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: BorderSide(color: AppColors.primary.withAlpha(80)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Chọn tối đa 10 ảnh. Dung lượng tối đa 5MB/ảnh.',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          _selectedImages.add(File(picked.path));
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi chọn ảnh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

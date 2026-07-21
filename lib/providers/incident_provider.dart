@@ -144,7 +144,11 @@ class IncidentProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateStatus(int id, IncidentStatus status, {int? updatedBy}) async {
+  Future<bool> updateStatus(
+    int id,
+    IncidentStatus status, {
+    int? updatedBy,
+  }) async {
     final current = _items.firstWhere((s) => s.id == id);
     final updated = Incident(
       id: current.id,
@@ -152,6 +156,7 @@ class IncidentProvider extends ChangeNotifier {
       title: current.title,
       description: current.description,
       address: current.address,
+      incidentAddress: current.incidentAddress,
       neighborhood: current.neighborhood,
       ward: current.ward,
       district: current.district,
@@ -165,6 +170,7 @@ class IncidentProvider extends ChangeNotifier {
       handler: current.handler,
       notes: current.notes,
       createdBy: current.createdBy,
+      imageUrls: current.imageUrls,
       createdAt: current.createdAt,
       updatedAt: current.updatedAt,
       completedDate: status == IncidentStatus.completed
@@ -182,6 +188,7 @@ class IncidentProvider extends ChangeNotifier {
       title: current.title,
       description: current.description,
       address: current.address,
+      incidentAddress: current.incidentAddress,
       neighborhood: current.neighborhood,
       ward: current.ward,
       district: current.district,
@@ -195,6 +202,7 @@ class IncidentProvider extends ChangeNotifier {
       handler: handler,
       notes: current.notes,
       createdBy: current.createdBy,
+      imageUrls: current.imageUrls,
       createdAt: current.createdAt,
       updatedAt: current.updatedAt,
       completedDate: current.completedDate,

@@ -1,10 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/household_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/household_provider.dart';
 import '../../services/database_service.dart';
+import '../../services/storage_service.dart';
 import '../../utils/app_theme.dart';
 
 class HouseholdFormScreen extends StatefulWidget {
@@ -36,6 +39,11 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
   bool get _isEditing => widget.household != null;
   List<String> _wards = [];
   List<Map<String, String>> _cities = [];
+
+  // Document upload state
+  final List<File> _selectedDocuments = [];
+  double _uploadProgress = 0;
+  bool _isUploading = false;
 
   @override
   void initState() {
@@ -118,6 +126,40 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
       final code = _isEditing
           ? widget.household!.householdCode
           : await _db.generateHouseholdCode();
+
+      // Upload documents to Storage if any
+      List<String> documentUrls = widget.household?.documentUrls ?? [];
+      if (_selectedDocuments.isNotEmpty) {
+        _isUploading = true;
+        setState(() {});
+        try {
+          documentUrls = await StorageService.instance.uploadHouseholdDocuments(
+            householdCode: code,
+            documents: _selectedDocuments,
+            onProgress: (progress) {
+              setState(() => _uploadProgress = progress);
+            },
+          );
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Lỗi upload giấy tờ: $e'),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          setState(() {
+            _isUploading = false;
+            _isSaving = false;
+          });
+          return;
+        }
+        _isUploading = false;
+        setState(() {});
+      }
+
       final h = Household(
         id: widget.household?.id,
         householdCode: code,
@@ -133,6 +175,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
         population: int.tryParse(_popCtrl.text.trim()),
         notes: _notesCtrl.text.trim(),
         createdBy: widget.household?.createdBy ?? auth.currentUser?.id,
+        documentUrls: documentUrls,
       );
 
       final provider = context.read<HouseholdProvider>();
@@ -186,6 +229,45 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
           ),
         );
       }
+    }
+  }
+
+  // ── Pick document from gallery or camera ──
+  Future<void> _pickDocument() async {
+    final source = await showDialog<ImageSource>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Chọn nguồn ảnh'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_rounded),
+              title: const Text('Chụp ảnh'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Thư viện ảnh'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      setState(() => _selectedDocuments.add(File(picked.path)));
     }
   }
 
@@ -331,9 +413,6 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -557,6 +636,135 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    // ── Section: Documents ──
+                    _buildSectionHeader(
+                      icon: Icons.description_rounded,
+                      title: 'Giấy tờ hộ gia đình',
+                      color: const Color(0xFF8B5CF6),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Pick document button
+                          OutlinedButton.icon(
+                            onPressed: _pickDocument,
+                            icon: const Icon(
+                              Icons.add_photo_alternate_rounded,
+                              size: 20,
+                            ),
+                            label: const Text('Thêm giấy tờ / ảnh'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF8B5CF6),
+                              side: const BorderSide(color: Color(0xFF8B5CF6)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          if (_selectedDocuments.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            // Preview list
+                            SizedBox(
+                              height: 80,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _selectedDocuments.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, index) {
+                                  final file = _selectedDocuments[index];
+                                  return Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.file(
+                                          file,
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              Container(
+                                                width: 80,
+                                                height: 80,
+                                                color: AppColors.border
+                                                    .withAlpha(40),
+                                                child: const Icon(
+                                                  Icons.description_rounded,
+                                                  size: 32,
+                                                ),
+                                              ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(
+                                              () => _selectedDocuments.removeAt(
+                                                index,
+                                              ),
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.black54,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.close_rounded,
+                                              size: 14,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                          // Existing documents from previous uploads
+                          if (widget.household?.documentUrls != null &&
+                              widget.household!.documentUrls.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              'Giấy tờ đã lưu (${widget.household!.documentUrls.length})',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                          // Upload progress
+                          if (_isUploading) ...[
+                            const SizedBox(height: 12),
+                            LinearProgressIndicator(
+                              value: _uploadProgress > 0
+                                  ? _uploadProgress
+                                  : null,
+                              backgroundColor: AppColors.primary.withAlpha(20),
+                              valueColor: const AlwaysStoppedAnimation(
+                                Color(0xFF8B5CF6),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Đang upload... ${(_uploadProgress * 100).toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 32),
                     // ── Save Button ──
                     SizedBox(
@@ -572,7 +780,7 @@ class _HouseholdFormScreenState extends State<HouseholdFormScreen> {
                           ),
                           elevation: 0,
                         ),
-                        child: _isSaving
+                        child: _isSaving || _isUploading
                             ? const SizedBox(
                                 width: 24,
                                 height: 24,
