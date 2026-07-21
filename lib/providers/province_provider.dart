@@ -12,15 +12,19 @@ class ProvinceProvider extends ChangeNotifier {
   ProvinceModel? focusedProvince;
 
   bool isCalculatingDensity = false;
+  bool _densitiesLoaded = false;
   List<Map<String, dynamic>> calculatedDensities = [];
 
   Future<void> calculateCommuneDensities() async {
-    if (calculatedDensities.isNotEmpty) return;
+    // Cache: chỉ fetch 1 lần trong toàn bộ phiên làm việc
+    if (_densitiesLoaded) return;
+    if (isCalculatingDensity) return;
     isCalculatingDensity = true;
     notifyListeners();
 
     try {
       calculatedDensities = await _service.fetchCalculatedDensities();
+      _densitiesLoaded = true;
     } catch (e) {
       debugPrint("Error calculating commune densities: $e");
     } finally {
@@ -38,16 +42,20 @@ class ProvinceProvider extends ChangeNotifier {
   bool isLoadingHighSchools = false;
   bool isLoadingHouseholds = false;
 
-  Future<void> loadHighSchoolsForCommune(ProvinceModel commune, {String? provinceName}) async {
+  Future<void> loadHighSchoolsForCommune(
+    ProvinceModel commune, {
+    String? provinceName,
+  }) async {
     if (commune.name.isEmpty) return;
     isLoadingHighSchools = true;
     selectedCommuneHighSchools = [];
     notifyListeners();
     // Ưu tiên parentTen của commune, fallback sang focusedProvince
-    final resolvedProvince = provinceName ??
-        commune.parentTen ??
-        focusedProvince?.name;
-    debugPrint('🏫 loadHighSchoolsForCommune: commune="${commune.name}", province="$resolvedProvince"');
+    final resolvedProvince =
+        provinceName ?? commune.parentTen ?? focusedProvince?.name;
+    debugPrint(
+      '🏫 loadHighSchoolsForCommune: commune="${commune.name}", province="$resolvedProvince"',
+    );
     try {
       selectedCommuneHighSchools = await _service.fetchHighSchoolsByCommuneName(
         commune.name,
@@ -191,7 +199,9 @@ class ProvinceProvider extends ChangeNotifier {
           );
           await focusProvince(parentProvince);
         } catch (e) {
-          debugPrint('Parent province not found in cache for commune search: $e');
+          debugPrint(
+            'Parent province not found in cache for commune search: $e',
+          );
         }
       }
       selectCommune(commune);

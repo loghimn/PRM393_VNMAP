@@ -48,7 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       vsync: this,
       initialIndex: 0,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
       if (!auth.isAdmin && _selectedView == 0) {
         setState(() {
@@ -59,11 +59,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       final provinceProvider = context.read<ProvinceProvider>();
       final weatherProvider = context.read<WeatherProvider>();
       final statsProvider = context.read<StatisticsProvider>();
-      provinceProvider.loadData().then((_) {
-        if (!mounted) return;
+
+      // Load province + stats song song, không block nhau
+      await Future.wait([provinceProvider.loadData(), statsProvider.loadAll()]);
+
+      // Sau khi có provinces, load weather (cũng đã dùng Future.wait bên trong)
+      if (mounted && provinceProvider.provinces.isNotEmpty) {
         weatherProvider.loadRegionalSummaries(provinceProvider.provinces);
-      });
-      statsProvider.loadAll();
+      }
     });
   }
 
@@ -315,8 +318,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-
-
   Widget _buildSidebarItem({
     required int index,
     required IconData icon,
@@ -413,17 +414,65 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildBottomNavigation(bool isAdmin) {
     final List<_NavItemData> items = [];
     if (isAdmin) {
-      items.add(const _NavItemData(icon: Icons.dashboard_rounded, label: 'Tổng quan', viewIndex: 0));
+      items.add(
+        const _NavItemData(
+          icon: Icons.dashboard_rounded,
+          label: 'Tổng quan',
+          viewIndex: 0,
+        ),
+      );
     }
-    items.add(const _NavItemData(icon: Icons.map_rounded, label: 'Bản đồ', viewIndex: 1));
-    items.add(const _NavItemData(icon: Icons.home_work_rounded, label: 'Hộ gia đình', viewIndex: 2));
-    items.add(const _NavItemData(icon: Icons.warning_amber_rounded, label: 'Sự vụ', viewIndex: 3));
+    items.add(
+      const _NavItemData(
+        icon: Icons.map_rounded,
+        label: 'Bản đồ',
+        viewIndex: 1,
+      ),
+    );
+    items.add(
+      const _NavItemData(
+        icon: Icons.home_work_rounded,
+        label: 'Hộ gia đình',
+        viewIndex: 2,
+      ),
+    );
+    items.add(
+      const _NavItemData(
+        icon: Icons.warning_amber_rounded,
+        label: 'Sự vụ',
+        viewIndex: 3,
+      ),
+    );
     if (isAdmin) {
-      items.add(const _NavItemData(icon: Icons.apartment_rounded, label: 'Khu phố', viewIndex: 4));
-      items.add(const _NavItemData(icon: Icons.assignment_rounded, label: 'Yêu cầu', viewIndex: 7));
+      items.add(
+        const _NavItemData(
+          icon: Icons.apartment_rounded,
+          label: 'Khu phố',
+          viewIndex: 4,
+        ),
+      );
+      items.add(
+        const _NavItemData(
+          icon: Icons.assignment_rounded,
+          label: 'Yêu cầu',
+          viewIndex: 7,
+        ),
+      );
     }
-    items.add(const _NavItemData(icon: Icons.history_edu_rounded, label: 'Di tích', viewIndex: 5));
-    items.add(const _NavItemData(icon: Icons.person_rounded, label: 'Tài khoản', viewIndex: 6));
+    items.add(
+      const _NavItemData(
+        icon: Icons.history_edu_rounded,
+        label: 'Di tích',
+        viewIndex: 5,
+      ),
+    );
+    items.add(
+      const _NavItemData(
+        icon: Icons.person_rounded,
+        label: 'Tài khoản',
+        viewIndex: 6,
+      ),
+    );
 
     final navHeight = isAdmin ? 80.0 : 72.0;
 
@@ -486,8 +535,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ? AppColors.primary
                                 : AppColors.textMuted.withValues(alpha: 0.8),
                             fontSize: 10,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                             height: 1.0,
                           ),
                           maxLines: 1,
@@ -513,7 +563,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 final double itemWidth = constraints.maxWidth / items.length;
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: items.map((item) => buildItem(item, itemWidth)).toList(),
+                  children: items
+                      .map((item) => buildItem(item, itemWidth))
+                      .toList(),
                 );
               }
             },

@@ -275,31 +275,23 @@ class FirestoreService {
   }
 
   Future<List<Map<String, dynamic>>> fetchCalculatedDensities() async {
-    final snap = await _db.collection('communes').get();
-    final Map<String, Map<String, double>> grouped = {};
-    for (final doc in snap.docs) {
-      final data = doc.data();
-      final parentName = data['parent_name']?.toString() ?? '';
-      if (parentName.isEmpty || parentName == 'nan') continue;
-      final pop = (data['population'] as num?)?.toDouble() ?? 0;
-      final area = (data['area_km2'] as num?)?.toDouble() ?? 0;
-      grouped.putIfAbsent(parentName, () => {'population': 0, 'area': 0});
-      grouped[parentName]!['population'] =
-          (grouped[parentName]!['population'] ?? 0) + pop;
-      grouped[parentName]!['area'] = (grouped[parentName]!['area'] ?? 0) + area;
-    }
-    final results = <Map<String, dynamic>>[];
-    for (final entry in grouped.entries) {
-      final pop = entry.value['population'] ?? 0;
-      final area = entry.value['area'] ?? 0;
-      results.add({
-        'name': entry.key,
-        'population': pop,
-        'area': area,
-        'density': area > 0 ? pop / area : 0,
-        'key': getProvinceKey(entry.key),
-      });
-    }
+    // 🚀 Tối ưu: lấy từ provinces (34 docs) thay vì communes (10.000+ docs)
+    // Mỗi province đã có sẵn population, area_km2, density trong Firestore
+    final provinces = await fetchProvinces();
+    final results = provinces
+        .where((p) => p.population != null || p.areaKm2 != null)
+        .map((p) {
+          final pop = (p.population ?? 0).toDouble();
+          final area = (p.areaKm2 ?? 0).toDouble();
+          return {
+            'name': p.name,
+            'population': pop,
+            'area': area,
+            'density': area > 0 ? pop / area : 0,
+            'key': getProvinceKey(p.name),
+          };
+        })
+        .toList();
     results.sort(
       (a, b) => (b['density'] as double).compareTo(a['density'] as double),
     );
@@ -961,12 +953,29 @@ class FirestoreService {
   }
 
   Future<DiaDiemLichSu> createDiaDiemLichSu(DiaDiemLichSu item) async {
-    final id = await _nextId('dia_diem_lich_su');
     final map = item.toJson();
-    map['id'] = id;
     map['created_at'] = DateTime.now().toIso8601String();
     map['updated_at'] = DateTime.now().toIso8601String();
-    await _setWithId('dia_diem_lich_su', id, map);
+
+    // 🐛 Fix bug "lưu được 2 cái, cái thứ 3 mất cái đầu":
+    // Gộp counter increment + tạo document trong 1 transaction atomic
+    // để tránh race condition: counter cho ID=1 nhưng doc/1 đã tồn tại
+    // (do double-tap, retry, hoặc đồng bộ nhiều thiết bị)
+    final id = await _db.runTransaction((transaction) async {
+      final counterRef = _db.collection('counters').doc('dia_diem_lich_su');
+      final counterDoc = await transaction.get(counterRef);
+      final currentId = (!counterDoc.exists
+          ? 0
+          : (counterDoc.data()?['current_id'] as num?)?.toInt() ?? 0);
+      final nextId = currentId + 1;
+      transaction.set(counterRef, {'current_id': nextId});
+
+      final docRef = _db.collection('dia_diem_lich_su').doc(nextId.toString());
+      map['id'] = nextId;
+      transaction.set(docRef, map);
+      return nextId;
+    });
+
     return DiaDiemLichSu.fromJson(map);
   }
 

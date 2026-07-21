@@ -14,6 +14,7 @@ class PopulationDensityChart extends StatefulWidget {
 
 class _PopulationDensityChartState extends State<PopulationDensityChart> {
   String _selectedMetric = 'density'; // 'density', 'area', 'population'
+  double _displayLimit = 34; // slider value: 1-34
 
   @override
   void initState() {
@@ -28,6 +29,8 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
   void dispose() {
     super.dispose();
   }
+
+  int get _displayCount => _displayLimit.round();
 
   void _onMetricSelected(String metric) {
     setState(() {
@@ -166,6 +169,8 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
       );
     }
 
+    // Chỉ lấy top N theo slider
+    final displayList = sortedList.take(_displayCount).toList();
     final highestProvince = sortedList.first;
     final lowestProvince = sortedList.last;
 
@@ -297,6 +302,72 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
                 );
               },
             ),
+            const SizedBox(height: 8),
+
+            // ── Slider: chọn số lượng tỉnh hiển thị ──
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.format_list_numbered,
+                    size: 16,
+                    color: AppColors.textMuted,
+                  ),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderThemeData(
+                        trackHeight: 4,
+                        activeTrackColor: AppColors.primary,
+                        inactiveTrackColor: AppColors.border.withValues(
+                          alpha: 0.3,
+                        ),
+                        thumbColor: AppColors.primary,
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 10,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 20,
+                        ),
+                        valueIndicatorColor: AppColors.primary,
+                        valueIndicatorTextStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      child: Slider(
+                        min: 1,
+                        max: 34,
+                        divisions: 33,
+                        value: _displayLimit,
+                        label: '$_displayCount tỉnh',
+                        onChanged: (val) => setState(() => _displayLimit = val),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 44,
+                    child: Text(
+                      '$_displayCount tỉnh',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
 
             // ── Ranking Card (Non-scrollable) ──
@@ -313,10 +384,10 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
               child: ListView.builder(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
-                itemCount: sortedList.length,
+                itemCount: displayList.length,
                 padding: EdgeInsets.zero,
                 itemBuilder: (context, index) {
-                  final data = sortedList[index];
+                  final data = displayList[index];
                   final name = data['name'] as String;
 
                   double metricValue;
@@ -339,7 +410,7 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
 
                   // Color based on rank
                   final isTop3 = index < 3;
-                  final isBottom3 = index >= sortedList.length - 3;
+                  final isBottom3 = index >= displayList.length - 3;
                   final Color barColor = isTop3
                       ? AppColors.primary
                       : isBottom3
@@ -349,7 +420,7 @@ class _PopulationDensityChartState extends State<PopulationDensityChart> {
                   return Padding(
                     padding: EdgeInsets.only(
                       top: 12,
-                      bottom: index == sortedList.length - 1 ? 0 : 12,
+                      bottom: index == displayList.length - 1 ? 0 : 12,
                     ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {

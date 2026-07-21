@@ -101,23 +101,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildMobileRegister() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildLogo(),
-        const SizedBox(height: 32),
-        Card(
-          elevation: 12,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          color: const Color(0xFF1E293B),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: _buildRegisterForm(),
-          ),
-        ),
-      ],
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      color: const Color(0xFF1E293B),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: _buildRegisterForm(),
+      ),
     );
   }
 
