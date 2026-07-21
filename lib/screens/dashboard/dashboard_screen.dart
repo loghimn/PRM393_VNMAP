@@ -10,7 +10,10 @@ import 'package:vietnam_geo_dashboard/utils/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../providers/province_provider.dart';
+import '../../providers/notification_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
+import 'package:vietnam_geo_dashboard/widgets/notification/notification_bell.dart';
+import 'package:vietnam_geo_dashboard/widgets/notification/notification_panel.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/population_density_chart.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_comparison.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/overview_statistics_tab.dart';
@@ -54,6 +57,11 @@ class _DashboardScreenState extends State<DashboardScreen>
         setState(() {
           _selectedView = 1;
         });
+      }
+
+      // Initialize notification provider with current user ID
+      if (auth.currentUser?.id != null) {
+        context.read<NotificationProvider>().initialize(auth.currentUser!.id!);
       }
 
       final provinceProvider = context.read<ProvinceProvider>();
@@ -466,6 +474,14 @@ class _DashboardScreenState extends State<DashboardScreen>
         viewIndex: 5,
       ),
     );
+    // Notification item cho tất cả user (không dùng viewIndex thường, dùng -1 để xử lý đặc biệt)
+    items.add(
+      const _NavItemData(
+        icon: Icons.notifications_outlined,
+        label: 'Thông báo',
+        viewIndex: -1,
+      ),
+    );
     items.add(
       const _NavItemData(
         icon: Icons.person_rounded,
@@ -493,15 +509,73 @@ class _DashboardScreenState extends State<DashboardScreen>
               final double totalMinWidth = items.length * minItemWidth;
               final bool shouldScroll = constraints.maxWidth < totalMinWidth;
 
+              Widget _buildNotificationBadgeIcon() {
+                return Consumer<NotificationProvider>(
+                  builder: (context, provider, child) {
+                    final unreadCount = provider.unreadCount;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.notifications_outlined,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        if (unreadCount > 0)
+                          Positioned(
+                            right: -6,
+                            top: -6,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                unreadCount > 99
+                                    ? '99+'
+                                    : unreadCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              }
+
               Widget buildItem(_NavItemData item, double width) {
-                final isSelected = _selectedView == item.viewIndex;
+                // Notification item (viewIndex == -1) xử lý đặc biệt
+                final bool isNotification = item.viewIndex == -1;
+                final bool isSelected =
+                    !isNotification && _selectedView == item.viewIndex;
                 return SizedBox(
                   width: width,
                   child: InkWell(
                     onTap: () {
-                      setState(() {
-                        _selectedView = item.viewIndex;
-                      });
+                      if (isNotification) {
+                        // Mở bottom sheet notification
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const NotificationPanel(),
+                        );
+                      } else {
+                        setState(() {
+                          _selectedView = item.viewIndex;
+                        });
+                      }
                     },
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
@@ -519,13 +593,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                             horizontal: 16,
                             vertical: 4,
                           ),
-                          child: Icon(
-                            item.icon,
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                            size: isSelected ? 22 : 20,
-                          ),
+                          child: isNotification
+                              ? _buildNotificationBadgeIcon()
+                              : Icon(
+                                  item.icon,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                  size: isSelected ? 22 : 20,
+                                ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -717,6 +793,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // Notification bell
+                  const NotificationBell(),
                   const SizedBox(width: 8),
                   // Quick stats toggle dropdown
                   GestureDetector(

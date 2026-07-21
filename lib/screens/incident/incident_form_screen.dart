@@ -219,7 +219,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
       );
       final provider = context.read<IncidentProvider>();
       final ok = _isEditing
-          ? await provider.update(inc)
+          ? await provider.update(inc, updatedBy: auth.currentUser?.id)
           : await provider.create(inc);
       if (mounted) {
         setState(() => _isSaving = false);

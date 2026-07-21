@@ -96,9 +96,11 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
     );
 
     if (newStatus != null) {
+      final auth = context.read<AuthProvider>();
       final success = await context.read<IncidentProvider>().updateStatus(
         widget.incidentId,
         newStatus,
+        updatedBy: auth.currentUser?.id,
       );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -712,7 +714,11 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       ),
     );
     if (confirmed == true && provider.selected?.id != null) {
-      final success = await provider.delete(provider.selected!.id!);
+      final auth = context.read<AuthProvider>();
+      final success = await provider.delete(
+        provider.selected!.id!,
+        deletedBy: auth.currentUser?.id,
+      );
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

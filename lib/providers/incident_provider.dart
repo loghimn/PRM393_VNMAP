@@ -126,13 +126,13 @@ class IncidentProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> update(Incident incident) async {
+  Future<bool> update(Incident incident, {int? updatedBy}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _db.updateIncident(incident);
+      await _db.updateIncident(incident, updatedBy: updatedBy);
       _selected = incident;
       await loadItems(createdBy: _createdByFilter);
       return true;
@@ -144,7 +144,7 @@ class IncidentProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateStatus(int id, IncidentStatus status) async {
+  Future<bool> updateStatus(int id, IncidentStatus status, {int? updatedBy}) async {
     final current = _items.firstWhere((s) => s.id == id);
     final updated = Incident(
       id: current.id,
@@ -171,10 +171,10 @@ class IncidentProvider extends ChangeNotifier {
           ? DateTime.now()
           : current.completedDate,
     );
-    return update(updated);
+    return update(updated, updatedBy: updatedBy);
   }
 
-  Future<bool> assignHandler(int id, String handler) async {
+  Future<bool> assignHandler(int id, String handler, {int? updatedBy}) async {
     final current = _items.firstWhere((s) => s.id == id);
     final updated = Incident(
       id: current.id,
@@ -199,16 +199,16 @@ class IncidentProvider extends ChangeNotifier {
       updatedAt: current.updatedAt,
       completedDate: current.completedDate,
     );
-    return update(updated);
+    return update(updated, updatedBy: updatedBy);
   }
 
-  Future<bool> delete(int id) async {
+  Future<bool> delete(int id, {int? deletedBy}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _db.deleteIncident(id);
+      await _db.deleteIncident(id, deletedBy: deletedBy);
       if (_selected?.id == id) _selected = null;
       await loadItems(createdBy: _createdByFilter);
       return true;

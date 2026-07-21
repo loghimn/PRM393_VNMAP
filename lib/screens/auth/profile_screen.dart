@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/notification_provider.dart';
 import '../../models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -230,6 +231,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                       if (confirm == true) {
+                        // Xóa dữ liệu thông báo trước khi đăng xuất
+                        // để tránh lộ thông báo của tài khoản này sang tài khoản khác
+                        context.read<NotificationProvider>().disposeListener();
                         await auth.logout();
                         if (context.mounted) {
                           Navigator.of(context).pushReplacementNamed('/login');
