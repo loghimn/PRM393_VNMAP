@@ -10,7 +10,10 @@ import 'package:vietnam_geo_dashboard/utils/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../providers/province_provider.dart';
+import '../../providers/notification_provider.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_detail_panel.dart';
+import 'package:vietnam_geo_dashboard/widgets/notification/notification_bell.dart';
+import 'package:vietnam_geo_dashboard/widgets/notification/notification_panel.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/population_density_chart.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/province_comparison.dart';
 import 'package:vietnam_geo_dashboard/widgets/analytics/overview_statistics_tab.dart';
@@ -48,7 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       vsync: this,
       initialIndex: 0,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final auth = context.read<AuthProvider>();
       if (!auth.isAdmin && _selectedView == 0) {
         setState(() {
@@ -56,14 +59,22 @@ class _DashboardScreenState extends State<DashboardScreen>
         });
       }
 
+      // Initialize notification provider with current user ID
+      if (auth.currentUser?.id != null) {
+        context.read<NotificationProvider>().initialize(auth.currentUser!.id!);
+      }
+
       final provinceProvider = context.read<ProvinceProvider>();
       final weatherProvider = context.read<WeatherProvider>();
       final statsProvider = context.read<StatisticsProvider>();
-      provinceProvider.loadData().then((_) {
-        if (!mounted) return;
+
+      // Load province + stats song song, không block nhau
+      await Future.wait([provinceProvider.loadData(), statsProvider.loadAll()]);
+
+      // Sau khi có provinces, load weather (cũng đã dùng Future.wait bên trong)
+      if (mounted && provinceProvider.provinces.isNotEmpty) {
         weatherProvider.loadRegionalSummaries(provinceProvider.provinces);
-      });
-      statsProvider.loadAll();
+      }
     });
   }
 
@@ -315,8 +326,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-
-
   Widget _buildSidebarItem({
     required int index,
     required IconData icon,
@@ -413,17 +422,73 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildBottomNavigation(bool isAdmin) {
     final List<_NavItemData> items = [];
     if (isAdmin) {
-      items.add(const _NavItemData(icon: Icons.dashboard_rounded, label: 'Tổng quan', viewIndex: 0));
+      items.add(
+        const _NavItemData(
+          icon: Icons.dashboard_rounded,
+          label: 'Tổng quan',
+          viewIndex: 0,
+        ),
+      );
     }
-    items.add(const _NavItemData(icon: Icons.map_rounded, label: 'Bản đồ', viewIndex: 1));
-    items.add(const _NavItemData(icon: Icons.home_work_rounded, label: 'Hộ gia đình', viewIndex: 2));
-    items.add(const _NavItemData(icon: Icons.warning_amber_rounded, label: 'Sự vụ', viewIndex: 3));
+    items.add(
+      const _NavItemData(
+        icon: Icons.map_rounded,
+        label: 'Bản đồ',
+        viewIndex: 1,
+      ),
+    );
+    items.add(
+      const _NavItemData(
+        icon: Icons.home_work_rounded,
+        label: 'Hộ gia đình',
+        viewIndex: 2,
+      ),
+    );
+    items.add(
+      const _NavItemData(
+        icon: Icons.warning_amber_rounded,
+        label: 'Sự vụ',
+        viewIndex: 3,
+      ),
+    );
     if (isAdmin) {
-      items.add(const _NavItemData(icon: Icons.apartment_rounded, label: 'Khu phố', viewIndex: 4));
-      items.add(const _NavItemData(icon: Icons.assignment_rounded, label: 'Yêu cầu', viewIndex: 7));
+      items.add(
+        const _NavItemData(
+          icon: Icons.apartment_rounded,
+          label: 'Khu phố',
+          viewIndex: 4,
+        ),
+      );
+      items.add(
+        const _NavItemData(
+          icon: Icons.assignment_rounded,
+          label: 'Yêu cầu',
+          viewIndex: 7,
+        ),
+      );
     }
-    items.add(const _NavItemData(icon: Icons.history_edu_rounded, label: 'Di tích', viewIndex: 5));
-    items.add(const _NavItemData(icon: Icons.person_rounded, label: 'Tài khoản', viewIndex: 6));
+    items.add(
+      const _NavItemData(
+        icon: Icons.history_edu_rounded,
+        label: 'Di tích',
+        viewIndex: 5,
+      ),
+    );
+    // Notification item cho tất cả user (không dùng viewIndex thường, dùng -1 để xử lý đặc biệt)
+    items.add(
+      const _NavItemData(
+        icon: Icons.notifications_outlined,
+        label: 'Thông báo',
+        viewIndex: -1,
+      ),
+    );
+    items.add(
+      const _NavItemData(
+        icon: Icons.person_rounded,
+        label: 'Tài khoản',
+        viewIndex: 6,
+      ),
+    );
 
     final navHeight = isAdmin ? 80.0 : 72.0;
 
@@ -444,15 +509,73 @@ class _DashboardScreenState extends State<DashboardScreen>
               final double totalMinWidth = items.length * minItemWidth;
               final bool shouldScroll = constraints.maxWidth < totalMinWidth;
 
+              Widget _buildNotificationBadgeIcon() {
+                return Consumer<NotificationProvider>(
+                  builder: (context, provider, child) {
+                    final unreadCount = provider.unreadCount;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.notifications_outlined,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        if (unreadCount > 0)
+                          Positioned(
+                            right: -6,
+                            top: -6,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                unreadCount > 99
+                                    ? '99+'
+                                    : unreadCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              }
+
               Widget buildItem(_NavItemData item, double width) {
-                final isSelected = _selectedView == item.viewIndex;
+                // Notification item (viewIndex == -1) xử lý đặc biệt
+                final bool isNotification = item.viewIndex == -1;
+                final bool isSelected =
+                    !isNotification && _selectedView == item.viewIndex;
                 return SizedBox(
                   width: width,
                   child: InkWell(
                     onTap: () {
-                      setState(() {
-                        _selectedView = item.viewIndex;
-                      });
+                      if (isNotification) {
+                        // Mở bottom sheet notification
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const NotificationPanel(),
+                        );
+                      } else {
+                        setState(() {
+                          _selectedView = item.viewIndex;
+                        });
+                      }
                     },
                     splashColor: Colors.transparent,
                     highlightColor: Colors.transparent,
@@ -470,13 +593,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                             horizontal: 16,
                             vertical: 4,
                           ),
-                          child: Icon(
-                            item.icon,
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                            size: isSelected ? 22 : 20,
-                          ),
+                          child: isNotification
+                              ? _buildNotificationBadgeIcon()
+                              : Icon(
+                                  item.icon,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                  size: isSelected ? 22 : 20,
+                                ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -486,8 +611,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ? AppColors.primary
                                 : AppColors.textMuted.withValues(alpha: 0.8),
                             fontSize: 10,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w500,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                             height: 1.0,
                           ),
                           maxLines: 1,
@@ -513,7 +639,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                 final double itemWidth = constraints.maxWidth / items.length;
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: items.map((item) => buildItem(item, itemWidth)).toList(),
+                  children: items
+                      .map((item) => buildItem(item, itemWidth))
+                      .toList(),
                 );
               }
             },
@@ -665,6 +793,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // Notification bell
+                  const NotificationBell(),
                   const SizedBox(width: 8),
                   // Quick stats toggle dropdown
                   GestureDetector(

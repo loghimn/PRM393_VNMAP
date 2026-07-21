@@ -163,9 +163,15 @@ class FirestoreService {
   // ===================================================================
 
   Future<UserModel?> getUserById(int id) async {
-    final doc = await _db.collection('users').doc(id.toString()).get();
-    if (!doc.exists) return null;
-    return UserModel.fromJson(doc.data() as Map<String, dynamic>);
+    // Document ID trong collection 'users' là Firebase uid (không phải id số nguyên)
+    // Nên phải query theo trường 'id'
+    final snap = await _db
+        .collection('users')
+        .where('id', isEqualTo: id)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return UserModel.fromJson(snap.docs.first.data() as Map<String, dynamic>);
   }
 
   Future<UserModel?> getUserByUsername(String username) async {
@@ -181,7 +187,20 @@ class FirestoreService {
   Future<UserModel> updateUser(UserModel user) async {
     final data = user.toJson();
     data['updated_at'] = DateTime.now().toIso8601String();
-    await _db.collection('users').doc(user.id.toString()).update(data);
+    // Nếu có uid, dùng uid làm document ID (cách chuẩn)
+    if (user.uid != null && user.uid!.isNotEmpty) {
+      await _db.collection('users').doc(user.uid).update(data);
+    } else {
+      // Fallback: tìm theo trường 'id'
+      final snap = await _db
+          .collection('users')
+          .where('id', isEqualTo: user.id)
+          .limit(1)
+          .get();
+      if (snap.docs.isNotEmpty) {
+        await snap.docs.first.reference.update(data);
+      }
+    }
     return user;
   }
 
@@ -275,31 +294,23 @@ class FirestoreService {
   }
 
   Future<List<Map<String, dynamic>>> fetchCalculatedDensities() async {
-    final snap = await _db.collection('communes').get();
-    final Map<String, Map<String, double>> grouped = {};
-    for (final doc in snap.docs) {
-      final data = doc.data();
-      final parentName = data['parent_name']?.toString() ?? '';
-      if (parentName.isEmpty || parentName == 'nan') continue;
-      final pop = (data['population'] as num?)?.toDouble() ?? 0;
-      final area = (data['area_km2'] as num?)?.toDouble() ?? 0;
-      grouped.putIfAbsent(parentName, () => {'population': 0, 'area': 0});
-      grouped[parentName]!['population'] =
-          (grouped[parentName]!['population'] ?? 0) + pop;
-      grouped[parentName]!['area'] = (grouped[parentName]!['area'] ?? 0) + area;
-    }
-    final results = <Map<String, dynamic>>[];
-    for (final entry in grouped.entries) {
-      final pop = entry.value['population'] ?? 0;
-      final area = entry.value['area'] ?? 0;
-      results.add({
-        'name': entry.key,
-        'population': pop,
-        'area': area,
-        'density': area > 0 ? pop / area : 0,
-        'key': getProvinceKey(entry.key),
-      });
-    }
+    // 🚀 Tối ưu: lấy từ provinces (34 docs) thay vì communes (10.000+ docs)
+    // Mỗi province đã có sẵn population, area_km2, density trong Firestore
+    final provinces = await fetchProvinces();
+    final results = provinces
+        .where((p) => p.population != null || p.areaKm2 != null)
+        .map((p) {
+          final pop = (p.population ?? 0).toDouble();
+          final area = (p.areaKm2 ?? 0).toDouble();
+          return {
+            'name': p.name,
+            'population': pop,
+            'area': area,
+            'density': area > 0 ? pop / area : 0,
+            'key': getProvinceKey(p.name),
+          };
+        })
+        .toList();
     results.sort(
       (a, b) => (b['density'] as double).compareTo(a['density'] as double),
     );
@@ -887,15 +898,51 @@ class FirestoreService {
     final id = await _nextId('incidents');
     final map = incident.toDbMap();
     map['id'] = id;
-    map['incident_code'] =
-        incident.incidentCode ?? await generateIncidentCode();
+    final code = incident.incidentCode ?? await generateIncidentCode();
+    map['incident_code'] = code;
     map['created_at'] = DateTime.now().toIso8601String();
     map['updated_at'] = DateTime.now().toIso8601String();
     await _setWithId('incidents', id, map);
-    return Incident.fromJson(map);
+    final result = Incident.fromJson(map);
+
+    // 🔔 Notify all admins: incident_created
+    final adminIds = await _getAdminUserIds();
+    final createdBy = result.createdBy;
+    for (final adminId in adminIds) {
+      // Don't notify the creator if they are an admin themselves
+      if (adminId == createdBy) continue;
+      await _addNotification(
+        type: 'incident_created',
+        title: 'Sự vụ mới: $code',
+        body: 'Sự vụ "${result.title}" vừa được tạo bởi user #$createdBy',
+        targetUserId: adminId,
+        actorUserId: createdBy,
+        relatedId: id,
+        relatedCode: code,
+      );
+    }
+
+    return result;
   }
 
-  Future<Incident> updateIncident(Incident incident) async {
+  Future<Incident> updateIncident(Incident incident, {int? updatedBy}) async {
+    // Fetch old incident data to compare changes
+    final oldDoc = await _db
+        .collection('incidents')
+        .doc(incident.id.toString())
+        .get();
+
+    final oldData = oldDoc.data();
+    final oldStatus = oldData?['status']?.toString() ?? '';
+    final oldCreatedByRaw = oldData?['created_by'];
+    final int? oldCreatedBy;
+    if (oldCreatedByRaw is int) {
+      oldCreatedBy = oldCreatedByRaw;
+    } else {
+      oldCreatedBy = int.tryParse('${oldCreatedByRaw}');
+    }
+    final oldCode = oldData?['incident_code']?.toString() ?? '';
+
     final map = Map<String, dynamic>.from(incident.toDbMap());
     map.remove('id');
     map.remove('incident_code');
@@ -903,11 +950,65 @@ class FirestoreService {
     map.remove('created_at');
     map['updated_at'] = DateTime.now().toIso8601String();
     await _db.collection('incidents').doc(incident.id.toString()).update(map);
+
+    final newStatus = incident.status.dbValue;
+
+    // 🔔 Luồng thông báo cập nhật sự vụ:
+    // - Trạng thái thay đổi (admin cập nhật status) → thông báo tới người tạo sự vụ
+    // - Thông tin khác thay đổi (user tự cập nhật) → thông báo tới chính người cập nhật
+    if (oldStatus != newStatus) {
+      // Admin thay đổi status → người tạo sự vụ nhận thông báo
+      if (oldCreatedBy != null) {
+        await _addNotification(
+          type: 'incident_status_changed',
+          title: 'Sự vụ #$oldCode: $newStatus',
+          body:
+              'Sự vụ "${incident.title}" đã chuyển sang trạng thái "$newStatus"',
+          targetUserId: oldCreatedBy,
+          actorUserId: updatedBy,
+          relatedId: incident.id,
+          relatedCode: oldCode,
+        );
+      }
+    } else {
+      // User cập nhật thông tin khác → chính người cập nhật nhận thông báo
+      if (updatedBy != null) {
+        await _addNotification(
+          type: 'incident_updated',
+          title: 'Sự vụ #$oldCode đã được cập nhật',
+          body: 'Sự vụ "${incident.title}" vừa được chỉnh sửa',
+          targetUserId: updatedBy,
+          actorUserId: updatedBy,
+          relatedId: incident.id,
+          relatedCode: oldCode,
+        );
+      }
+    }
+
     return incident;
   }
 
-  Future<void> deleteIncident(int id) async {
+  Future<void> deleteIncident(int id, {int? deletedBy}) async {
+    // Fetch old incident data before deleting
+    final oldDoc = await _db.collection('incidents').doc(id.toString()).get();
+    final oldData = oldDoc.data();
+    final oldCode = oldData?['incident_code']?.toString() ?? '';
+    final oldTitle = oldData?['title']?.toString() ?? '';
+
     await _db.collection('incidents').doc(id.toString()).delete();
+
+    // 🔔 Luồng xóa sự vụ: chỉ thông báo tới chính người thực hiện xóa
+    if (deletedBy != null) {
+      await _addNotification(
+        type: 'incident_deleted',
+        title: 'Sự vụ #$oldCode đã bị xoá',
+        body: 'Sự vụ "$oldTitle" (mã $oldCode) đã bị xoá khỏi hệ thống',
+        targetUserId: deletedBy,
+        actorUserId: deletedBy,
+        relatedId: id,
+        relatedCode: oldCode,
+      );
+    }
   }
 
   Future<int> countIncidents({
@@ -961,12 +1062,29 @@ class FirestoreService {
   }
 
   Future<DiaDiemLichSu> createDiaDiemLichSu(DiaDiemLichSu item) async {
-    final id = await _nextId('dia_diem_lich_su');
     final map = item.toJson();
-    map['id'] = id;
     map['created_at'] = DateTime.now().toIso8601String();
     map['updated_at'] = DateTime.now().toIso8601String();
-    await _setWithId('dia_diem_lich_su', id, map);
+
+    // 🐛 Fix bug "lưu được 2 cái, cái thứ 3 mất cái đầu":
+    // Gộp counter increment + tạo document trong 1 transaction atomic
+    // để tránh race condition: counter cho ID=1 nhưng doc/1 đã tồn tại
+    // (do double-tap, retry, hoặc đồng bộ nhiều thiết bị)
+    final id = await _db.runTransaction((transaction) async {
+      final counterRef = _db.collection('counters').doc('dia_diem_lich_su');
+      final counterDoc = await transaction.get(counterRef);
+      final currentId = (!counterDoc.exists
+          ? 0
+          : (counterDoc.data()?['current_id'] as num?)?.toInt() ?? 0);
+      final nextId = currentId + 1;
+      transaction.set(counterRef, {'current_id': nextId});
+
+      final docRef = _db.collection('dia_diem_lich_su').doc(nextId.toString());
+      map['id'] = nextId;
+      transaction.set(docRef, map);
+      return nextId;
+    });
+
     return DiaDiemLichSu.fromJson(map);
   }
 
@@ -1217,7 +1335,24 @@ class FirestoreService {
     map['created_at'] = DateTime.now().toIso8601String();
     map['updated_at'] = DateTime.now().toIso8601String();
     await _setWithId('household_requests', id, map);
-    return HouseholdRequest.fromJson(map);
+    final result = HouseholdRequest.fromJson(map);
+
+    // 🔔 Notify all admins: request_created
+    final adminIds = await _getAdminUserIds();
+    for (final adminId in adminIds) {
+      if (adminId == result.userId) continue;
+      await _addNotification(
+        type: 'request_created',
+        title: 'Yêu cầu xác nhận hộ khẩu mới',
+        body: 'Yêu cầu hộ khẩu mới từ user #${result.userId}',
+        targetUserId: adminId,
+        actorUserId: result.userId,
+        relatedId: id,
+        relatedCode: 'HR-$id',
+      );
+    }
+
+    return result;
   }
 
   Future<List<HouseholdRequest>> fetchHouseholdRequests({
@@ -1267,6 +1402,20 @@ class FirestoreService {
     int? approvedBy,
     String? adminNote,
   }) async {
+    // Fetch old request data before updating
+    final oldDoc = await _db
+        .collection('household_requests')
+        .doc(id.toString())
+        .get();
+    final oldData = oldDoc.data();
+    final userIdRaw = oldData?['user_id'];
+    final int? userId;
+    if (userIdRaw is int) {
+      userId = userIdRaw;
+    } else {
+      userId = int.tryParse('${userIdRaw}');
+    }
+
     final data = <String, dynamic>{
       'status': status,
       'admin_note': adminNote,
@@ -1274,7 +1423,28 @@ class FirestoreService {
     };
     if (approvedBy != null) data['approved_by'] = approvedBy;
     await _db.collection('household_requests').doc(id.toString()).update(data);
-    return (await fetchHouseholdRequestById(id))!;
+    final updated = (await fetchHouseholdRequestById(id))!;
+
+    // 🔔 Notify the requester about the status change
+    if (userId != null) {
+      final title = status == 'approved'
+          ? 'Yêu cầu xác nhận hộ khẩu đã được duyệt'
+          : 'Yêu cầu xác nhận hộ khẩu đã bị từ chối';
+      final body = status == 'approved'
+          ? 'Yêu cầu hộ khẩu của bạn đã được phê duyệt thành công'
+          : 'Yêu cầu hộ khẩu của bạn đã bị từ chối${adminNote != null ? '. Lý do: $adminNote' : ''}';
+      await _addNotification(
+        type: 'household_request_$status',
+        title: title,
+        body: body,
+        targetUserId: userId,
+        actorUserId: approvedBy,
+        relatedId: id,
+        relatedCode: 'HR-$id',
+      );
+    }
+
+    return updated;
   }
 
   // ===================================================================
@@ -1378,6 +1548,82 @@ class FirestoreService {
     str = str.replaceAll(RegExp(r'\s+'), '_');
     str = str.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
     return str;
+  }
+
+  // ===================================================================
+  // NOTIFICATION METHODS
+  // ===================================================================
+
+  /// Internal helper: create a notification document in Firestore
+  Future<void> _addNotification({
+    required String type,
+    required String title,
+    required String body,
+    int? targetUserId,
+    int? actorUserId,
+    int? relatedId,
+    String? relatedCode,
+  }) async {
+    try {
+      final id = await _nextId('notifications');
+      await _setWithId('notifications', id, {
+        'id': id,
+        'type': type,
+        'title': title,
+        'body': body,
+        'is_read': false,
+        'target_user_id': targetUserId,
+        'actor_user_id': actorUserId,
+        'related_id': relatedId,
+        'related_code': relatedCode,
+        'created_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('FirestoreService._addNotification error: $e');
+    }
+  }
+
+  /// Public method: add a notification (can be called from anywhere)
+  Future<void> addNotification({
+    required String type,
+    required String title,
+    required String body,
+    int? targetUserId,
+    int? actorUserId,
+    int? relatedId,
+    String? relatedCode,
+  }) {
+    return _addNotification(
+      type: type,
+      title: title,
+      body: body,
+      targetUserId: targetUserId,
+      actorUserId: actorUserId,
+      relatedId: relatedId,
+      relatedCode: relatedCode,
+    );
+  }
+
+  /// Public getter for admin user IDs
+  Future<List<int>> fetchAdminUserIds() => _getAdminUserIds();
+
+  /// Get all admin user IDs for broadcasting notifications
+  Future<List<int>> _getAdminUserIds() async {
+    final snap = await _db
+        .collection('users')
+        .where('role', isEqualTo: 'admin')
+        .get();
+    return snap.docs
+        .map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['id'] is int
+              ? data['id'] as int
+              : int.tryParse('${data['id']}');
+        })
+        .where((id) => id != null)
+        .cast<int>()
+        .toList();
   }
 }
 

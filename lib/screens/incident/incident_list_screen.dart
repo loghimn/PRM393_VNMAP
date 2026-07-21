@@ -113,7 +113,11 @@ class _IncidentListScreenState extends State<IncidentListScreen> {
       ),
     );
     if (confirmed == true && incident.id != null) {
-      await context.read<IncidentProvider>().delete(incident.id!);
+      final auth = context.read<AuthProvider>();
+      await context.read<IncidentProvider>().delete(
+        incident.id!,
+        deletedBy: auth.currentUser?.id,
+      );
     }
   }
 

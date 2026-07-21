@@ -190,10 +190,11 @@ class DatabaseService {
   Future<Incident> createIncident(Incident incident) =>
       _firestore.createIncident(incident);
 
-  Future<Incident> updateIncident(Incident incident) =>
-      _firestore.updateIncident(incident);
+  Future<Incident> updateIncident(Incident incident, {int? updatedBy}) =>
+      _firestore.updateIncident(incident, updatedBy: updatedBy);
 
-  Future<void> deleteIncident(int id) => _firestore.deleteIncident(id);
+  Future<void> deleteIncident(int id, {int? deletedBy}) =>
+      _firestore.deleteIncident(id, deletedBy: deletedBy);
 
   Future<int> countIncidents({
     String? searchQuery,
@@ -282,6 +283,30 @@ class DatabaseService {
 
   Future<List<DaiDienModel>> searchDaiDiens(String query) =>
       _firestore.searchDaiDiens(query);
+
+  // ===================================================================
+  // NOTIFICATION METHODS
+  // ===================================================================
+
+  Future<void> addNotification({
+    required String type,
+    required String title,
+    required String body,
+    int? targetUserId,
+    int? actorUserId,
+    int? relatedId,
+    String? relatedCode,
+  }) => _firestore.addNotification(
+    type: type,
+    title: title,
+    body: body,
+    targetUserId: targetUserId,
+    actorUserId: actorUserId,
+    relatedId: relatedId,
+    relatedCode: relatedCode,
+  );
+
+  Future<List<int>> fetchAdminUserIds() => _firestore.fetchAdminUserIds();
 
   // ===================================================================
   // HOUSEHOLD REQUESTS CRUD

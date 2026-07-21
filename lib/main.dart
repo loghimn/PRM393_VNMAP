@@ -15,6 +15,7 @@ import 'package:vietnam_geo_dashboard/models/incident_model.dart';
 import 'package:vietnam_geo_dashboard/providers/khu_pho_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/dai_dien_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/household_request_provider.dart';
+import 'package:vietnam_geo_dashboard/providers/notification_provider.dart';
 import 'package:vietnam_geo_dashboard/screens/dashboard/dashboard_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/login_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
@@ -49,6 +50,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => KhuPhoProvider()),
         ChangeNotifierProvider(create: (_) => DaiDienProvider()),
         ChangeNotifierProvider(create: (_) => HouseholdRequestProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: const MyApp(),
     ),
