@@ -3,7 +3,10 @@ import '../models/khu_pho_model.dart';
 import '../services/database_service.dart';
 
 class KhuPhoProvider extends ChangeNotifier {
-  final DatabaseService _service = DatabaseService();
+  final DatabaseService _service;
+
+  KhuPhoProvider({DatabaseService? databaseService})
+    : _service = databaseService ?? DatabaseService();
   List<KhuPhoModel> _danhSach = [];
   bool _isLoading = false;
   String? _error;

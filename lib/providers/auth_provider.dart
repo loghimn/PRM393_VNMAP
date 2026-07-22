@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,9 +8,17 @@ import '../services/storage_service.dart';
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 
 class AuthProvider extends ChangeNotifier {
-  final DatabaseService _dbService = DatabaseService();
-  final StorageService _storageService = StorageService.instance;
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final DatabaseService _dbService;
+  final StorageService _storageService;
+  final FirebaseAuth _firebaseAuth;
+
+  AuthProvider({
+    DatabaseService? databaseService,
+    StorageService? storageService,
+    FirebaseAuth? firebaseAuth,
+  }) : _dbService = databaseService ?? DatabaseService(),
+       _storageService = storageService ?? StorageService.instance,
+       _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -249,6 +258,12 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  @visibleForTesting
+  void setCurrentUserForTesting(UserModel? user) {
+    _currentUser = user;
+    notifyListeners();
   }
 
   void clearError() {

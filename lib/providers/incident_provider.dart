@@ -3,7 +3,10 @@ import '../models/incident_model.dart';
 import '../services/database_service.dart';
 
 class IncidentProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  final DatabaseService _db;
+
+  IncidentProvider({DatabaseService? databaseService})
+    : _db = databaseService ?? DatabaseService();
 
   List<Incident> _items = [];
   Incident? _selected;

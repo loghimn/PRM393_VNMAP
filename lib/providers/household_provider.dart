@@ -3,7 +3,10 @@ import '../models/household_model.dart';
 import '../services/database_service.dart';
 
 class HouseholdProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  final DatabaseService _db;
+
+  HouseholdProvider({DatabaseService? databaseService})
+    : _db = databaseService ?? DatabaseService();
 
   List<Household> _items = [];
   Household? _selected;

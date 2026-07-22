@@ -3,7 +3,9 @@ import '../models/dia_diem_lich_su_model.dart';
 import '../services/database_service.dart';
 
 class DiaDiemLichSuProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  final DatabaseService _db;
+
+  DiaDiemLichSuProvider({DatabaseService? db}) : _db = db ?? DatabaseService();
 
   List<DiaDiemLichSu> _items = [];
   DiaDiemLichSu? _selected;
@@ -121,6 +123,11 @@ class DiaDiemLichSuProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  @visibleForTesting
+  void setItemsForTesting(List<DiaDiemLichSu> items) {
+    _items = items;
   }
 
   void clearSelected() {

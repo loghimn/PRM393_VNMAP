@@ -4,7 +4,10 @@ import '../models/household_request_model.dart';
 import '../services/database_service.dart';
 
 class HouseholdRequestProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  final DatabaseService _db;
+
+  HouseholdRequestProvider({DatabaseService? db})
+    : _db = db ?? DatabaseService();
   List<HouseholdRequest> _requests = [];
   bool _isLoading = false;
   String? _error;
@@ -21,6 +24,11 @@ class HouseholdRequestProvider extends ChangeNotifier {
 
   List<HouseholdRequest> get rejectedRequests =>
       _requests.where((r) => r.status == 'rejected').toList();
+
+  @visibleForTesting
+  void setRequestsForTesting(List<HouseholdRequest> requests) {
+    _requests = requests;
+  }
 
   Future<void> fetchAllRequests() async {
     _isLoading = true;

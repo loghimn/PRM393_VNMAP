@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/dai_dien_model.dart';
 import '../services/database_service.dart';
 
 class DaiDienProvider extends ChangeNotifier {
-  final DatabaseService _service = DatabaseService();
+  final DatabaseService _service;
+
+  DaiDienProvider({DatabaseService? service})
+    : _service = service ?? DatabaseService();
   List<DaiDienModel> _danhSach = [];
   List<DaiDienModel> _ketQuaTimKiem = [];
   bool _isLoading = false;
@@ -101,6 +105,11 @@ class DaiDienProvider extends ChangeNotifier {
     _ketQuaTimKiem = [];
     _isSearching = false;
     notifyListeners();
+  }
+
+  @visibleForTesting
+  void setDanhSachForTesting(List<DaiDienModel> danhSach) {
+    _danhSach = danhSach;
   }
 
   DaiDienModel? getById(int id) {
