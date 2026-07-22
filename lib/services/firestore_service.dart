@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:meta/meta.dart';
 import '../models/province_model.dart';
 import '../models/high_school_model.dart';
 import '../models/household_model.dart';
@@ -20,10 +21,29 @@ import '../models/household_request_model.dart';
 /// - Dùng auto-increment ID qua document counters
 class FirestoreService {
   // Singleton
-  FirestoreService._internal();
+  FirestoreService._internal({
+    FirebaseFirestore? firestore,
+    auth.FirebaseAuth? firebaseAuth,
+  }) : _db = firestore ?? FirebaseFirestore.instance,
+       _firebaseAuth = firebaseAuth ?? auth.FirebaseAuth.instance;
+
   static final FirestoreService instance = FirestoreService._internal();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  /// Create a test instance with optional mock/fake dependencies.
+  /// Use this in tests to inject [FakeFirebaseFirestore] or mock [FirebaseAuth].
+  @visibleForTesting
+  static FirestoreService createTestInstance({
+    FirebaseFirestore? firestore,
+    auth.FirebaseAuth? firebaseAuth,
+  }) {
+    return FirestoreService._internal(
+      firestore: firestore,
+      firebaseAuth: firebaseAuth,
+    );
+  }
+
+  final FirebaseFirestore _db;
+  final auth.FirebaseAuth _firebaseAuth;
 
   // ===================================================================
   // HELPERS - ID generation (thay thế SERIAL trong PostgreSQL)
@@ -58,7 +78,7 @@ class FirestoreService {
   // AUTH — Firebase Auth
   // ===================================================================
 
-  final auth.FirebaseAuth _firebaseAuth = auth.FirebaseAuth.instance;
+  // Uses _firebaseAuth declared in constructor
 
   /// Đăng nhập bằng email + password qua Firebase Auth
   Future<UserModel?> signInWithEmail(String email, String password) async {

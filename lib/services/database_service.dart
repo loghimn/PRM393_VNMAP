@@ -9,6 +9,7 @@ import '../models/dai_dien_model.dart';
 import '../models/user_model.dart';
 import '../models/household_request_model.dart';
 import 'firestore_service.dart';
+import 'package:meta/meta.dart';
 
 /// DatabaseService chuyển tiếp toàn bộ sang FirestoreService.
 ///
@@ -17,7 +18,14 @@ import 'firestore_service.dart';
 /// delegate mọi method sang FirestoreService.
 /// Không cần sửa bất kỳ file nào khác.
 class DatabaseService {
-  final FirestoreService _firestore = FirestoreService.instance;
+  final FirestoreService _firestore;
+
+  /// Constructor mặc định — dùng FirestoreService.instance
+  DatabaseService() : _firestore = FirestoreService.instance;
+
+  /// Constructor dành cho test — inject FirestoreService với mock/fake dependencies
+  @visibleForTesting
+  DatabaseService.withService(this._firestore);
 
   // ===================================================================
   // PROVINCES / GEOGRAPHY

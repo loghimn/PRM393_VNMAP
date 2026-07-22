@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 
 /// Service quản lý upload/download file trên Firebase Storage.
 ///
@@ -9,7 +10,20 @@ class StorageService {
   StorageService._internal();
   static final StorageService instance = StorageService._internal();
 
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  late final FirebaseStorage _storage;
+
+  /// Default constructor dùng [FirebaseStorage.instance].
+  StorageService() {
+    _storage = FirebaseStorage.instance;
+  }
+
+  /// Test-only constructor: inject [FirebaseStorage] mock.
+  @visibleForTesting
+  factory StorageService.createTestInstance(FirebaseStorage storage) {
+    final service = StorageService._internal();
+    service._storage = storage;
+    return service;
+  }
 
   // ===================================================================
   // PUBLIC METHODS
