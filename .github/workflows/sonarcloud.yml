@@ -1,14 +1,18 @@
 name: SonarCloud
 
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - test/sonar-qube
+
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  sonarcloud:
+  sonarqube:
+    name: SonarQube
     runs-on: ubuntu-latest
 
     steps:
@@ -18,16 +22,15 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
           flutter-version: '3.41.9'
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run tests with coverage
+      - name: Run unit tests with coverage
         run: flutter test --coverage
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v6
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
