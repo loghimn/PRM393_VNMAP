@@ -1,18 +1,77 @@
-# vietnam_geo_dashboard
+# 🇻🇳 Vietnam Map Dashboard (PRM393)
 
-A new Flutter project.
+A Flutter application for managing and visualizing administrative information in Vietnam. The system provides interactive maps, household management, incident management, historical site management, and role-based administration using Firebase services.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+### User
+- Login / Logout
+- Update profile
+- View interactive Vietnam map
+- View province, commune, and high school information
+- Create household registration requests
+- Create, update, and delete incidents
+- Receive notifications
 
-A few resources to get you started if this is your first Flutter project:
+### Administrator
+- Dashboard
+- Approve or reject household requests
+- Assign and update incident status
+- Manage historical sites
+- Manage users
+- View reports and statistics
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Technology Stack
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-"# PRM393_VNMAP" 
+- Flutter
+- Dart
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Storage
+- Firebase Cloud Messaging (FCM)
+- Provider
+- Google Maps
+
+## Testing
+
+This project includes:
+
+- Unit Tests
+- Widget Tests
+- Code Coverage
+- SonarCloud static code analysis
+- GitHub Actions CI
+
+Run tests locally:
+
+```bash
+flutter test
+```
+
+Generate coverage:
+
+```bash
+flutter test --coverage
+```
+
+## Project Structure
+
+```
+lib/
+ ├── models/
+ ├── providers/
+ ├── services/
+ ├── screens/
+ ├── widgets/
+ └── utils/
+
+test/
+ ├── models/
+ ├── providers/
+ ├── services/
+ └── widgets/
+```
+
+## Authors
+
+PRM393 - Vietnam Map Project
