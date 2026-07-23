@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
 
 import '../models/province_model.dart';
 import '../models/high_school_model.dart';
@@ -6,7 +7,13 @@ import '../models/household_model.dart';
 import '../services/database_service.dart';
 
 class ProvinceProvider extends ChangeNotifier {
-  final DatabaseService _service = DatabaseService();
+  final DatabaseService _service;
+
+  ProvinceProvider() : _service = DatabaseService();
+
+  /// Constructor dành cho test — inject DatabaseService với mock/fake dependencies
+  @visibleForTesting
+  ProvinceProvider.withService(this._service);
   ProvinceModel? hoveredProvince;
   List<ProvinceModel> communes = [];
   ProvinceModel? focusedProvince;
