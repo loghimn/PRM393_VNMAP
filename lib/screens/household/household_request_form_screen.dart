@@ -13,7 +13,9 @@ import '../../widgets/popup_notification.dart';
 import '../household/household_request_detail_screen.dart';
 
 class HouseholdRequestFormScreen extends StatefulWidget {
-  const HouseholdRequestFormScreen({super.key});
+  final DatabaseService? databaseService;
+
+  const HouseholdRequestFormScreen({super.key, this.databaseService});
 
   @override
   State<HouseholdRequestFormScreen> createState() =>
@@ -23,7 +25,7 @@ class HouseholdRequestFormScreen extends StatefulWidget {
 class _HouseholdRequestFormScreenState
     extends State<HouseholdRequestFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _db = DatabaseService();
+  late final _db = widget.databaseService ?? DatabaseService();
   final _scrollController = ScrollController();
 
   final _headCtrl = TextEditingController();

@@ -17,7 +17,7 @@ class GisMapScreen extends StatefulWidget {
 class _GisMapScreenState extends State<GisMapScreen> {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Default center: Vietnam
   static const LatLng _defaultCenter = LatLng(16.0, 108.0);
   static const double _defaultZoom = 6.0;
@@ -35,7 +35,7 @@ class _GisMapScreenState extends State<GisMapScreen> {
   Future<void> _loadData() async {
     final householdProvider = context.read<HouseholdProvider>();
     final incidentProvider = context.read<IncidentProvider>();
-    
+
     await Future.wait([
       householdProvider.loadItems(),
       incidentProvider.loadItems(),
@@ -90,7 +90,7 @@ class _GisMapScreenState extends State<GisMapScreen> {
                 userAgentPackageName: 'com.vietnam_geo_dashboard.app',
                 maxZoom: 19,
               ),
-              
+
               // Marker layer for households and incidents
               MarkerLayer(
                 markers: [
@@ -121,18 +121,29 @@ class _GisMapScreenState extends State<GisMapScreen> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
                         decoration: const InputDecoration(
                           hintText: 'Tìm hộ dân, khu phố, địa điểm...',
-                          hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
+                          hintStyle: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 13,
+                          ),
                           border: InputBorder.none,
                         ),
+                        onChanged: (_) => setState(() {}),
                         onSubmitted: _onSearch,
                       ),
                     ),
                     if (_searchController.text.isNotEmpty)
                       IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white54, size: 18),
+                        icon: const Icon(
+                          Icons.clear,
+                          color: Colors.white54,
+                          size: 18,
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {});
@@ -163,7 +174,8 @@ class _GisMapScreenState extends State<GisMapScreen> {
                       icon: Icons.home,
                       label: 'Hộ dân',
                       active: _showHouseholds,
-                      onTap: () => setState(() => _showHouseholds = !_showHouseholds),
+                      onTap: () =>
+                          setState(() => _showHouseholds = !_showHouseholds),
                       activeColor: const Color(0xFF3B82F6),
                     ),
                     const SizedBox(width: 8),
@@ -171,13 +183,17 @@ class _GisMapScreenState extends State<GisMapScreen> {
                       icon: Icons.warning,
                       label: 'Sự vụ',
                       active: _showIncidents,
-                      onTap: () => setState(() => _showIncidents = !_showIncidents),
+                      onTap: () =>
+                          setState(() => _showIncidents = !_showIncidents),
                       activeColor: Colors.orange,
                     ),
                     const Spacer(),
                     Text(
                       '${_getTotalMarkers()} điểm',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -196,20 +212,17 @@ class _GisMapScreenState extends State<GisMapScreen> {
     return households
         .where((h) => h.latitude != null && h.longitude != null)
         .map((h) {
-      return Marker(
-        point: LatLng(h.latitude!, h.longitude!),
-        width: 40,
-        height: 40,
-        child: GestureDetector(
-          onTap: () => _showHouseholdDetail(h),
-          child: const Icon(
-            Icons.home,
-            color: Color(0xFF3B82F6),
-            size: 30,
-          ),
-        ),
-      );
-    }).toList();
+          return Marker(
+            point: LatLng(h.latitude!, h.longitude!),
+            width: 40,
+            height: 40,
+            child: GestureDetector(
+              onTap: () => _showHouseholdDetail(h),
+              child: const Icon(Icons.home, color: Color(0xFF3B82F6), size: 30),
+            ),
+          );
+        })
+        .toList();
   }
 
   List<Marker> _buildIncidentMarkers() {
@@ -219,17 +232,18 @@ class _GisMapScreenState extends State<GisMapScreen> {
     return incidents
         .where((i) => i.latitude != null && i.longitude != null)
         .map((i) {
-      final color = _getIncidentColor(i.status);
-      return Marker(
-        point: LatLng(i.latitude!, i.longitude!),
-        width: 40,
-        height: 40,
-        child: GestureDetector(
-          onTap: () => _showIncidentDetail(i),
-          child: Icon(Icons.warning, color: color, size: 30),
-        ),
-      );
-    }).toList();
+          final color = _getIncidentColor(i.status);
+          return Marker(
+            point: LatLng(i.latitude!, i.longitude!),
+            width: 40,
+            height: 40,
+            child: GestureDetector(
+              onTap: () => _showIncidentDetail(i),
+              child: Icon(Icons.warning, color: color, size: 30),
+            ),
+          );
+        })
+        .toList();
   }
 
   Color _getIncidentColor(IncidentStatus status) {
@@ -249,11 +263,15 @@ class _GisMapScreenState extends State<GisMapScreen> {
     int count = 0;
     if (_showHouseholds) {
       final hProvider = context.read<HouseholdProvider>();
-      count += hProvider.items.where((h) => h.latitude != null && h.longitude != null).length;
+      count += hProvider.items
+          .where((h) => h.latitude != null && h.longitude != null)
+          .length;
     }
     if (_showIncidents) {
       final iProvider = context.read<IncidentProvider>();
-      count += iProvider.items.where((i) => i.latitude != null && i.longitude != null).length;
+      count += iProvider.items
+          .where((i) => i.latitude != null && i.longitude != null)
+          .length;
     }
     return count;
   }
@@ -287,7 +305,11 @@ class _GisMapScreenState extends State<GisMapScreen> {
                 Expanded(
                   child: Text(
                     household.headOfHousehold ?? 'Hộ dân',
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -296,23 +318,25 @@ class _GisMapScreenState extends State<GisMapScreen> {
             _detailRow('Mã hộ', household.householdCode),
             _detailRow('Địa chỉ', household.fullAddress),
             _detailRow('Số điện thoại', household.phone ?? '--'),
-    if (household.latitude != null && household.longitude != null) ...[
-      const SizedBox(height: 12),
-      SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () => Navigator.pop(ctx),
-          icon: const Icon(Icons.navigation, size: 18),
-          label: const Text('Xem vị trí'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF3B82F6),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        ),
-      ),
-    ] else
-      const SizedBox.shrink(),
+            if (household.latitude != null && household.longitude != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(ctx),
+                  icon: const Icon(Icons.navigation, size: 18),
+                  label: const Text('Xem vị trí'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3B82F6),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ] else
+              const SizedBox.shrink(),
           ],
         ),
       ),
@@ -339,7 +363,11 @@ class _GisMapScreenState extends State<GisMapScreen> {
                 Expanded(
                   child: Text(
                     incident.title ?? 'Sự vụ',
-                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
@@ -363,7 +391,10 @@ class _GisMapScreenState extends State<GisMapScreen> {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: const TextStyle(color: Colors.white54, fontSize: 13)),
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
+            ),
           ),
           Expanded(
             child: Text(
@@ -388,7 +419,9 @@ class _GisMapScreenState extends State<GisMapScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? activeColor.withValues(alpha: 0.2) : Colors.transparent,
+          color: active
+              ? activeColor.withValues(alpha: 0.2)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: active ? activeColor : Colors.white24,
@@ -427,7 +460,11 @@ class _GisMapScreenState extends State<GisMapScreen> {
             _legendItem(Icons.home, const Color(0xFF3B82F6), 'Hộ gia đình'),
             const SizedBox(height: 12),
             _legendItem(Icons.warning, Colors.orange, 'Sự vụ - Tiếp nhận'),
-            _legendItem(Icons.warning, const Color(0xFF3B82F6), 'Sự vụ - Đang xử lý'),
+            _legendItem(
+              Icons.warning,
+              const Color(0xFF3B82F6),
+              'Sự vụ - Đang xử lý',
+            ),
             _legendItem(Icons.warning, Colors.green, 'Sự vụ - Hoàn thành'),
             _legendItem(Icons.warning, Colors.grey, 'Sự vụ - Đã hủy'),
           ],
@@ -447,7 +484,10 @@ class _GisMapScreenState extends State<GisMapScreen> {
       children: [
         Icon(icon, color: color, size: 20),
         const SizedBox(width: 12),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white70, fontSize: 13),
+        ),
       ],
     );
   }

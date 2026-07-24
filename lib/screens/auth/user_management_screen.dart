@@ -5,16 +5,18 @@ import '../../models/user_model.dart';
 import '../../services/database_service.dart';
 
 class UserManagementScreen extends StatefulWidget {
-  const UserManagementScreen({super.key});
+  final DatabaseService? databaseService;
+
+  const UserManagementScreen({super.key, this.databaseService});
 
   @override
   State<UserManagementScreen> createState() => _UserManagementScreenState();
 }
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
-  final DatabaseService _dbService = DatabaseService();
+  DatabaseService get _dbService => widget.databaseService ?? DatabaseService();
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<UserModel> _users = [];
   bool _isLoading = false;
   String? _error;
@@ -73,9 +75,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       _loadUsers();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
     }
   }
 
@@ -83,7 +85,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     // Không cho phép đổi vai trò admin thành user
     if (user.role == 'admin' && newRole != 'admin') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể thay đổi vai trò tài khoản admin!')),
+        const SnackBar(
+          content: Text('Không thể thay đổi vai trò tài khoản admin!'),
+        ),
       );
       return;
     }
@@ -103,9 +107,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       _loadUsers();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi: ${e.toString()}')));
     }
   }
 
@@ -113,7 +117,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     // Không cho phép mở dialog thay đổi vai trò admin
     if (user.role == 'admin') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể thay đổi vai trò tài khoản admin!')),
+        const SnackBar(
+          content: Text('Không thể thay đổi vai trò tài khoản admin!'),
+        ),
       );
       return;
     }
@@ -161,12 +167,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    
+
     // Only admin can access this screen
     if (!auth.isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Quản lý người dùng')),
-        body: const Center(child: Text('Bạn không có quyền truy cập trang này')),
+        body: const Center(
+          child: Text('Bạn không có quyền truy cập trang này'),
+        ),
       );
     }
 
@@ -175,10 +183,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         title: const Text('Quản lý người dùng'),
         backgroundColor: const Color(0xFF1E293B),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadUsers,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadUsers),
         ],
       ),
       body: Column(
@@ -204,85 +209,86 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               onSubmitted: (_) => _loadUsers(),
             ),
           ),
-          
+
           // User list
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(child: Text('Lỗi: $_error'))
-                    : _users.isEmpty
-                        ? const Center(child: Text('Không có người dùng nào'))
-                        : ListView.builder(
-                            itemCount: _users.length,
-                            itemBuilder: (context, index) {
-                              final user = _users[index];
-                              return Card(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 4,
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: user.role == 'admin'
-                                        ? Colors.orange
-                                        : Colors.blue,
-                                    child: Icon(
-                                      user.role == 'admin'
-                                          ? Icons.admin_panel_settings
-                                          : Icons.person,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  title: Text(user.username),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (user.fullName != null)
-                                        Text('Họ tên: ${user.fullName}'),
-                                      if (user.email != null)
-                                        Text('Email: ${user.email}'),
-                                      Text('Vai trò: ${user.role}'),
-                                      Text(
-                                        'Trạng thái: ${user.isActive ? "Hoạt động" : "Đã khóa"}',
-                                        style: TextStyle(
-                                          color: user.isActive
-                                              ? Colors.green
-                                              : Colors.red,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: PopupMenuButton<String>(
-                                    onSelected: (value) {
-                                      if (value == 'toggle_status') {
-                                        _toggleUserStatus(user);
-                                      } else if (value == 'change_role') {
-                                        _showRoleDialog(user);
-                                      }
-                                    },
-                                    itemBuilder: (context) => [
-                                      // Chỉ hiện "Khóa tài khoản" khi không phải admin
-                                      if (user.role != 'admin')
-                                        PopupMenuItem(
-                                          value: 'toggle_status',
-                                          child: Text(
-                                            user.isActive ? 'Khóa tài khoản' : 'Mở tài khoản',
-                                          ),
-                                        ),
-                                      // Chỉ hiện "Đổi vai trò" khi không phải admin
-                                      if (user.role != 'admin')
-                                        const PopupMenuItem(
-                                          value: 'change_role',
-                                          child: Text('Đổi vai trò'),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                ? Center(child: Text('Lỗi: $_error'))
+                : _users.isEmpty
+                ? const Center(child: Text('Không có người dùng nào'))
+                : ListView.builder(
+                    itemCount: _users.length,
+                    itemBuilder: (context, index) {
+                      final user = _users[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: user.role == 'admin'
+                                ? Colors.orange
+                                : Colors.blue,
+                            child: Icon(
+                              user.role == 'admin'
+                                  ? Icons.admin_panel_settings
+                                  : Icons.person,
+                              color: Colors.white,
+                            ),
                           ),
+                          title: Text(user.username),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (user.fullName != null)
+                                Text('Họ tên: ${user.fullName}'),
+                              if (user.email != null)
+                                Text('Email: ${user.email}'),
+                              Text('Vai trò: ${user.role}'),
+                              Text(
+                                'Trạng thái: ${user.isActive ? "Hoạt động" : "Đã khóa"}',
+                                style: TextStyle(
+                                  color: user.isActive
+                                      ? Colors.green
+                                      : Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'toggle_status') {
+                                _toggleUserStatus(user);
+                              } else if (value == 'change_role') {
+                                _showRoleDialog(user);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              // Chỉ hiện "Khóa tài khoản" khi không phải admin
+                              if (user.role != 'admin')
+                                PopupMenuItem(
+                                  value: 'toggle_status',
+                                  child: Text(
+                                    user.isActive
+                                        ? 'Khóa tài khoản'
+                                        : 'Mở tài khoản',
+                                  ),
+                                ),
+                              // Chỉ hiện "Đổi vai trò" khi không phải admin
+                              if (user.role != 'admin')
+                                const PopupMenuItem(
+                                  value: 'change_role',
+                                  child: Text('Đổi vai trò'),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
