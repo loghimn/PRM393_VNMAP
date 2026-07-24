@@ -9,8 +9,13 @@ import '../../widgets/popup_notification.dart';
 
 class HouseholdRequestDetailScreen extends StatefulWidget {
   final int requestId;
+  final DatabaseService? databaseService;
 
-  const HouseholdRequestDetailScreen({super.key, required this.requestId});
+  const HouseholdRequestDetailScreen({
+    super.key,
+    required this.requestId,
+    this.databaseService,
+  });
 
   @override
   State<HouseholdRequestDetailScreen> createState() =>
@@ -19,7 +24,7 @@ class HouseholdRequestDetailScreen extends StatefulWidget {
 
 class _HouseholdRequestDetailScreenState
     extends State<HouseholdRequestDetailScreen> {
-  final _db = DatabaseService();
+  late final _db = widget.databaseService ?? DatabaseService();
   HouseholdRequest? _request;
   bool _isLoading = true;
   bool _isProcessing = false;

@@ -14,14 +14,20 @@ import '../../utils/app_theme.dart';
 class IncidentFormScreen extends StatefulWidget {
   final Incident? incident;
   final int? householdId;
-  const IncidentFormScreen({super.key, this.incident, this.householdId});
+  final DatabaseService? databaseService;
+  const IncidentFormScreen({
+    super.key,
+    this.incident,
+    this.householdId,
+    this.databaseService,
+  });
   @override
   State<IncidentFormScreen> createState() => _IncidentFormScreenState();
 }
 
 class _IncidentFormScreenState extends State<IncidentFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _db = DatabaseService();
+  late final DatabaseService _db;
   final _storage = StorageService.instance;
   final _picker = ImagePicker();
   Timer? _phoneDebounce;
@@ -55,6 +61,7 @@ class _IncidentFormScreenState extends State<IncidentFormScreen> {
   @override
   void initState() {
     super.initState();
+    _db = widget.databaseService ?? DatabaseService();
     final inc = widget.incident;
     _householdId = widget.householdId ?? inc?.householdId;
     _titleController = TextEditingController(text: inc?.title ?? '');
