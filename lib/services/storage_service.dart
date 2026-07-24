@@ -7,22 +7,20 @@ import 'package:flutter/foundation.dart';
 /// Singleton pattern, tương tự FirestoreService.
 /// Hỗ trợ upload ảnh cho: Incident, Household, User, DiaDiemLichSu.
 class StorageService {
-  StorageService._internal();
+  StorageService._internal([FirebaseStorage? storage]) : _customStorage = storage;
+
   static final StorageService instance = StorageService._internal();
 
-  late final FirebaseStorage _storage;
+  final FirebaseStorage? _customStorage;
+  FirebaseStorage get _storage => _customStorage ?? FirebaseStorage.instance;
 
   /// Default constructor dùng [FirebaseStorage.instance].
-  StorageService() {
-    _storage = FirebaseStorage.instance;
-  }
+  StorageService([FirebaseStorage? storage]) : _customStorage = storage;
 
   /// Test-only constructor: inject [FirebaseStorage] mock.
   @visibleForTesting
   factory StorageService.createTestInstance(FirebaseStorage storage) {
-    final service = StorageService._internal();
-    service._storage = storage;
-    return service;
+    return StorageService._internal(storage);
   }
 
   // ===================================================================
