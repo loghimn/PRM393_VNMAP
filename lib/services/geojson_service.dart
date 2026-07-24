@@ -5,6 +5,11 @@ import 'package:flutter/services.dart';
 import '../models/province_model.dart';
 
 class GeoJsonService {
+  final AssetBundle _assetBundle;
+
+  GeoJsonService({AssetBundle? assetBundle})
+    : _assetBundle = assetBundle ?? rootBundle;
+
   String getProvinceKey(String name) {
     var str = name.toLowerCase();
 
@@ -89,7 +94,7 @@ class GeoJsonService {
   }
 
   Future<List<ProvinceModel>> fetchProvinces() async {
-    final String response = await rootBundle.loadString(
+    final String response = await _assetBundle.loadString(
       'assets/geojson/provinces.geojson',
     );
 
@@ -109,7 +114,7 @@ class GeoJsonService {
   }
 
   Future<List<ProvinceModel>> fetchSpecialZones() async {
-    final String response = await rootBundle.loadString(
+    final String response = await _assetBundle.loadString(
       'assets/geojson/special_zones.geojson',
     );
 
@@ -133,7 +138,7 @@ class GeoJsonService {
   ) async {
     final String fileKey = getProvinceKey(provinceName);
     try {
-      final String response = await rootBundle.loadString(
+      final String response = await _assetBundle.loadString(
         'assets/geojson/communes/$fileKey.json',
       );
 
