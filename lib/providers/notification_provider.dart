@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/app_notification_model.dart';
-import '../services/firestore_service.dart';
 
 /// Provider quản lý In-App Notification center
 ///
@@ -10,11 +9,14 @@ import '../services/firestore_service.dart';
 /// - Real-time listener để cập nhật badge
 /// - Mark as read
 class NotificationProvider extends ChangeNotifier {
-  final FirestoreService _firestoreService = FirestoreService.instance;
+  final FirebaseFirestore _firestore;
   List<AppNotification> _notifications = [];
   bool _isLoading = false;
   StreamSubscription? _subscription;
   int? _currentUserId;
+
+  NotificationProvider({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   List<AppNotification> get notifications => _notifications;
   bool get isLoading => _isLoading;
@@ -57,7 +59,7 @@ class NotificationProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _subscription = FirebaseFirestore.instance
+    _subscription = _firestore
         .collection('notifications')
         .where('target_user_id', isEqualTo: userId)
         .snapshots()
@@ -87,7 +89,7 @@ class NotificationProvider extends ChangeNotifier {
   /// Đánh dấu một notification là đã đọc
   Future<void> markAsRead(int notificationId) async {
     try {
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('notifications')
           .doc(notificationId.toString())
           .update({'is_read': true});
@@ -100,9 +102,9 @@ class NotificationProvider extends ChangeNotifier {
   /// Đánh dấu tất cả là đã đọc
   Future<void> markAllAsRead() async {
     try {
-      final batch = FirebaseFirestore.instance.batch();
+      final batch = _firestore.batch();
       for (final notification in _notifications.where((n) => !n.isRead)) {
-        final docRef = FirebaseFirestore.instance
+        final docRef = _firestore
             .collection('notifications')
             .doc(notification.id.toString());
         batch.update(docRef, {'is_read': true});
@@ -117,7 +119,7 @@ class NotificationProvider extends ChangeNotifier {
   /// Xoá một notification
   Future<void> deleteNotification(int notificationId) async {
     try {
-      await FirebaseFirestore.instance
+      await _firestore
           .collection('notifications')
           .doc(notificationId.toString())
           .delete();

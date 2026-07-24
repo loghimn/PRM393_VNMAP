@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import '../services/database_service.dart';
 
 class StatisticsProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
+  final DatabaseService _db;
+
+  StatisticsProvider({DatabaseService? databaseService})
+    : _db = databaseService ?? DatabaseService();
 
   Map<String, int> _incidentsByMonth = {};
   Map<String, int> _incidentsByNeighborhood = {};
