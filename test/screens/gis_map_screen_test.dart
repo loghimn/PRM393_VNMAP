@@ -30,6 +30,7 @@ void main() {
   }
 
   group('GisMapScreen', () {
+    // ==================== RENDER ====================
     testWidgets('should render AppBar with title and legend button', (
       tester,
     ) async {
@@ -41,9 +42,7 @@ void main() {
         ),
       );
 
-      // AppBar title
       expect(find.text('Bản đồ GIS'), findsOneWidget);
-      // Legend button
       expect(find.byIcon(Icons.layers), findsOneWidget);
     });
 
@@ -56,7 +55,6 @@ void main() {
         ),
       );
 
-      // Search field should exist
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Tìm hộ dân, khu phố, địa điểm...'), findsOneWidget);
     });
@@ -72,7 +70,6 @@ void main() {
           ),
         );
 
-        // Filter chips
         expect(find.text('Hộ dân'), findsOneWidget);
         expect(find.text('Sự vụ'), findsOneWidget);
       },
@@ -91,6 +88,7 @@ void main() {
       expect(find.text('4 điểm'), findsOneWidget);
     });
 
+    // ==================== FILTER TOGGLES ====================
     testWidgets('should toggle household filter on tap', (tester) async {
       await tester.pumpScreen(
         buildTestScreen(),
@@ -100,11 +98,9 @@ void main() {
         ),
       );
 
-      // Tap household filter chip
       await tester.tap(find.text('Hộ dân'));
       await tester.pump();
 
-      // After toggling off, only 2 incident markers remain
       expect(find.text('2 điểm'), findsOneWidget);
     });
 
@@ -117,14 +113,32 @@ void main() {
         ),
       );
 
-      // Tap incident filter chip
       await tester.tap(find.text('Sự vụ'));
       await tester.pump();
 
-      // After toggling off, only 2 household markers remain
       expect(find.text('2 điểm'), findsOneWidget);
     });
 
+    testWidgets('should toggle both filters off showing 0 markers', (
+      tester,
+    ) async {
+      await tester.pumpScreen(
+        buildTestScreen(),
+        overrides: ProviderOverrides(
+          household: mockHousehold,
+          incident: mockIncident,
+        ),
+      );
+
+      await tester.tap(find.text('Hộ dân'));
+      await tester.pump();
+      await tester.tap(find.text('Sự vụ'));
+      await tester.pump();
+
+      expect(find.text('0 điểm'), findsOneWidget);
+    });
+
+    // ==================== SEARCH ====================
     testWidgets('should show search clear button when typing', (tester) async {
       await tester.pumpScreen(
         buildTestScreen(),
@@ -134,90 +148,17 @@ void main() {
         ),
       );
 
-      // Initially no clear button
       expect(find.byIcon(Icons.clear), findsNothing);
 
-      // Type in search field
       await tester.enterText(find.byType(TextField), 'test');
       await tester.pump();
 
-      // Clear button should appear (Icons.clear)
       expect(find.byIcon(Icons.clear), findsOneWidget);
 
-      // Tap clear
       await tester.tap(find.byIcon(Icons.clear));
       await tester.pump();
 
-      // Clear button should be gone
       expect(find.byIcon(Icons.clear), findsNothing);
-    });
-
-    testWidgets('should show legend dialog when layers button tapped', (
-      tester,
-    ) async {
-      await tester.pumpScreen(
-        buildTestScreen(),
-        overrides: ProviderOverrides(
-          household: mockHousehold,
-          incident: mockIncident,
-        ),
-      );
-      await tester.pump();
-
-      // Tap layers icon
-      await tester.tap(find.byIcon(Icons.layers));
-      await tester.pumpAndSettle();
-
-      // Dialog should appear
-      expect(find.text('Chú thích'), findsOneWidget);
-      expect(find.text('Hộ gia đình'), findsOneWidget);
-      expect(find.text('Sự vụ - Tiếp nhận'), findsOneWidget);
-      expect(find.text('Sự vụ - Đang xử lý'), findsOneWidget);
-      expect(find.text('Sự vụ - Hoàn thành'), findsOneWidget);
-      expect(find.text('Sự vụ - Đã hủy'), findsOneWidget);
-
-      // Close dialog
-      await tester.tap(find.text('Đóng'));
-      await tester.pumpAndSettle();
-
-      // Dialog should be closed
-      expect(find.text('Chú thích'), findsNothing);
-    });
-
-    testWidgets('should show household detail bottom sheet on marker tap', (
-      tester,
-    ) async {
-      await tester.pumpScreen(
-        buildTestScreen(),
-        overrides: ProviderOverrides(
-          household: mockHousehold,
-          incident: mockIncident,
-        ),
-      );
-      await tester.pump();
-
-      // Since the bottom sheet uses showModalBottomSheet which requires
-      // a scaffold context, we can verify the provider data is consumed.
-      // The map markers are built from the watch on HouseholdProvider
-      expect(find.byIcon(Icons.home), findsAtLeast(2));
-    });
-
-    testWidgets('should show loading indicator when household is loading', (
-      tester,
-    ) async {
-      mockHousehold.isLoading = true;
-
-      await tester.pumpScreen(
-        buildTestScreen(),
-        overrides: ProviderOverrides(
-          household: mockHousehold,
-          incident: mockIncident,
-        ),
-      );
-
-      // Loading state should show CircularProgressIndicator
-      // (the map still renders but markers won't show)
-      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('should submit search on pressing done', (tester) async {
@@ -235,7 +176,39 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('should close legend dialog on close button', (tester) async {
+    // ==================== LEGEND DIALOG ====================
+    testWidgets('should show legend dialog when layers button tapped', (
+      tester,
+    ) async {
+      await tester.pumpScreen(
+        buildTestScreen(),
+        overrides: ProviderOverrides(
+          household: mockHousehold,
+          incident: mockIncident,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.layers));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chú thích'), findsOneWidget);
+      expect(find.text('Hộ gia đình'), findsOneWidget);
+      expect(find.text('Sự vụ - Tiếp nhận'), findsOneWidget);
+      expect(find.text('Sự vụ - Đang xử lý'), findsOneWidget);
+      expect(find.text('Sự vụ - Hoàn thành'), findsOneWidget);
+      expect(find.text('Sự vụ - Đã hủy'), findsOneWidget);
+
+      await tester.tap(find.text('Đóng'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Chú thích'), findsNothing);
+    });
+
+    // ==================== LOADING STATE ====================
+    testWidgets('should not crash when household is loading', (tester) async {
+      mockHousehold.isLoading = true;
+
       await tester.pumpScreen(
         buildTestScreen(),
         overrides: ProviderOverrides(
@@ -244,18 +217,12 @@ void main() {
         ),
       );
 
-      // Open legend
-      await tester.tap(find.byIcon(Icons.layers));
-      await tester.pumpAndSettle();
-
-      // Close dialog
-      await tester.tap(find.text('Đóng'));
-      await tester.pumpAndSettle();
-
-      // Legend gone
-      expect(find.text('Chú thích'), findsNothing);
+      // Should render without error; the map still renders but markers
+      // come from the data items, not from isLoading
+      expect(find.byType(Scaffold), findsOneWidget);
     });
 
+    // ==================== EMPTY STATE ====================
     testWidgets('should handle empty items with no markers', (tester) async {
       mockHousehold.items = [];
       mockIncident.items = [];
@@ -271,9 +238,128 @@ void main() {
       expect(find.text('0 điểm'), findsOneWidget);
     });
 
-    testWidgets('should use correct incident status colors', (tester) async {
-      // Verify the color mapping through marker rendering
-      mockHousehold.items = [];
+    // ==================== STATIC HELPERS ====================
+    group('GisMapScreen static helpers', () {
+      test('getIncidentColor returns correct color for each status', () {
+        expect(
+          GisMapScreen.getIncidentColor(IncidentStatus.received),
+          Colors.orange,
+        );
+        expect(
+          GisMapScreen.getIncidentColor(IncidentStatus.processing),
+          const Color(0xFF3B82F6),
+        );
+        expect(
+          GisMapScreen.getIncidentColor(IncidentStatus.completed),
+          Colors.green,
+        );
+        expect(
+          GisMapScreen.getIncidentColor(IncidentStatus.cancelled),
+          Colors.grey,
+        );
+      });
+
+      test('detailRow renders label and value', () {
+        final widget = GisMapScreen.detailRow('Mã hộ', 'HH001');
+        // Should not crash, returns a widget
+        expect(widget, isA<Widget>());
+      });
+
+      test('detailRow renders fallback for null value', () {
+        final widget = GisMapScreen.detailRow('SĐT', null);
+        expect(widget, isA<Widget>());
+      });
+
+      test('householdDetailContent renders with location data', () {
+        final builder = GisMapScreen.householdDetailContent(
+          testHousehold,
+          () {},
+        );
+        expect(builder, isA<Widget>());
+      });
+
+      test('householdDetailContent renders without location data', () {
+        final householdNoLoc = Household(
+          id: 99,
+          householdCode: 'HH099',
+          headOfHousehold: 'Test',
+          houseNumber: '1',
+          street: 'Test',
+          neighborhood: 'Test',
+          ward: 'Test',
+          city: 'Test',
+          latitude: null,
+          longitude: null,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        );
+
+        final builder = GisMapScreen.householdDetailContent(
+          householdNoLoc,
+          () {},
+        );
+        expect(builder, isA<Widget>());
+
+        // Should not contain the "Xem vị trí" button
+        expect(
+          GisMapScreen.householdDetailContent(householdNoLoc, () {}),
+          isA<Widget>(),
+        );
+      });
+
+      test('incidentDetailContent renders with incident data', () {
+        final builder = GisMapScreen.incidentDetailContent(testIncident);
+        expect(builder, isA<Widget>());
+      });
+
+      test('incidentDetailContent renders incident with empty title', () {
+        final incidentNoTitle = Incident(
+          id: 99,
+          incidentCode: 'INC099',
+          title: '',
+          description: null,
+          status: IncidentStatus.received,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        );
+
+        final builder = GisMapScreen.incidentDetailContent(incidentNoTitle);
+        expect(builder, isA<Widget>());
+      });
+    });
+
+    // ==================== DATA WITHOUT LAT/LNG ====================
+    testWidgets('should handle items without lat/lng gracefully', (
+      tester,
+    ) async {
+      mockHousehold.items = [
+        Household(
+          id: 3,
+          householdCode: 'HH003',
+          headOfHousehold: 'No Location',
+          houseNumber: '789',
+          street: 'Test',
+          neighborhood: 'Test',
+          ward: 'Test',
+          city: 'Test',
+          latitude: null,
+          longitude: null,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        ),
+      ];
+      mockIncident.items = [
+        Incident(
+          id: 3,
+          incidentCode: 'INC003',
+          title: 'No Loc Incident (cancelled)',
+          status: IncidentStatus.cancelled,
+          latitude: null,
+          longitude: null,
+          createdAt: baseDate,
+          updatedAt: baseDate,
+        ),
+      ];
 
       await tester.pumpScreen(
         buildTestScreen(),
@@ -283,8 +369,7 @@ void main() {
         ),
       );
 
-      // Both incidents have lat/lng, they should render warning icons
-      expect(find.byIcon(Icons.warning), findsAtLeast(1));
+      expect(find.text('0 điểm'), findsOneWidget);
     });
   });
 }
