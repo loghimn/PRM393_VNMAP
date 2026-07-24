@@ -10,7 +10,6 @@ import 'package:vietnam_geo_dashboard/providers/household_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/incident_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/statistics_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/dia_diem_lich_su_provider.dart';
-import 'package:vietnam_geo_dashboard/models/household_model.dart';
 import 'package:vietnam_geo_dashboard/models/incident_model.dart';
 import 'package:vietnam_geo_dashboard/providers/khu_pho_provider.dart';
 import 'package:vietnam_geo_dashboard/providers/dai_dien_provider.dart';
@@ -21,7 +20,6 @@ import 'package:vietnam_geo_dashboard/screens/auth/login_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/auth/profile_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_detail_screen.dart';
-import 'package:vietnam_geo_dashboard/screens/household/household_form_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_request_list_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_request_form_screen.dart';
 import 'package:vietnam_geo_dashboard/screens/household/household_request_detail_screen.dart';
@@ -115,18 +113,6 @@ class MyApp extends StatelessWidget {
         final householdId = settings.arguments as int;
         return MaterialPageRoute(
           builder: (_) => HouseholdDetailScreen(householdId: householdId),
-          settings: settings,
-        );
-      case '/household-create':
-        return MaterialPageRoute(
-          builder: (_) => const HouseholdFormScreen(),
-          settings: settings,
-        );
-      case '/household-edit':
-        // Pass the Household object via arguments
-        final household = settings.arguments as Household;
-        return MaterialPageRoute(
-          builder: (_) => HouseholdFormScreen(household: household),
           settings: settings,
         );
       case '/household-request-list':

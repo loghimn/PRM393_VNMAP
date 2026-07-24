@@ -7,7 +7,6 @@ import '../../models/household_model.dart';
 import '../../models/household_request_model.dart';
 import '../../utils/app_theme.dart';
 import 'household_detail_screen.dart';
-import 'household_form_screen.dart';
 import 'household_request_form_screen.dart';
 
 class HouseholdListScreen extends StatefulWidget {
@@ -443,15 +442,7 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                   // Actions
                   PopupMenuButton<String>(
                     onSelected: (value) async {
-                      if (value == 'edit') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                HouseholdFormScreen(household: item),
-                          ),
-                        );
-                      } else if (value == 'delete') {
+                      if (value == 'delete') {
                         final confirmed = await showDialog<bool>(
                           context: context,
                           builder: (ctx) => AlertDialog(
@@ -499,20 +490,6 @@ class _HouseholdListScreenState extends State<HouseholdListScreen> {
                     ),
                     color: AppColors.surfaceBackground,
                     itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.edit_rounded,
-                              size: 18,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text('Sửa'),
-                          ],
-                        ),
-                      ),
                       PopupMenuItem(
                         value: 'delete',
                         child: Row(

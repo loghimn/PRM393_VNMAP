@@ -206,9 +206,7 @@ void main() {
       verify(() => observer.didPush(any(), any())).called(2);
     });
 
-    testWidgets('should show popup menu with edit/delete options', (
-      tester,
-    ) async {
+    testWidgets('should show popup menu with delete option', (tester) async {
       await tester.pumpScreen(
         buildTestScreen(),
         overrides: ProviderOverrides(
@@ -222,8 +220,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert_rounded).first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Sửa'), findsOneWidget);
+      // Source only has delete option, not edit
       expect(find.text('Xóa'), findsOneWidget);
+      expect(find.text('Sửa'), findsNothing);
     });
 
     testWidgets('should delete household after confirmation', (tester) async {

@@ -23,6 +23,10 @@ void main() {
     when(() => mockHousehold.isLoading).thenReturn(false);
     when(() => mockHousehold.error).thenReturn(null);
     when(() => mockHousehold.loadById(any())).thenAnswer((_) async {});
+
+    // Auth stubs (needed by IncidentListScreen when navigating)
+    when(() => mockAuth.isAdmin).thenReturn(false);
+    when(() => mockAuth.isLoggedIn).thenReturn(true);
   });
 
   Widget buildTestScreen({int householdId = 1}) {
@@ -204,18 +208,17 @@ void main() {
       expect(find.text('Xem sự vụ liên quan'), findsOneWidget);
     });
 
-    testWidgets('should show popup menu with edit option', (tester) async {
+    testWidgets('should not have popup menu in AppBar (no edit action)', (
+      tester,
+    ) async {
       await tester.pumpScreen(
         buildTestScreen(),
         overrides: ProviderOverrides(auth: mockAuth, household: mockHousehold),
       );
       await tester.pumpAndSettle();
 
-      // Open popup menu
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Sửa'), findsOneWidget);
+      // Source does not have any actions/popup menu in AppBar
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
     });
   });
 
@@ -253,22 +256,16 @@ void main() {
     testWidgets('should navigate to edit screen when edit is tapped', (
       tester,
     ) async {
+      // Source does not have popup menu → skip this test
+      // (edit functionality may be added later)
       await tester.pumpScreen(
         buildTestScreen(),
         overrides: ProviderOverrides(auth: mockAuth, household: mockHousehold),
       );
       await tester.pumpAndSettle();
 
-      // Open popup menu
-      await tester.tap(find.byIcon(Icons.more_vert_rounded));
-      await tester.pumpAndSettle();
-
-      // Tap "Sửa"
-      await tester.tap(find.text('Sửa'));
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Should navigate to form (will throw because providers not set up for form)
-      tester.takeException();
+      // Verify no popup menu icon exists (source has no edit actions)
+      expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
     });
 
     testWidgets(

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/household_provider.dart';
 import '../../utils/app_theme.dart';
-import 'household_form_screen.dart';
 import '../incident/incident_list_screen.dart';
 
 class HouseholdDetailScreen extends StatefulWidget {
@@ -41,51 +40,6 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
         backgroundColor: AppColors.surfaceBackground,
         elevation: 0,
         scrolledUnderElevation: 1,
-        actions: [
-          Consumer<HouseholdProvider>(
-            builder: (context, provider, child) {
-              final household = provider.selected;
-              if (household == null) return const SizedBox.shrink();
-              return PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            HouseholdFormScreen(household: household),
-                      ),
-                    );
-                  }
-                },
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  color: AppColors.textSecondary,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                color: AppColors.surfaceBackground,
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.edit_rounded,
-                          size: 18,
-                          color: AppColors.primary,
-                        ),
-                        SizedBox(width: 8),
-                        Text('Sửa'),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
       ),
       body: Consumer<HouseholdProvider>(
         builder: (context, provider, child) {

@@ -250,7 +250,26 @@ class FakeNotificationProvider extends ChangeNotifier
   Future<void> loadNotifications() async {}
 
   @override
-  Future<void> markAsRead(int notificationId) async {}
+  Future<void> markAsRead(int notificationId) async {
+    final index = notifications.indexWhere((n) => n.id == notificationId);
+    if (index != -1) {
+      final old = notifications[index];
+      notifications[index] = AppNotification(
+        id: old.id,
+        type: old.type,
+        title: old.title,
+        body: old.body,
+        isRead: true,
+        targetUserId: old.targetUserId,
+        actorUserId: old.actorUserId,
+        relatedId: old.relatedId,
+        relatedCode: old.relatedCode,
+        createdAt: old.createdAt,
+        updatedAt: old.updatedAt,
+      );
+      notifyListeners();
+    }
+  }
 
   @override
   Future<void> markAllAsRead() async {
