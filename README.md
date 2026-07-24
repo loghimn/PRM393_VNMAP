@@ -72,6 +72,12 @@ test/
  └── widgets/
 ```
 
+## Test Coverage quality Code ensure higher 80%
+![alt text](image/image.png)
+![alt text](image/image-1.png)
+![alt text](image/image-2.png)
+![alt text](image/image-3.png)
+
 ## Authors
 
 PRM393 - Vietnam Map Project
