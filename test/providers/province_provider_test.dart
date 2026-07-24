@@ -352,6 +352,19 @@ void main() {
 
       expect(provider.isLoadingHighSchools, isFalse);
     });
+
+    test('should handle error when loading high schools fails', () async {
+      when(
+        () => mockService.fetchHighSchoolsByCommuneName(
+          any(),
+          provinceName: any(named: 'provinceName'),
+        ),
+      ).thenThrow(Exception('Service error'));
+
+      await provider.loadHighSchoolsForCommune(commune1);
+
+      expect(provider.isLoadingHighSchools, isFalse);
+    });
   });
 
   group('ProvinceProvider — loadHouseholdsForCommune()', () {
@@ -367,6 +380,16 @@ void main() {
       when(
         () => mockService.fetchHouseholdsByCommuneName('Phường Tràng Tiền'),
       ).thenAnswer((_) async => []);
+
+      await provider.loadHouseholdsForCommune(commune1);
+
+      expect(provider.isLoadingHouseholds, isFalse);
+    });
+
+    test('should handle error when loading households fails', () async {
+      when(
+        () => mockService.fetchHouseholdsByCommuneName(any()),
+      ).thenThrow(Exception('Service error'));
 
       await provider.loadHouseholdsForCommune(commune1);
 
@@ -436,6 +459,78 @@ void main() {
       expect(provider.selectedCommune, equals(commune1));
       expect(provider.selectedProvince, isNull);
       expect(provider.focusedProvince, isNotNull);
+    });
+
+    test(
+      'should match commune parent to special zone when not in provinces',
+      () async {
+        final communeInSpecialZone = createProvince(
+          name: 'Phường Đặc khu',
+          parentTen: 'Đặc khu A',
+        );
+        when(
+          () => mockService.fetchCommunesForProvince('Đặc khu A'),
+        ).thenAnswer((_) async => [communeInSpecialZone]);
+        when(() => mockService.fetchProvinces()).thenAnswer((_) async => []);
+        when(
+          () => mockService.fetchSpecialZones(),
+        ).thenAnswer((_) async => [zone1]);
+        when(
+          () => mockService.fetchHighSchoolsByCommuneName(
+            any(),
+            provinceName: any(named: 'provinceName'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockService.fetchHouseholdsByCommuneName(any()),
+        ).thenAnswer((_) async => []);
+
+        await provider.loadData();
+        final result = SearchResult(
+          name: 'Phường Đặc khu',
+          type: 'commune',
+          model: communeInSpecialZone,
+        );
+
+        await provider.selectSearchResult(result);
+
+        expect(provider.selectedCommune, equals(communeInSpecialZone));
+        expect(provider.focusedProvince, equals(zone1));
+      },
+    );
+
+    test('should handle parent province not found gracefully', () async {
+      final orphanCommune = createProvince(
+        name: 'Phường Lạc Loài',
+        parentTen: 'Tỉnh Không Tồn Tại',
+      );
+      when(
+        () => mockService.fetchProvinces(),
+      ).thenAnswer((_) async => [provinceHaNoi]);
+      when(() => mockService.fetchSpecialZones()).thenAnswer((_) async => []);
+      when(
+        () => mockService.fetchHighSchoolsByCommuneName(
+          any(),
+          provinceName: any(named: 'provinceName'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockService.fetchHouseholdsByCommuneName(any()),
+      ).thenAnswer((_) async => []);
+
+      await provider.loadData();
+      final result = SearchResult(
+        name: 'Phường Lạc Loài',
+        type: 'commune',
+        model: orphanCommune,
+      );
+
+      await provider.selectSearchResult(result);
+
+      // Should still select the commune even if parent focus fails
+      expect(provider.selectedCommune, equals(orphanCommune));
+      // SelectedProvince and focusedProvince should remain unchanged
+      expect(provider.focusedProvince, isNull);
     });
   });
 }
